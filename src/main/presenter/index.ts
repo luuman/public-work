@@ -20,7 +20,7 @@ import { NotificationPresenter } from './notifactionPresenter';
 import { TabPresenter } from './tabPresenter';
 import { TrayPresenter } from './trayPresenter';
 import { OAuthPresenter } from './oauthPresenter';
-// import { FloatingButtonPresenter } from './floatingButtonPresenter';
+import { FloatingButtonPresenter } from './floatingButtonPresenter';
 import { CONFIG_EVENTS, WINDOW_EVENTS } from '@/events/events';
 // import { KnowledgePresenter } from './knowledgePresenter';
 
@@ -43,19 +43,19 @@ export class Presenter implements IPresenter {
   // sqlitePresenter: SQLitePresenter;
   // llmproviderPresenter: LLMProviderPresenter;
   configPresenter: ConfigPresenter;
-  threadPresenter: ThreadPresenter;
+  // threadPresenter: ThreadPresenter;
   devicePresenter: DevicePresenter;
-  upgradePresenter: UpgradePresenter;
+  // upgradePresenter: UpgradePresenter;
   shortcutPresenter: ShortcutPresenter;
   filePresenter: FilePresenter;
   // mcpPresenter: McpPresenter;
-  syncPresenter: SyncPresenter;
+  // syncPresenter: SyncPresenter;
   deeplinkPresenter: DeeplinkPresenter;
   notificationPresenter: NotificationPresenter;
   tabPresenter: TabPresenter;
   trayPresenter: TrayPresenter;
   oauthPresenter: OAuthPresenter;
-  // floatingButtonPresenter: FloatingButtonPresenter;
+  floatingButtonPresenter: FloatingButtonPresenter;
   // knowledgePresenter: KnowledgePresenter;
   // llamaCppPresenter: LlamaCppPresenter // 保留原始注释
   dialogPresenter: DialogPresenter;
@@ -90,9 +90,9 @@ export class Presenter implements IPresenter {
     this.notificationPresenter = new NotificationPresenter();
     this.oauthPresenter = new OAuthPresenter();
     this.trayPresenter = new TrayPresenter();
-    // this.floatingButtonPresenter = new FloatingButtonPresenter(
-    //   this.configPresenter,
-    // );
+    this.floatingButtonPresenter = new FloatingButtonPresenter(
+      this.configPresenter,
+    );
     this.dialogPresenter = new DialogPresenter();
     // this.knowledgePresenter = new KnowledgePresenter(
     //   this.configPresenter,
@@ -150,7 +150,7 @@ export class Presenter implements IPresenter {
   // 初始化悬浮按钮
   private async initializeFloatingButton() {
     try {
-      // await this.floatingButtonPresenter.initialize();
+      await this.floatingButtonPresenter.initialize();
       console.log('FloatingButtonPresenter initialized successfully');
     } catch (error) {
       console.error('Failed to initialize FloatingButtonPresenter:', error);
@@ -179,11 +179,11 @@ export class Presenter implements IPresenter {
 
   // 在应用退出时进行清理，关闭数据库连接
   destroy() {
-    // this.floatingButtonPresenter.destroy(); // 销毁悬浮按钮
+    this.floatingButtonPresenter.destroy(); // 销毁悬浮按钮
     this.tabPresenter.destroy();
     // this.sqlitePresenter.close(); // 关闭数据库连接
     this.shortcutPresenter.destroy(); // 销毁快捷键监听
-    this.syncPresenter.destroy(); // 销毁同步相关资源
+    // this.syncPresenter.destroy(); // 销毁同步相关资源
     this.notificationPresenter.clearAllNotifications(); // 清除所有通知
     // this.knowledgePresenter.destroy(); // 释放所有数据库连接
     // 注意: trayPresenter.destroy() 在 main/index.ts 的 will-quit 事件中处理

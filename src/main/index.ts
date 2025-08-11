@@ -1,14 +1,16 @@
 import { app, protocol } from 'electron';
-import { eventBus } from '@/events/eventbus';
-import { presenter } from './presenter';
 import { electronApp, optimizer, is } from '@electron-toolkit/utils';
+import { setLoggingEnabled } from '@shared/logger';
+import path from 'path';
+import fs from 'fs';
+import { eventBus } from '@/events/eventbus';
 import {
   WINDOW_EVENTS,
   TRAY_EVENTS,
   FLOATING_BUTTON_EVENTS,
 } from '@/events/events';
-import { setLoggingEnabled } from '@shared/logger';
-import { is } from '@electron-toolkit/utils'; // 确保导入 is
+import { presenter } from '@/presenter';
+import { handleShowHiddenWindow } from '@/utils';
 
 // 设置应用命令行参数
 app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required'); // 允许视频自动播放
@@ -123,7 +125,7 @@ app.whenReady().then(async () => {
     FLOATING_BUTTON_EVENTS.ENABLED_CHANGED,
     async (enabled: boolean) => {
       try {
-        // await presenter.floatingButtonPresenter.setEnabled(enabled);
+        await presenter.floatingButtonPresenter.setEnabled(enabled);
       } catch (error) {
         console.error('Failed to set floating button enabled state:', error);
       }
