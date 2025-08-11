@@ -23,7 +23,18 @@
   "dependencies": {
     "@electron-toolkit/preload": "^3.0.2",
     "@electron-toolkit/utils": "^4.0.0",
-    "electron-updater": "^6.3.9"
+    "axios": "^1.11.0",
+    "compare-versions": "^6.1.1",
+    "electron-store": "^8.2.0",
+    "electron-updater": "^6.3.9",
+    "electron-window-state": "^5.0.3",
+    "file-type": "^21.0.0",
+    "mammoth": "^1.10.0",
+    "monaco-editor": "^0.52.2",
+    "sharp": "^0.34.3",
+    "turndown": "^7.2.0",
+    "xlsx": "^0.18.5",
+    "xml2js": "^0.6.2"
   },
   "devDependencies": {
     "@electron-toolkit/eslint-config-prettier": "3.0.0",
@@ -31,14 +42,18 @@
     "@electron-toolkit/tsconfig": "^1.0.1",
     "@types/node": "^22.16.5",
     "@vitejs/plugin-vue": "^6.0.0",
-    "electron": "^20.3.8",
+    "electron": "35.7.4",
     "electron-builder": "^25.1.8",
+    "electron-log": "^5.4.2",
     "electron-vite": "^4.0.0",
     "eslint": "^9.31.0",
     "eslint-plugin-vue": "^10.3.0",
+    "pdf-parse-new": "^1.3.9",
     "prettier": "^3.6.2",
     "typescript": "^5.8.3",
     "vite": "^7.0.5",
+    "vite-plugin-svg-icons": "^2.0.1",
+    "vite-plugin-vue-devtools": "^8.0.0",
     "vue": "^3.5.17",
     "vue-eslint-parser": "^10.2.0",
     "vue-tsc": "^3.0.3"
@@ -48,8 +63,5 @@
       "electron",
       "esbuild"
     ]
-  },
-  "volta": {
-    "node": "16.15.0"
   }
 }

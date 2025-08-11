@@ -1,13 +1,14 @@
 <script setup lang="ts">
-import Versions from './components/Versions.vue'
+import Versions from './components/Versions.vue';
 
-const ipcHandle = (): void => window.electron.ipcRenderer.send('ping')
+const ipcHandle = (): void => window.electron.ipcRenderer.send('ping');
 </script>
 
 <template>
   <img alt="logo" class="logo" src="./assets/electron.svg" />
   <div class="creator">Powered by electron-vite</div>
   <div class="text">
+    <SvgIcon name="zhipu" className="zhipu-icon" />
     Build an Electron app with
     <span class="vue">Vue</span>
     and
@@ -16,7 +17,9 @@ const ipcHandle = (): void => window.electron.ipcRenderer.send('ping')
   <p class="tip">Please try pressing <code>F12</code> to open the devTool</p>
   <div class="actions">
     <div class="action">
-      <a href="https://electron-vite.org/" target="_blank" rel="noreferrer">Documentation</a>
+      <a href="https://electron-vite.org/" target="_blank" rel="noreferrer"
+        >Documentation</a
+      >
     </div>
     <div class="action">
       <a target="_blank" rel="noreferrer" @click="ipcHandle">Send IPC</a>
