@@ -1,5 +1,8 @@
 import { Server } from '@modelcontextprotocol/sdk/server/index.js'
-import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js'
+import {
+  CallToolRequestSchema,
+  ListToolsRequestSchema,
+} from '@modelcontextprotocol/sdk/types.js'
 import { z } from 'zod'
 import { zodToJsonSchema } from 'zod-to-json-schema'
 import { Transport } from '@modelcontextprotocol/sdk/shared/transport.js'
@@ -9,7 +12,11 @@ import axios from 'axios'
 const FastGptKnowledgeSearchArgsSchema = z.object({
   query: z.string().describe('搜索查询内容 (必填)'),
   topK: z.number().optional().default(5).describe('返回结果数量 (默认5条)'),
-  scoreThreshold: z.number().optional().default(0.2).describe('相似度阈值 (0-1之间，默认0.2)')
+  scoreThreshold: z
+    .number()
+    .optional()
+    .default(0.2)
+    .describe('相似度阈值 (0-1之间，默认0.2)'),
 })
 
 // 定义FastGPT API返回的数据结构
@@ -76,7 +83,9 @@ export class FastGptKnowledgeServer {
         throw new Error('需要提供FastGPT Dataset ID')
       }
       if (!env.description) {
-        throw new Error('需要提供对这个知识库的描述，以方便ai决定是否检索此知识库')
+        throw new Error(
+          '需要提供对这个知识库的描述，以方便ai决定是否检索此知识库',
+        )
       }
 
       this.configs.push({
@@ -84,7 +93,7 @@ export class FastGptKnowledgeServer {
         datasetId: env.datasetId,
         endpoint: env.endpoint || 'http://localhost:3000/api',
         description: env.description,
-        enabled: env.enabled
+        enabled: env.enabled,
       })
     }
 
@@ -92,13 +101,13 @@ export class FastGptKnowledgeServer {
     this.server = new Server(
       {
         name: 'deepchat-inmemory/fastgpt-knowledge-server',
-        version: '0.1.0'
+        version: '0.1.0',
       },
       {
         capabilities: {
-          tools: {}
-        }
-      }
+          tools: {},
+        },
+      },
     )
 
     // 设置请求处理器
@@ -121,7 +130,7 @@ export class FastGptKnowledgeServer {
           return {
             name: `fastgpt_knowledge_search${suffix}`,
             description: config.description,
-            inputSchema: zodToJsonSchema(FastGptKnowledgeSearchArgsSchema)
+            inputSchema: zodToJsonSchema(FastGptKnowledgeSearchArgsSchema),
           }
         })
       return { tools }
@@ -149,19 +158,22 @@ export class FastGptKnowledgeServer {
           }
           // 获取实际配置的索引
           const actualConfigIndex = this.configs.findIndex(
-            (config) => config === enabledConfigs[configIndex]
+            (config) => config === enabledConfigs[configIndex],
           )
 
-          return await this.performFastGptKnowledgeSearch(parameters, actualConfigIndex)
+          return await this.performFastGptKnowledgeSearch(
+            parameters,
+            actualConfigIndex,
+          )
         } catch (error) {
-          console.error('FastGPT知识库搜索失败:', error)
+          console.error('❌FastGPT知识库搜索失败:', error)
           return {
             content: [
               {
                 type: 'text',
-                text: `搜索失败: ${error instanceof Error ? error.message : String(error)}`
-              }
-            ]
+                text: `搜索失败: ${error instanceof Error ? error.message : String(error)}`,
+              },
+            ],
           }
         }
       }
@@ -170,9 +182,9 @@ export class FastGptKnowledgeServer {
         content: [
           {
             type: 'text',
-            text: `未知工具: ${name}`
-          }
-        ]
+            text: `未知工具: ${name}`,
+          },
+        ],
       }
     })
   }
@@ -180,12 +192,12 @@ export class FastGptKnowledgeServer {
   // 执行FastGPT知识库搜索
   private async performFastGptKnowledgeSearch(
     parameters: Record<string, unknown> | undefined,
-    configIndex: number = 0
+    configIndex: number = 0,
   ): Promise<{ content: MCPTextContent[] }> {
     const {
       query,
       topK = 5,
-      scoreThreshold = 0.2
+      scoreThreshold = 0.2,
     } = parameters as {
       query: string
       topK?: number
@@ -210,14 +222,14 @@ export class FastGptKnowledgeServer {
           limit: 20000,
           similarity: scoreThreshold,
           searchMode: 'embedding',
-          usingReRank: false
+          usingReRank: false,
         },
         {
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${config.apiKey}`
-          }
-        }
+            Authorization: `Bearer ${config.apiKey}`,
+          },
+        },
       )
 
       if (response.data.code !== 200) {
@@ -230,7 +242,7 @@ export class FastGptKnowledgeServer {
           title: record.sourceName || '未知文档',
           documentId: record.sourceId,
           content: record.q,
-          score: record.score.length > 0 ? record.score[0].value : 0
+          score: record.score.length > 0 ? record.score[0].value : 0,
         }
       })
 
@@ -252,15 +264,15 @@ export class FastGptKnowledgeServer {
         content: [
           {
             type: 'text',
-            text: resultText
-          }
-        ]
+            text: resultText,
+          },
+        ],
       }
     } catch (error) {
-      console.error('FastGPT API请求失败:', error)
+      console.error('❌FastGPT API请求失败:', error)
       if (axios.isAxiosError(error) && error.response) {
         throw new Error(
-          `FastGPT API错误 (${error.response.status}): ${JSON.stringify(error.response.data)}`
+          `FastGPT API错误 (${error.response.status}): ${JSON.stringify(error.response.data)}`,
         )
       }
       throw error

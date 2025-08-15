@@ -32,7 +32,7 @@ export abstract class BaseFileAdapter {
     return {
       fileSize: stat.size,
       fileCreated: stat.birthtime,
-      fileModified: stat.mtime
+      fileModified: stat.mtime,
     }
   }
 
@@ -49,17 +49,18 @@ export abstract class BaseFileAdapter {
       try {
         // const fileBuffer = await this.readFile()
         // const fileHash = await this.calculateFileHash(fileBuffer)
-        const { fileSize, fileCreated, fileModified } = await this.extractBasicInfo()
+        const { fileSize, fileCreated, fileModified } =
+          await this.extractBasicInfo()
         this.fileMetaData = {
           fileName: path.basename(this.filePath),
           fileSize,
           // fileHash,
           fileDescription: this.getFileDescription(),
           fileCreated,
-          fileModified
+          fileModified,
         }
       } catch (error) {
-        console.error('Error processing file:', error)
+        console.error('❌Error processing file:', error)
         return null
       }
     }

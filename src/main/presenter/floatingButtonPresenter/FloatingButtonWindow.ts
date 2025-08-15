@@ -1,7 +1,7 @@
 import { BrowserWindow, screen } from 'electron'
 import path from 'path'
 import { FloatingButtonConfig, FloatingButtonState } from './types'
-import logger from '../../../shared/logger'
+// import logger from '../../../shared/logger'
 import { platform } from '@electron-toolkit/utils'
 
 export class FloatingButtonWindow {
@@ -17,8 +17,8 @@ export class FloatingButtonWindow {
         x: 0,
         y: 0,
         width: config.size.width,
-        height: config.size.height
-      }
+        height: config.size.height,
+      },
     }
   }
 
@@ -60,8 +60,8 @@ export class FloatingButtonWindow {
           preload: path.join(__dirname, '../preload/floating.mjs'),
           webSecurity: false, // 开发模式下允许跨域
           devTools: isDev, // 开发模式下启用开发者工具
-          sandbox: false // 禁用沙盒模式，确保预加载脚本能正常工作
-        }
+          sandbox: false, // 禁用沙盒模式，确保预加载脚本能正常工作
+        },
       })
       this.window.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true })
       this.window.setAlwaysOnTop(true, 'floating')
@@ -74,15 +74,17 @@ export class FloatingButtonWindow {
         // 开发模式下可选择性打开开发者工具（暂时禁用，避免影响拖拽）
         this.window.webContents.openDevTools({ mode: 'detach' })
       } else {
-        await this.window.loadFile(path.join(__dirname, '../renderer/floating/index.html'))
+        await this.window.loadFile(
+          path.join(__dirname, '../renderer/floating/index.html'),
+        )
       }
 
       // 监听窗口事件
       this.setupWindowEvents()
 
-      logger.info('FloatingButtonWindow created successfully')
+      // logger.info('FloatingButtonWindow created successfully')
     } catch (error) {
-      logger.error('Failed to create FloatingButtonWindow:', error)
+      // logger.error('Failed to create FloatingButtonWindow:', error)
       throw error
     }
   }
@@ -97,7 +99,7 @@ export class FloatingButtonWindow {
 
     this.window.show()
     this.state.isVisible = true
-    logger.debug('FloatingButtonWindow shown')
+    // logger.debug('FloatingButtonWindow shown')
   }
 
   /**
@@ -110,7 +112,7 @@ export class FloatingButtonWindow {
 
     this.window.hide()
     this.state.isVisible = false
-    logger.debug('FloatingButtonWindow hidden')
+    // logger.debug('FloatingButtonWindow hidden')
   }
 
   /**
@@ -121,7 +123,7 @@ export class FloatingButtonWindow {
       this.window.destroy()
       this.window = null
       this.state.isVisible = false
-      logger.debug('FloatingButtonWindow destroyed')
+      // logger.debug('FloatingButtonWindow destroyed')
     }
   }
 

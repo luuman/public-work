@@ -49,14 +49,16 @@ export class ContentEnricher {
         timeout,
         headers: {
           'User-Agent':
-            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
         },
-        httpAgent: proxyUrl ? new HttpsProxyAgent(proxyUrl) : undefined
+        httpAgent: proxyUrl ? new HttpsProxyAgent(proxyUrl) : undefined,
       })
 
       const $ = cheerio.load(response.data)
       // 移除不需要的元素
-      $('script, style, nav, header, footer, iframe, .ad, #ad, .advertisement').remove()
+      $(
+        'script, style, nav, header, footer, iframe, .ad, #ad, .advertisement',
+      ).remove()
 
       // 获取页面标题
       const title = $('title').text().trim() || url
@@ -78,17 +80,20 @@ export class ContentEnricher {
         content: mainContent,
         icon,
         description,
-        rank
+        rank,
       }
     } catch (error: Error | unknown) {
-      console.error(`提取URL内容失败 ${url}:`, error instanceof Error ? error.message : '')
+      console.error(
+        `提取URL内容失败 ${url}:`,
+        error instanceof Error ? error.message : '',
+      )
       // 如果获取失败，只添加URL信息
       return {
         title: url,
         url,
         rank,
         description: '',
-        icon: ''
+        icon: '',
       }
     }
   }
@@ -99,7 +104,10 @@ export class ContentEnricher {
    * @param limit 处理结果的数量限制（可选）
    * @returns 丰富后的搜索结果数组
    */
-  static async enrichResults(results: SearchResult[], limit?: number): Promise<SearchResult[]> {
+  static async enrichResults(
+    results: SearchResult[],
+    limit?: number,
+  ): Promise<SearchResult[]> {
     const enrichedResults: SearchResult[] = []
     const resultsToProcess = limit ? results.slice(0, limit) : results
 
@@ -110,7 +118,7 @@ export class ContentEnricher {
         enrichedResults.push({
           ...result,
           content: enrichedResult.content || result.description || '',
-          icon: result.icon || enrichedResult.icon || ''
+          icon: result.icon || enrichedResult.icon || '',
         })
       } catch (error) {
         console.error(`Error enriching content for ${result.url}:`, error)
@@ -139,7 +147,7 @@ export class ContentEnricher {
       '.article-content',
       '.entry-content',
       '[role="main"]',
-      '.container'
+      '.container',
     ]
 
     for (const selector of possibleSelectors) {
@@ -176,7 +184,9 @@ export class ContentEnricher {
    */
   private static extractFavicon($: cheerio.CheerioAPI, url: string): string {
     // 尝试获取网站图标
-    let icon = $('link[rel="icon"]').attr('href') || $('link[rel="shortcut icon"]').attr('href')
+    let icon =
+      $('link[rel="icon"]').attr('href') ||
+      $('link[rel="shortcut icon"]').attr('href')
 
     // 如果找到了相对路径的图标，转换为绝对路径
     if (icon && !icon.startsWith('http')) {
@@ -201,7 +211,10 @@ export class ContentEnricher {
    * @param urlResults 提取的URL内容结果
    * @returns 丰富后的用户消息
    */
-  static enrichUserMessageWithUrlContent(userText: string, urlResults: SearchResult[]): string {
+  static enrichUserMessageWithUrlContent(
+    userText: string,
+    urlResults: SearchResult[],
+  ): string {
     if (urlResults.length === 0) {
       return userText
     }
@@ -233,7 +246,9 @@ export class ContentEnricher {
     const $ = cheerio.load(html)
 
     // 移除不需要的元素
-    $('script, style, nav, header, footer, iframe, .ad, #ad, .advertisement').remove()
+    $(
+      'script, style, nav, header, footer, iframe, .ad, #ad, .advertisement',
+    ).remove()
 
     let markdown = ''
 
@@ -247,7 +262,12 @@ export class ContentEnricher {
       const text = $el.text().trim()
 
       // 跳过空链接和明显的导航链接
-      if (!href || href === '#' || text.length < 3 || href.includes('javascript:')) {
+      if (
+        !href ||
+        href === '#' ||
+        text.length < 3 ||
+        href.includes('javascript:')
+      ) {
         return
       }
 
@@ -257,7 +277,7 @@ export class ContentEnricher {
         url = href.startsWith('http') ? href : new URL(href, baseUrl).toString()
       } catch (error) {
         // 如果URL构建失败，使用原始href
-        console.error('构建URL失败:', error)
+        console.error('❌构建URL失败:', error)
       }
 
       // 获取周围的文本作为描述
@@ -286,7 +306,7 @@ export class ContentEnricher {
       searchResults.push({
         title: text,
         url,
-        text: description
+        text: description,
       })
     })
 
@@ -329,7 +349,9 @@ export class ContentEnricher {
         if (href && href !== '#' && text.length > 0) {
           let url = href
           try {
-            url = href.startsWith('http') ? href : new URL(href, baseUrl).toString()
+            url = href.startsWith('http')
+              ? href
+              : new URL(href, baseUrl).toString()
           } catch {
             // 如果URL构建失败，使用原始href
           }
@@ -347,7 +369,9 @@ export class ContentEnricher {
       if (src) {
         let imageUrl = src
         try {
-          imageUrl = src.startsWith('http') ? src : new URL(src, baseUrl).toString()
+          imageUrl = src.startsWith('http')
+            ? src
+            : new URL(src, baseUrl).toString()
         } catch {
           // 如果URL构建失败，使用原始src
         }

@@ -9,103 +9,100 @@ import {
   ResourceListEntry,
   Resource,
   PromptListEntry,
-} from '@shared/presenter';
-import { ServerManager } from './serverManager';
-import { ToolManager } from './toolManager';
-import { eventBus, SendTarget } from '@/events/eventbus';
-import { MCP_EVENTS, NOTIFICATION_EVENTS } from '@/events/events';
-import { IConfigPresenter } from '@shared/presenter';
-import { getErrorMessageLabels } from '@shared/i18n';
-import { OpenAI } from 'openai';
-import { ToolListUnion, Type, FunctionDeclaration } from '@google/genai';
-import { CONFIG_EVENTS } from '@/events/events';
-import { presenter } from '@/presenter';
+} from '@shared/presenter'
+import { ServerManager } from './serverManager'
+import { ToolManager } from './toolManager'
+import { eventBus, SendTarget } from '@/events/eventbus'
+import { MCP_EVENTS, NOTIFICATION_EVENTS } from '@/events/events'
+import { IConfigPresenter } from '@shared/presenter'
+import { getErrorMessageLabels } from '@shared/i18n'
+import { OpenAI } from 'openai'
+import { ToolListUnion, Type, FunctionDeclaration } from '@google/genai'
+import { CONFIG_EVENTS } from '@/events/events'
+import { presenter } from '@/presenter'
 
 // 定义MCP工具接口
 interface MCPTool {
-  id: string;
-  name: string;
-  type: string;
-  description: string;
-  serverName: string;
+  id: string
+  name: string
+  type: string
+  description: string
+  serverName: string
   inputSchema: {
-    properties: Record<string, Record<string, unknown>>;
-    required: string[];
-    [key: string]: unknown;
-  };
+    properties: Record<string, Record<string, unknown>>
+    required: string[]
+    [key: string]: unknown
+  }
 }
 
 // 定义各家LLM的工具类型接口
 interface OpenAIToolCall {
   function: {
-    name: string;
-    arguments: string;
-  };
+    name: string
+    arguments: string
+  }
 }
 
 interface AnthropicToolUse {
-  name: string;
-  input: Record<string, unknown>;
+  name: string
+  input: Record<string, unknown>
 }
 
 interface GeminiFunctionCall {
-  name: string;
-  args: Record<string, unknown>;
+  name: string
+  args: Record<string, unknown>
 }
 
 // 定义工具转换接口
 interface OpenAITool {
-  type: 'function';
+  type: 'function'
   function: {
-    name: string;
-    description: string;
+    name: string
+    description: string
     parameters: {
-      type: string;
-      properties: Record<string, Record<string, unknown>>;
-      required: string[];
-    };
-  };
+      type: string
+      properties: Record<string, Record<string, unknown>>
+      required: string[]
+    }
+  }
 }
 
 interface AnthropicTool {
-  name: string;
-  description: string;
+  name: string
+  description: string
   input_schema: {
-    type: string;
-    properties: Record<string, Record<string, unknown>>;
-    required: string[];
-  };
+    type: string
+    properties: Record<string, Record<string, unknown>>
+    required: string[]
+  }
 }
 
 // 完整版的 McpPresenter 实现
 export class McpPresenter implements IMCPPresenter {
-  private serverManager: ServerManager;
-  private toolManager: ToolManager;
-  private configPresenter: IConfigPresenter;
-  private isInitialized: boolean = false;
+  private serverManager: ServerManager
+  private toolManager: ToolManager
+  private configPresenter: IConfigPresenter
+  private isInitialized: boolean = false
 
   constructor(configPresenter?: IConfigPresenter) {
-    console.log('Initializing MCP Presenter');
+    console.log('Initializing MCP Presenter')
 
-    this.configPresenter = configPresenter || presenter.configPresenter;
-    this.serverManager = new ServerManager(this.configPresenter);
-    this.toolManager = new ToolManager(
-      this.configPresenter,
-      this.serverManager,
-    );
+    this.configPresenter = configPresenter || presenter.configPresenter
+    this.serverManager = new ServerManager(this.configPresenter)
+    this.toolManager = new ToolManager(this.configPresenter, this.serverManager)
 
     // 监听自定义提示词服务器检查事件
     eventBus.on(
       CONFIG_EVENTS.CUSTOM_PROMPTS_SERVER_CHECK_REQUIRED,
       async () => {
-        await this.checkAndManageCustomPromptsServer();
+        await this.checkAndManageCustomPromptsServer()
       },
-    );
+    )
 
     // 延迟初始化，确保其他组件已经准备好
     setTimeout(() => {
-      this.initialize();
-    }, 1000);
+      this.initialize()
+    }, 1000)
   }
 
   private async initialize() {
@@ -113,54 +110,54 @@ export class McpPresenter implements IMCPPresenter {
       // 如果没有提供configPresenter，从presenter中获取
       if (!this.configPresenter.getLanguage) {
         // 重新创建管理器
-        this.serverManager = new ServerManager(this.configPresenter);
+        this.serverManager = new ServerManager(this.configPresenter)
         this.toolManager = new ToolManager(
           this.configPresenter,
           this.serverManager,
-        );
+        )
       }
 
       // 加载配置
       const [servers, defaultServers] = await Promise.all([
         this.configPresenter.getMcpServers(),
         this.configPresenter.getMcpDefaultServers(),
-      ]);
+      ])
 
       // 初始化npm registry（优先使用缓存）
-      console.log('[MCP] Initializing npm registry...');
+      console.log('[MCP] Initializing npm registry...')
       try {
-        await this.serverManager.testNpmRegistrySpeed(true);
+        await this.serverManager.testNpmRegistrySpeed(true)
         console.log(
           `[MCP] npm registry initialized: ${this.serverManager.getNpmRegistry()}`,
-        );
+        )
       } catch (error) {
-        console.error('[MCP] npm registry initialization failed:', error);
+        console.error('❌[MCP] npm registry initialization failed:', error)
       }
 
       // 检查并启动 deepchat-inmemory/custom-prompts-server
-      const customPromptsServerName = 'deepchat-inmemory/custom-prompts-server';
+      const customPromptsServerName = 'deepchat-inmemory/custom-prompts-server'
       if (servers[customPromptsServerName]) {
         console.log(
           `[MCP] Attempting to start custom prompts server: ${customPromptsServerName}`,
-        );
+        )
 
         try {
-          await this.serverManager.startServer(customPromptsServerName);
+          await this.serverManager.startServer(customPromptsServerName)
           console.log(
             `[MCP] Custom prompts server ${customPromptsServerName} started successfully`,
-          );
+          )
 
           // 通知渲染进程服务器已启动
           eventBus.send(
             MCP_EVENTS.SERVER_STARTED,
             SendTarget.ALL_WINDOWS,
             customPromptsServerName,
-          );
+          )
         } catch (error) {
           console.error(
             `[MCP] Failed to start custom prompts server ${customPromptsServerName}:`,
             error,
-          );
+          )
         }
       }
 
@@ -170,149 +167,149 @@ export class McpPresenter implements IMCPPresenter {
           if (servers[serverName]) {
             console.log(
               `[MCP] Attempting to start default server: ${serverName}`,
-            );
+            )
 
             try {
-              await this.serverManager.startServer(serverName);
+              await this.serverManager.startServer(serverName)
               console.log(
                 `[MCP] Default server ${serverName} started successfully`,
-              );
+              )
 
               // 通知渲染进程服务器已启动
               eventBus.send(
                 MCP_EVENTS.SERVER_STARTED,
                 SendTarget.ALL_WINDOWS,
                 serverName,
-              );
+              )
             } catch (error) {
               console.error(
                 `[MCP] Failed to start default server ${serverName}:`,
                 error,
-              );
+              )
             }
           }
         }
       }
 
       // 标记初始化完成并发出事件
-      this.isInitialized = true;
-      console.log('[MCP] Initialization completed');
-      eventBus.send(MCP_EVENTS.INITIALIZED, SendTarget.ALL_WINDOWS);
+      this.isInitialized = true
+      console.log('[MCP] Initialization completed')
+      eventBus.send(MCP_EVENTS.INITIALIZED, SendTarget.ALL_WINDOWS)
 
       // 检查并管理自定义提示词服务器
-      await this.checkAndManageCustomPromptsServer();
+      await this.checkAndManageCustomPromptsServer()
 
-      this.scheduleBackgroundRegistryUpdate();
+      this.scheduleBackgroundRegistryUpdate()
     } catch (error) {
-      console.error('[MCP] Initialization failed:', error);
+      console.error('❌[MCP] Initialization failed:', error)
       // 即使初始化失败也标记为已完成，避免系统卡在未初始化状态
-      this.isInitialized = true;
-      eventBus.send(MCP_EVENTS.INITIALIZED, SendTarget.ALL_WINDOWS);
+      this.isInitialized = true
+      eventBus.send(MCP_EVENTS.INITIALIZED, SendTarget.ALL_WINDOWS)
     }
   }
 
   private scheduleBackgroundRegistryUpdate(): void {
     setTimeout(async () => {
       try {
-        await this.serverManager.updateNpmRegistryInBackground();
+        await this.serverManager.updateNpmRegistryInBackground()
       } catch (error) {
-        console.error('[MCP] Background registry update failed:', error);
+        console.error('❌[MCP] Background registry update failed:', error)
       }
-    }, 5000);
+    }, 5000)
   }
 
   // 添加获取初始化状态的方法
   isReady(): boolean {
-    return this.isInitialized;
+    return this.isInitialized
   }
 
   // 检查并管理自定义提示词服务器
   private async checkAndManageCustomPromptsServer(): Promise<void> {
-    const customPromptsServerName = 'deepchat-inmemory/custom-prompts-server';
+    const customPromptsServerName = 'deepchat-inmemory/custom-prompts-server'
 
     try {
       // 获取当前自定义提示词
-      const customPrompts = await this.configPresenter.getCustomPrompts();
-      const hasCustomPrompts = customPrompts && customPrompts.length > 0;
+      const customPrompts = await this.configPresenter.getCustomPrompts()
+      const hasCustomPrompts = customPrompts && customPrompts.length > 0
 
       // 检查服务器是否正在运行
       const isServerRunning = this.serverManager.isServerRunning(
         customPromptsServerName,
-      );
+      )
 
       if (hasCustomPrompts && !isServerRunning) {
         // 有自定义提示词但服务器未运行，启动服务器
         try {
-          await this.serverManager.startServer(customPromptsServerName);
+          await this.serverManager.startServer(customPromptsServerName)
           eventBus.send(
             MCP_EVENTS.SERVER_STARTED,
             SendTarget.ALL_WINDOWS,
             customPromptsServerName,
-          );
+          )
         } catch (error) {
           console.error(
             `Failed to start custom prompts server ${customPromptsServerName}:`,
             error,
-          );
+          )
         }
       } else if (!hasCustomPrompts && isServerRunning) {
         // 没有自定义提示词但服务器正在运行，停止服务器
         try {
-          await this.serverManager.stopServer(customPromptsServerName);
+          await this.serverManager.stopServer(customPromptsServerName)
           eventBus.send(
             MCP_EVENTS.SERVER_STOPPED,
             SendTarget.ALL_WINDOWS,
             customPromptsServerName,
-          );
+          )
         } catch (error) {
           console.error(
             `Failed to stop custom prompts server ${customPromptsServerName}:`,
             error,
-          );
+          )
         }
       } else if (hasCustomPrompts && isServerRunning) {
         // 有自定义提示词且服务器正在运行，重启服务器以刷新缓存
         try {
-          await this.serverManager.stopServer(customPromptsServerName);
-          await this.serverManager.startServer(customPromptsServerName);
+          await this.serverManager.stopServer(customPromptsServerName)
+          await this.serverManager.startServer(customPromptsServerName)
           eventBus.send(
             MCP_EVENTS.SERVER_STARTED,
             SendTarget.ALL_WINDOWS,
             customPromptsServerName,
-          );
+          )
         } catch (error) {
           console.error(
             `Failed to restart custom prompts server ${customPromptsServerName}:`,
             error,
-          );
+          )
         }
       }
 
       // 通知客户端列表已更新
-      eventBus.send(MCP_EVENTS.CLIENT_LIST_UPDATED, SendTarget.ALL_WINDOWS);
+      eventBus.send(MCP_EVENTS.CLIENT_LIST_UPDATED, SendTarget.ALL_WINDOWS)
     } catch (error) {
-      console.error('Failed to manage custom prompts server:', error);
+      console.error('❌Failed to manage custom prompts server:', error)
     }
   }
 
   // 获取MCP服务器配置
   getMcpServers(): Promise<Record<string, MCPServerConfig>> {
-    return this.configPresenter.getMcpServers();
+    return this.configPresenter.getMcpServers()
   }
 
   // 获取所有MCP服务器
   async getMcpClients(): Promise<McpClient[]> {
-    const clients = await this.toolManager.getRunningClients();
-    const clientsList: McpClient[] = [];
+    const clients = await this.toolManager.getRunningClients()
+    const clientsList: McpClient[] = []
     for (const client of clients) {
-      const results: MCPToolDefinition[] = [];
-      const tools = await client.listTools();
+      const results: MCPToolDefinition[] = []
+      const tools = await client.listTools()
       for (const tool of tools) {
-        const properties = tool.inputSchema.properties || {};
-        const toolProperties = { ...properties };
+        const properties = tool.inputSchema.properties || {}
+        const toolProperties = { ...properties }
         for (const key in toolProperties) {
           if (!toolProperties[key].description) {
-            toolProperties[key].description = 'Params of ' + key;
+            toolProperties[key].description = 'Params of ' + key
           }
         }
         results.push({
@@ -333,7 +330,7 @@ export class McpPresenter implements IMCPPresenter {
             icons: client.serverConfig['icons'] as string,
             description: client.serverConfig['description'] as string,
           },
-        });
+        })
       }
 
       // 创建客户端基本信息对象
@@ -342,12 +339,12 @@ export class McpPresenter implements IMCPPresenter {
         icon: client.serverConfig['icons'] as string,
         isRunning: client.isServerRunning(),
         tools: results,
-      };
+      }
 
       // 检查并添加 prompts（如果支持）
       if (typeof client.listPrompts === 'function') {
         try {
-          const prompts = await client.listPrompts();
+          const prompts = await client.listPrompts()
           if (prompts && prompts.length > 0) {
             clientObj.prompts = prompts.map((prompt) => ({
               id: prompt.name,
@@ -359,54 +356,54 @@ export class McpPresenter implements IMCPPresenter {
                 name: client.serverName,
                 icon: client.serverConfig['icons'] as string,
               },
-            }));
+            }))
           }
         } catch (error) {
           console.error(
             `[MCP] Failed to get prompt templates for client ${client.serverName}:`,
             error,
-          );
+          )
         }
       }
 
       // 检查并添加 resources（如果支持）
       if (typeof client.listResources === 'function') {
         try {
-          const resources = await client.listResources();
+          const resources = await client.listResources()
           if (resources && resources.length > 0) {
-            clientObj.resources = resources;
+            clientObj.resources = resources
           }
         } catch (error) {
           console.error(
             `[MCP] Failed to get resources for client ${client.serverName}:`,
             error,
-          );
+          )
         }
       }
 
-      clientsList.push(clientObj);
+      clientsList.push(clientObj)
     }
-    return clientsList;
+    return clientsList
   }
 
   // 获取所有默认MCP服务器
   getMcpDefaultServers(): Promise<string[]> {
-    return this.configPresenter.getMcpDefaultServers();
+    return this.configPresenter.getMcpDefaultServers()
   }
 
   // 添加默认MCP服务器
   async addMcpDefaultServer(serverName: string): Promise<void> {
-    await this.configPresenter.addMcpDefaultServer(serverName);
+    await this.configPresenter.addMcpDefaultServer(serverName)
   }
 
   // 移除默认MCP服务器
   async removeMcpDefaultServer(serverName: string): Promise<void> {
-    await this.configPresenter.removeMcpDefaultServer(serverName);
+    await this.configPresenter.removeMcpDefaultServer(serverName)
   }
 
   // 切换服务器的默认状态
   async toggleMcpDefaultServer(serverName: string): Promise<void> {
-    await this.configPresenter.toggleMcpDefaultServer(serverName);
+    await this.configPresenter.toggleMcpDefaultServer(serverName)
   }
 
   // 添加MCP服务器
@@ -414,14 +411,14 @@ export class McpPresenter implements IMCPPresenter {
     serverName: string,
     config: MCPServerConfig,
   ): Promise<boolean> {
-    const existingServers = await this.getMcpServers();
+    const existingServers = await this.getMcpServers()
     if (existingServers[serverName]) {
       console.error(
         `[MCP] Failed to add server: Server name "${serverName}" already exists.`,
-      );
+      )
       // 获取当前语言并发送通知
-      const locale = this.configPresenter.getLanguage?.() || 'zh-CN';
-      const errorMessages = getErrorMessageLabels(locale);
+      const locale = this.configPresenter.getLanguage?.() || 'zh-CN'
+      const errorMessages = getErrorMessageLabels(locale)
       eventBus.sendToRenderer(
         NOTIFICATION_EVENTS.SHOW_ERROR,
         SendTarget.ALL_WINDOWS,
@@ -435,11 +432,11 @@ export class McpPresenter implements IMCPPresenter {
           id: `mcp-error-add-server-${serverName}-${Date.now()}`,
           type: 'error',
         },
-      );
-      return false;
+      )
+      return false
     }
-    await this.configPresenter.addMcpServer(serverName, config);
-    return true;
+    await this.configPresenter.addMcpServer(serverName, config)
+    return true
   }
 
   // 更新MCP服务器配置
@@ -447,26 +444,26 @@ export class McpPresenter implements IMCPPresenter {
     serverName: string,
     config: Partial<MCPServerConfig>,
   ): Promise<void> {
-    const wasRunning = this.serverManager.isServerRunning(serverName);
-    await this.configPresenter.updateMcpServer(serverName, config);
+    const wasRunning = this.serverManager.isServerRunning(serverName)
+    await this.configPresenter.updateMcpServer(serverName, config)
 
     // 如果服务器之前正在运行，则重启它以应用新配置
     if (wasRunning) {
       console.log(
         `[MCP] Configuration updated, restarting server: ${serverName}`,
-      );
+      )
       try {
-        await this.stopServer(serverName); // stopServer 会发出 SERVER_STOPPED 事件
-        await this.startServer(serverName); // startServer 会发出 SERVER_STARTED 事件
-        console.log(`[MCP] Server ${serverName} restarted successfully`);
+        await this.stopServer(serverName) // stopServer 会发出 SERVER_STOPPED 事件
+        await this.startServer(serverName) // startServer 会发出 SERVER_STARTED 事件
+        console.log(`[MCP] Server ${serverName} restarted successfully`)
       } catch (error) {
-        console.error(`[MCP] Failed to restart server ${serverName}:`, error);
+        console.error(`[MCP] Failed to restart server ${serverName}:`, error)
         // 即使重启失败，也要确保状态正确，标记为未运行
         eventBus.send(
           MCP_EVENTS.SERVER_STOPPED,
           SendTarget.ALL_WINDOWS,
           serverName,
-        );
+        )
       }
     }
   }
@@ -475,42 +472,34 @@ export class McpPresenter implements IMCPPresenter {
   async removeMcpServer(serverName: string): Promise<void> {
     // 如果服务器正在运行，先停止
     if (await this.isServerRunning(serverName)) {
-      await this.stopServer(serverName);
+      await this.stopServer(serverName)
     }
-    await this.configPresenter.removeMcpServer(serverName);
+    await this.configPresenter.removeMcpServer(serverName)
   }
 
   async isServerRunning(serverName: string): Promise<boolean> {
-    return Promise.resolve(this.serverManager.isServerRunning(serverName));
+    return Promise.resolve(this.serverManager.isServerRunning(serverName))
   }
 
   async startServer(serverName: string): Promise<void> {
-    await this.serverManager.startServer(serverName);
+    await this.serverManager.startServer(serverName)
     // 通知渲染进程服务器已启动
-    eventBus.send(
-      MCP_EVENTS.SERVER_STARTED,
-      SendTarget.ALL_WINDOWS,
-      serverName,
-    );
+    eventBus.send(MCP_EVENTS.SERVER_STARTED, SendTarget.ALL_WINDOWS, serverName)
   }
 
   async stopServer(serverName: string): Promise<void> {
-    await this.serverManager.stopServer(serverName);
+    await this.serverManager.stopServer(serverName)
     // 通知渲染进程服务器已停止
-    eventBus.send(
-      MCP_EVENTS.SERVER_STOPPED,
-      SendTarget.ALL_WINDOWS,
-      serverName,
-    );
+    eventBus.send(MCP_EVENTS.SERVER_STOPPED, SendTarget.ALL_WINDOWS, serverName)
   }
   async getAllToolDefinitions(
     enabledMcpTools?: string[],
   ): Promise<MCPToolDefinition[]> {
-    const enabled = await this.configPresenter.getMcpEnabled();
+    const enabled = await this.configPresenter.getMcpEnabled()
     if (enabled) {
-      return await this.toolManager.getAllToolDefinitions(enabledMcpTools);
+      return await this.toolManager.getAllToolDefinitions(enabledMcpTools)
     }
-    return [];
+    return []
   }
 
   /**
@@ -518,20 +507,20 @@ export class McpPresenter implements IMCPPresenter {
    * @returns 所有提示模板列表，每个提示模板附带所属客户端信息
    */
   async getAllPrompts(): Promise<Array<PromptListEntry>> {
-    const enabled = await this.configPresenter.getMcpEnabled();
+    const enabled = await this.configPresenter.getMcpEnabled()
     if (!enabled) {
-      return [];
+      return []
     }
 
-    const clients = await this.toolManager.getRunningClients();
+    const clients = await this.toolManager.getRunningClients()
     const promptsList: Array<
       Prompt & { client: { name: string; icon: string } }
-    > = [];
+    > = []
 
     for (const client of clients) {
       if (typeof client.listPrompts === 'function') {
         try {
-          const prompts = await client.listPrompts();
+          const prompts = await client.listPrompts()
           if (prompts && prompts.length > 0) {
             // 为每个提示模板添加客户端信息
             const clientPrompts = prompts.map((prompt) => ({
@@ -544,19 +533,19 @@ export class McpPresenter implements IMCPPresenter {
                 name: client.serverName,
                 icon: client.serverConfig['icons'] as string,
               },
-            }));
-            promptsList.push(...clientPrompts);
+            }))
+            promptsList.push(...clientPrompts)
           }
         } catch (error) {
           console.error(
             `[MCP] Failed to get prompt templates for client ${client.serverName}:`,
             error,
-          );
+          )
         }
       }
     }
 
-    return promptsList;
+    return promptsList
   }
 
   /**
@@ -566,20 +555,20 @@ export class McpPresenter implements IMCPPresenter {
   async getAllResources(): Promise<
     Array<ResourceListEntry & { client: { name: string; icon: string } }>
   > {
-    const enabled = await this.configPresenter.getMcpEnabled();
+    const enabled = await this.configPresenter.getMcpEnabled()
     if (!enabled) {
-      return [];
+      return []
     }
 
-    const clients = await this.toolManager.getRunningClients();
+    const clients = await this.toolManager.getRunningClients()
     const resourcesList: Array<
       ResourceListEntry & { client: { name: string; icon: string } }
-    > = [];
+    > = []
 
     for (const client of clients) {
       if (typeof client.listResources === 'function') {
         try {
-          const resources = await client.listResources();
+          const resources = await client.listResources()
           if (resources && resources.length > 0) {
             // 为每个资源添加客户端信息
             const clientResources = resources.map((resource) => ({
@@ -588,69 +577,69 @@ export class McpPresenter implements IMCPPresenter {
                 name: client.serverName,
                 icon: client.serverConfig['icons'] as string,
               },
-            }));
-            resourcesList.push(...clientResources);
+            }))
+            resourcesList.push(...clientResources)
           }
         } catch (error) {
           console.error(
             `[MCP] Failed to get resources for client ${client.serverName}:`,
             error,
-          );
+          )
         }
       }
     }
 
-    return resourcesList;
+    return resourcesList
   }
 
   async callTool(
     request: MCPToolCall,
   ): Promise<{ content: string; rawData: MCPToolResponse }> {
-    const toolCallResult = await this.toolManager.callTool(request);
+    const toolCallResult = await this.toolManager.callTool(request)
 
     // 格式化工具调用结果为大模型易于解析的字符串
-    let formattedContent = '';
+    let formattedContent = ''
 
     // 判断内容类型
     if (typeof toolCallResult.content === 'string') {
       // 内容已经是字符串
-      formattedContent = toolCallResult.content;
+      formattedContent = toolCallResult.content
     } else if (Array.isArray(toolCallResult.content)) {
       // 内容是结构化数组，需要格式化
-      const contentParts: string[] = [];
+      const contentParts: string[] = []
 
       // 处理每个内容项
       for (const item of toolCallResult.content) {
         if (item.type === 'text') {
-          contentParts.push(item.text);
+          contentParts.push(item.text)
         } else if (item.type === 'image') {
-          contentParts.push(`[图片: ${item.mimeType}]`);
+          contentParts.push(`[图片: ${item.mimeType}]`)
         } else if (item.type === 'resource') {
           if ('text' in item.resource && item.resource.text) {
             contentParts.push(
               `[资源: ${item.resource.uri}]\n${item.resource.text}`,
-            );
+            )
           } else if ('blob' in item.resource) {
-            contentParts.push(`[二进制资源: ${item.resource.uri}]`);
+            contentParts.push(`[二进制资源: ${item.resource.uri}]`)
           } else {
-            contentParts.push(`[资源: ${item.resource.uri}]`);
+            contentParts.push(`[资源: ${item.resource.uri}]`)
           }
         } else {
           // 处理其他未知类型
-          contentParts.push(JSON.stringify(item));
+          contentParts.push(JSON.stringify(item))
         }
       }
 
       // 合并所有内容
-      formattedContent = contentParts.join('\n\n');
+      formattedContent = contentParts.join('\n\n')
     }
 
     // 添加错误标记（如果有）
     if (toolCallResult.isError) {
-      formattedContent = `错误: ${formattedContent}`;
+      formattedContent = `错误: ${formattedContent}`
     }
 
-    return { content: formattedContent, rawData: toolCallResult };
+    return { content: formattedContent, rawData: toolCallResult }
   }
 
   // 将MCPToolDefinition转换为MCPTool
@@ -672,8 +661,8 @@ export class McpPresenter implements IMCPPresenter {
         type: toolDefinition.function.parameters.type,
         required: toolDefinition.function.parameters.required,
       },
-    } as MCPTool;
-    return mcpTool;
+    } as MCPTool
+    return mcpTool
   }
 
   // 工具属性过滤函数
@@ -688,14 +677,14 @@ export class McpPresenter implements IMCPPresenter {
       'items',
       'enum',
       'anyOf',
-    ];
+    ]
 
-    const properties = tool.inputSchema.properties;
+    const properties = tool.inputSchema.properties
 
     // 递归清理函数，确保所有值都是可序列化的
     const cleanValue = (value: unknown): unknown => {
       if (value === null || value === undefined) {
-        return value;
+        return value
       }
 
       if (
@@ -703,24 +692,24 @@ export class McpPresenter implements IMCPPresenter {
         typeof value === 'number' ||
         typeof value === 'boolean'
       ) {
-        return value;
+        return value
       }
 
       if (Array.isArray(value)) {
-        return value.map(cleanValue);
+        return value.map(cleanValue)
       }
 
       if (typeof value === 'object') {
-        const cleaned: Record<string, unknown> = {};
+        const cleaned: Record<string, unknown> = {}
         for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
-          cleaned[k] = cleanValue(v);
+          cleaned[k] = cleanValue(v)
         }
-        return cleaned;
+        return cleaned
       }
 
       // 对于函数、Symbol等不可序列化的值，返回字符串表示
-      return String(value);
-    };
+      return String(value)
+    }
 
     const getSubMap = (
       obj: Record<string, unknown>,
@@ -728,12 +717,12 @@ export class McpPresenter implements IMCPPresenter {
     ): Record<string, unknown> => {
       const filtered = Object.fromEntries(
         Object.entries(obj).filter(([key]) => keys.includes(key)),
-      );
-      const cleaned: Record<string, unknown> = {};
+      )
+      const cleaned: Record<string, unknown> = {}
       for (const [key, value] of Object.entries(filtered)) {
         if (key === 'type') {
           // Handle type property specifically to ensure it has a valid value
-          const typeValue = cleanValue(value);
+          const typeValue = cleanValue(value)
           if (
             !typeValue ||
             typeof typeValue !== 'string' ||
@@ -742,7 +731,7 @@ export class McpPresenter implements IMCPPresenter {
             typeValue.toLowerCase() === 'unknown'
           ) {
             // Set to 'string' if type is missing, empty, 'any', or 'unknown'
-            cleaned[key] = 'string';
+            cleaned[key] = 'string'
           } else {
             // Validate that it's a supported JSON Schema type
             const supportedTypes = [
@@ -753,38 +742,38 @@ export class McpPresenter implements IMCPPresenter {
               'array',
               'object',
               'null',
-            ];
+            ]
             if (supportedTypes.includes(typeValue.toLowerCase())) {
-              cleaned[key] = typeValue.toLowerCase();
+              cleaned[key] = typeValue.toLowerCase()
             } else {
               // If it's not a supported type, default to 'string'
-              cleaned[key] = 'string';
+              cleaned[key] = 'string'
             }
           }
         } else {
-          cleaned[key] = cleanValue(value);
+          cleaned[key] = cleanValue(value)
         }
       }
 
       // Ensure type property exists if it was supposed to be included
       if (keys.includes('type') && !cleaned.hasOwnProperty('type')) {
-        cleaned.type = 'string';
+        cleaned.type = 'string'
       }
 
-      return cleaned;
-    };
+      return cleaned
+    }
 
-    const result: Record<string, Record<string, unknown>> = {};
+    const result: Record<string, Record<string, unknown>> = {}
     for (const [key, val] of Object.entries(properties)) {
       if (typeof val === 'object' && val !== null) {
         result[key] = getSubMap(
           val as Record<string, unknown>,
           supportedAttributes,
-        );
+        )
       }
     }
 
-    return result;
+    return result
   }
 
   // 新增工具转换方法
@@ -799,7 +788,7 @@ export class McpPresenter implements IMCPPresenter {
     serverName: string,
   ): Promise<OpenAITool[]> {
     const openaiTools: OpenAITool[] = mcpTools.map((toolDef) => {
-      const tool = this.mcpToolDefinitionToMcpTool(toolDef, serverName);
+      const tool = this.mcpToolDefinitionToMcpTool(toolDef, serverName)
       return {
         type: 'function',
         function: {
@@ -811,10 +800,10 @@ export class McpPresenter implements IMCPPresenter {
             required: tool.inputSchema.required || [],
           },
         },
-      };
-    });
+      }
+    })
     // console.log('openaiTools', JSON.stringify(openaiTools))
-    return openaiTools;
+    return openaiTools
   }
 
   /**
@@ -828,12 +817,12 @@ export class McpPresenter implements IMCPPresenter {
     llmTool: OpenAIToolCall,
     providerId: string,
   ): Promise<MCPToolCall | undefined> {
-    const mcpTools = await this.getAllToolDefinitions();
+    const mcpTools = await this.getAllToolDefinitions()
     const tool = mcpTools.find(
       (tool) => tool.function.name === llmTool.function.name,
-    );
+    )
     if (!tool) {
-      return undefined;
+      return undefined
     }
 
     // 创建MCP工具调用
@@ -849,10 +838,10 @@ export class McpPresenter implements IMCPPresenter {
         icons: tool.server.icons,
         description: tool.server.description,
       },
-    };
+    }
     // console.log('mcpToolCall', mcpToolCall, tool)
 
-    return mcpToolCall;
+    return mcpToolCall
   }
 
   /**
@@ -866,7 +855,7 @@ export class McpPresenter implements IMCPPresenter {
     serverName: string,
   ): Promise<AnthropicTool[]> {
     return mcpTools.map((toolDef) => {
-      const tool = this.mcpToolDefinitionToMcpTool(toolDef, serverName);
+      const tool = this.mcpToolDefinitionToMcpTool(toolDef, serverName)
       return {
         name: tool.name,
         description: tool.description,
@@ -875,8 +864,8 @@ export class McpPresenter implements IMCPPresenter {
           properties: this.filterPropertieAttributes(tool),
           required: tool.inputSchema.required as string[],
         },
-      };
-    });
+      }
+    })
   }
 
   /**
@@ -890,12 +879,12 @@ export class McpPresenter implements IMCPPresenter {
     toolUse: AnthropicToolUse,
     providerId: string,
   ): Promise<MCPToolCall | undefined> {
-    const mcpTools = await this.getAllToolDefinitions();
+    const mcpTools = await this.getAllToolDefinitions()
 
-    const tool = mcpTools.find((tool) => tool.function.name === toolUse.name);
+    const tool = mcpTools.find((tool) => tool.function.name === toolUse.name)
     // console.log('tool', tool, toolUse)
     if (!tool) {
-      return undefined;
+      return undefined
     }
 
     // 创建MCP工具调用
@@ -911,9 +900,9 @@ export class McpPresenter implements IMCPPresenter {
         icons: tool.server.icons,
         description: tool.server.description,
       },
-    };
+    }
 
-    return mcpToolCall;
+    return mcpToolCall
   }
 
   /**
@@ -927,69 +916,69 @@ export class McpPresenter implements IMCPPresenter {
     serverName: string,
   ): Promise<ToolListUnion> {
     if (!mcpTools || mcpTools.length === 0) {
-      return [];
+      return []
     }
 
     // 递归清理Schema对象，确保符合Gemini API要求
     const cleanSchema = (
       schema: Record<string, unknown>,
     ): Record<string, unknown> => {
-      const cleanedSchema: Record<string, unknown> = {};
+      const cleanedSchema: Record<string, unknown> = {}
 
       // 处理type字段 - 确保始终有有效值
       if ('type' in schema) {
-        const type = schema.type;
+        const type = schema.type
         if (typeof type === 'string' && type.trim() !== '') {
-          cleanedSchema.type = type;
+          cleanedSchema.type = type
         } else if (Array.isArray(type) && type.length > 0) {
           // 如果是类型数组，取第一个非空类型
           const validType = type.find(
             (t) => typeof t === 'string' && t.trim() !== '',
-          );
+          )
           if (validType) {
-            cleanedSchema.type = validType;
+            cleanedSchema.type = validType
           } else {
-            cleanedSchema.type = 'string'; // 默认类型
+            cleanedSchema.type = 'string' // 默认类型
           }
         } else {
           // 如果没有有效的type，根据其他属性推断
           if ('enum' in schema) {
-            cleanedSchema.type = 'string';
+            cleanedSchema.type = 'string'
           } else if ('properties' in schema) {
-            cleanedSchema.type = 'object';
+            cleanedSchema.type = 'object'
           } else if ('items' in schema) {
-            cleanedSchema.type = 'array';
+            cleanedSchema.type = 'array'
           } else {
-            cleanedSchema.type = 'string'; // 默认类型
+            cleanedSchema.type = 'string' // 默认类型
           }
         }
       } else {
         // 如果完全没有type字段，根据其他属性推断
         if ('enum' in schema) {
-          cleanedSchema.type = 'string';
+          cleanedSchema.type = 'string'
         } else if ('properties' in schema) {
-          cleanedSchema.type = 'object';
+          cleanedSchema.type = 'object'
         } else if ('items' in schema) {
-          cleanedSchema.type = 'array';
+          cleanedSchema.type = 'array'
         } else if ('anyOf' in schema || 'oneOf' in schema) {
           // 对于union类型，尝试推断最合适的类型
-          cleanedSchema.type = 'string'; // 默认为string
+          cleanedSchema.type = 'string' // 默认为string
         } else {
-          cleanedSchema.type = 'string'; // 最终默认类型
+          cleanedSchema.type = 'string' // 最终默认类型
         }
       }
 
       // 处理description
       if ('description' in schema && typeof schema.description === 'string') {
-        cleanedSchema.description = schema.description;
+        cleanedSchema.description = schema.description
       }
 
       // 处理enum
       if ('enum' in schema && Array.isArray(schema.enum)) {
-        cleanedSchema.enum = schema.enum;
+        cleanedSchema.enum = schema.enum
         // 确保enum类型是string
         if (!cleanedSchema.type || cleanedSchema.type === '') {
-          cleanedSchema.type = 'string';
+          cleanedSchema.type = 'string'
         }
       }
 
@@ -999,20 +988,20 @@ export class McpPresenter implements IMCPPresenter {
         typeof schema.properties === 'object' &&
         schema.properties !== null
       ) {
-        const properties = schema.properties as Record<string, unknown>;
-        const cleanedProperties: Record<string, unknown> = {};
+        const properties = schema.properties as Record<string, unknown>
+        const cleanedProperties: Record<string, unknown> = {}
 
         for (const [propName, propValue] of Object.entries(properties)) {
           if (typeof propValue === 'object' && propValue !== null) {
             cleanedProperties[propName] = cleanSchema(
               propValue as Record<string, unknown>,
-            );
+            )
           }
         }
 
         if (Object.keys(cleanedProperties).length > 0) {
-          cleanedSchema.properties = cleanedProperties;
-          cleanedSchema.type = 'object';
+          cleanedSchema.properties = cleanedProperties
+          cleanedSchema.type = 'object'
         }
       }
 
@@ -1024,27 +1013,27 @@ export class McpPresenter implements IMCPPresenter {
       ) {
         cleanedSchema.items = cleanSchema(
           schema.items as Record<string, unknown>,
-        );
-        cleanedSchema.type = 'array';
+        )
+        cleanedSchema.type = 'array'
       }
 
       // 处理nullable
       if ('nullable' in schema && typeof schema.nullable === 'boolean') {
-        cleanedSchema.nullable = schema.nullable;
+        cleanedSchema.nullable = schema.nullable
       }
 
       // 处理anyOf/oneOf (union类型) - 简化为单一类型
       if ('anyOf' in schema && Array.isArray(schema.anyOf)) {
-        const anyOfOptions = schema.anyOf as Array<Record<string, unknown>>;
+        const anyOfOptions = schema.anyOf as Array<Record<string, unknown>>
 
         // 尝试找到最适合的类型
-        let bestOption = anyOfOptions[0];
+        let bestOption = anyOfOptions[0]
 
         // 优先选择有enum的选项
         for (const option of anyOfOptions) {
           if ('enum' in option && Array.isArray(option.enum)) {
-            bestOption = option;
-            break;
+            bestOption = option
+            break
           }
         }
 
@@ -1052,53 +1041,53 @@ export class McpPresenter implements IMCPPresenter {
         if (!('enum' in bestOption)) {
           for (const option of anyOfOptions) {
             if (option.type === 'string') {
-              bestOption = option;
-              break;
+              bestOption = option
+              break
             }
           }
         }
 
         // 递归清理选中的选项
-        const cleanedOption = cleanSchema(bestOption);
-        Object.assign(cleanedSchema, cleanedOption);
+        const cleanedOption = cleanSchema(bestOption)
+        Object.assign(cleanedSchema, cleanedOption)
       }
 
       // 处理oneOf类似anyOf
       if ('oneOf' in schema && Array.isArray(schema.oneOf)) {
-        const oneOfOptions = schema.oneOf as Array<Record<string, unknown>>;
-        const bestOption = oneOfOptions[0] || {};
-        const cleanedOption = cleanSchema(bestOption);
-        Object.assign(cleanedSchema, cleanedOption);
+        const oneOfOptions = schema.oneOf as Array<Record<string, unknown>>
+        const bestOption = oneOfOptions[0] || {}
+        const cleanedOption = cleanSchema(bestOption)
+        Object.assign(cleanedSchema, cleanedOption)
       }
 
       // 最终检查：确保必须有type字段
       if (!cleanedSchema.type || cleanedSchema.type === '') {
-        cleanedSchema.type = 'string';
+        cleanedSchema.type = 'string'
       }
 
-      return cleanedSchema;
-    };
+      return cleanedSchema
+    }
 
     // 处理每个工具定义，构建符合Gemini API的函数声明
     const functionDeclarations = mcpTools.map((toolDef) => {
       // 转换为内部工具表示
-      const tool = this.mcpToolDefinitionToMcpTool(toolDef, serverName);
+      const tool = this.mcpToolDefinitionToMcpTool(toolDef, serverName)
 
       // 获取参数属性
-      const properties = tool.inputSchema.properties;
-      const processedProperties: Record<string, Record<string, unknown>> = {};
+      const properties = tool.inputSchema.properties
+      const processedProperties: Record<string, Record<string, unknown>> = {}
 
       // 处理每个属性，应用清理函数
       for (const [propName, propValue] of Object.entries(properties)) {
         if (typeof propValue === 'object' && propValue !== null) {
-          const cleaned = cleanSchema(propValue as Record<string, unknown>);
+          const cleaned = cleanSchema(propValue as Record<string, unknown>)
           // 确保清理后的属性有有效的type
           if (cleaned.type && cleaned.type !== '') {
-            processedProperties[propName] = cleaned;
+            processedProperties[propName] = cleaned
           } else {
             console.warn(
               `[MCP] Skipping property ${propName} due to invalid type`,
-            );
+            )
           }
         }
       }
@@ -1107,32 +1096,32 @@ export class McpPresenter implements IMCPPresenter {
       const functionDeclaration: FunctionDeclaration = {
         name: tool.id,
         description: tool.description,
-      };
+      }
 
       if (Object.keys(processedProperties).length > 0) {
         functionDeclaration.parameters = {
           type: Type.OBJECT,
           properties: processedProperties,
           required: tool.inputSchema.required || [],
-        };
+        }
       }
 
       // 记录没有参数的函数
       if (Object.keys(processedProperties).length === 0) {
         console.log(
           `[MCP] Function ${tool.id} has no parameters, providing minimal parameter structure`,
-        );
+        )
       }
 
-      return functionDeclaration;
-    });
+      return functionDeclaration
+    })
 
     // 返回符合Gemini工具格式的结果
     return [
       {
         functionDeclarations,
       },
-    ];
+    ]
   }
 
   /**
@@ -1146,13 +1135,13 @@ export class McpPresenter implements IMCPPresenter {
     fcall: GeminiFunctionCall | undefined,
     providerId: string,
   ): Promise<MCPToolCall | undefined> {
-    const mcpTools = await this.getAllToolDefinitions();
-    if (!fcall) return undefined;
-    if (!mcpTools) return undefined;
+    const mcpTools = await this.getAllToolDefinitions()
+    if (!fcall) return undefined
+    if (!mcpTools) return undefined
 
-    const tool = mcpTools.find((tool) => tool.function.name === fcall.name);
+    const tool = mcpTools.find((tool) => tool.function.name === fcall.name)
     if (!tool) {
-      return undefined;
+      return undefined
     }
 
     // 创建MCP工具调用
@@ -1168,23 +1157,23 @@ export class McpPresenter implements IMCPPresenter {
         icons: tool.server.icons,
         description: tool.server.description,
       },
-    };
+    }
 
-    return mcpToolCall;
+    return mcpToolCall
   }
 
   // 获取MCP启用状态
   async getMcpEnabled(): Promise<boolean> {
-    return this.configPresenter.getMcpEnabled();
+    return this.configPresenter.getMcpEnabled()
   }
 
   // 设置MCP启用状态
   async setMcpEnabled(enabled: boolean): Promise<void> {
-    await this.configPresenter?.setMcpEnabled(enabled);
+    await this.configPresenter?.setMcpEnabled(enabled)
   }
 
   async resetToDefaultServers(): Promise<void> {
-    await this.configPresenter?.getMcpConfHelper().resetToDefaultServers();
+    await this.configPresenter?.getMcpConfHelper().resetToDefaultServers()
   }
 
   /**
@@ -1197,9 +1186,9 @@ export class McpPresenter implements IMCPPresenter {
     prompt: PromptListEntry,
     args?: Record<string, unknown>,
   ): Promise<unknown> {
-    const enabled = await this.configPresenter.getMcpEnabled();
+    const enabled = await this.configPresenter.getMcpEnabled()
     if (!enabled) {
-      throw new Error('MCP功能已禁用');
+      throw new Error('MCP功能已禁用')
     }
 
     // 传递客户端信息和提示模板名称给toolManager
@@ -1207,7 +1196,7 @@ export class McpPresenter implements IMCPPresenter {
       prompt.client.name,
       prompt.name,
       args,
-    );
+    )
   }
 
   /**
@@ -1216,16 +1205,16 @@ export class McpPresenter implements IMCPPresenter {
    * @returns 资源内容
    */
   async readResource(resource: ResourceListEntry): Promise<Resource> {
-    const enabled = await this.configPresenter.getMcpEnabled();
+    const enabled = await this.configPresenter.getMcpEnabled()
     if (!enabled) {
-      throw new Error('MCP功能已禁用');
+      throw new Error('MCP功能已禁用')
     }
 
     // 传递客户端信息和资源URI给toolManager
     return this.toolManager.readResourceByClient(
       resource.client.name,
       resource.uri,
-    );
+    )
   }
 
   /**
@@ -1239,7 +1228,7 @@ export class McpPresenter implements IMCPPresenter {
     serverName: string,
   ): Promise<OpenAI.Responses.Tool[]> {
     const openaiTools: OpenAI.Responses.Tool[] = mcpTools.map((toolDef) => {
-      const tool = this.mcpToolDefinitionToMcpTool(toolDef, serverName);
+      const tool = this.mcpToolDefinitionToMcpTool(toolDef, serverName)
       return {
         type: 'function',
         name: tool.name,
@@ -1250,9 +1239,9 @@ export class McpPresenter implements IMCPPresenter {
           required: tool.inputSchema.required || [],
         },
         strict: false,
-      };
-    });
-    return openaiTools;
+      }
+    })
+    return openaiTools
   }
 
   async grantPermission(
@@ -1263,42 +1252,42 @@ export class McpPresenter implements IMCPPresenter {
     try {
       console.log(
         `[MCP] Granting ${permissionType} permission for server: ${serverName}, remember: ${remember}`,
-      );
+      )
       await this.toolManager.grantPermission(
         serverName,
         permissionType,
         remember,
-      );
+      )
       console.log(
         `[MCP] Successfully granted ${permissionType} permission for server: ${serverName}`,
-      );
+      )
     } catch (error) {
       console.error(
         `[MCP] Failed to grant permission for server ${serverName}:`,
         error,
-      );
-      throw error;
+      )
+      throw error
     }
   }
 
   async getNpmRegistryStatus(): Promise<{
-    currentRegistry: string | null;
-    isFromCache: boolean;
-    lastChecked?: number;
-    autoDetectEnabled: boolean;
-    customRegistry?: string;
+    currentRegistry: string | null
+    isFromCache: boolean
+    lastChecked?: number
+    autoDetectEnabled: boolean
+    customRegistry?: string
   }> {
-    const cache = this.configPresenter.getNpmRegistryCache?.();
+    const cache = this.configPresenter.getNpmRegistryCache?.()
     const autoDetectEnabled =
-      this.configPresenter.getAutoDetectNpmRegistry?.() ?? true;
-    const customRegistry = this.configPresenter.getCustomNpmRegistry?.();
-    const currentRegistry = this.serverManager.getNpmRegistry();
+      this.configPresenter.getAutoDetectNpmRegistry?.() ?? true
+    const customRegistry = this.configPresenter.getCustomNpmRegistry?.()
+    const currentRegistry = this.serverManager.getNpmRegistry()
 
-    let isFromCache = false;
+    let isFromCache = false
     if (customRegistry && currentRegistry === customRegistry) {
-      isFromCache = false;
+      isFromCache = false
     } else if (cache && this.configPresenter.isNpmRegistryCacheValid?.()) {
-      isFromCache = currentRegistry === cache.registry;
+      isFromCache = currentRegistry === cache.registry
     }
 
     return {
@@ -1307,32 +1296,32 @@ export class McpPresenter implements IMCPPresenter {
       lastChecked: cache?.lastChecked,
       autoDetectEnabled,
       customRegistry,
-    };
+    }
   }
 
   async refreshNpmRegistry(): Promise<string> {
-    return await this.serverManager.refreshNpmRegistry();
+    return await this.serverManager.refreshNpmRegistry()
   }
 
   async setCustomNpmRegistry(registry: string | undefined): Promise<void> {
-    this.configPresenter.setCustomNpmRegistry?.(registry);
+    this.configPresenter.setCustomNpmRegistry?.(registry)
     if (registry) {
-      console.log(`[MCP] Setting custom NPM registry: ${registry}`);
+      console.log(`[MCP] Setting custom NPM registry: ${registry}`)
     } else {
-      console.log('[MCP] Clearing custom NPM registry');
+      console.log('[MCP] Clearing custom NPM registry')
     }
-    this.serverManager.loadRegistryFromCache();
+    this.serverManager.loadRegistryFromCache()
   }
 
   async setAutoDetectNpmRegistry(enabled: boolean): Promise<void> {
-    this.configPresenter.setAutoDetectNpmRegistry?.(enabled);
+    this.configPresenter.setAutoDetectNpmRegistry?.(enabled)
     if (enabled) {
-      this.serverManager.loadRegistryFromCache();
+      this.serverManager.loadRegistryFromCache()
     }
   }
 
   async clearNpmRegistryCache(): Promise<void> {
-    this.configPresenter.clearNpmRegistryCache?.();
-    console.log('[MCP] NPM Registry cache cleared');
+    this.configPresenter.clearNpmRegistryCache?.()
+    console.log('[MCP] NPM Registry cache cleared')
   }
 }

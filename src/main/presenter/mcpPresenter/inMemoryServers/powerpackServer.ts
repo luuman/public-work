@@ -1,5 +1,8 @@
 import { Server } from '@modelcontextprotocol/sdk/server/index.js'
-import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js'
+import {
+  CallToolRequestSchema,
+  ListToolsRequestSchema,
+} from '@modelcontextprotocol/sdk/types.js'
 import { z } from 'zod'
 import { zodToJsonSchema } from 'zod-to-json-schema'
 import { Transport } from '@modelcontextprotocol/sdk/shared/transport.js'
@@ -18,24 +21,29 @@ const GetTimeArgsSchema = z.object({
     .number()
     .optional()
     .default(0)
-    .describe('Millisecond offset relative to current time, positive for future, negative for past')
+    .describe(
+      'Millisecond offset relative to current time, positive for future, negative for past',
+    ),
 })
 
 const GetWebInfoArgsSchema = z.object({
-  url: z.string().url().describe('URL of the webpage to retrieve detailed information')
+  url: z
+    .string()
+    .url()
+    .describe('URL of the webpage to retrieve detailed information'),
 })
 
 const RunNodeCodeArgsSchema = z.object({
   code: z
     .string()
     .describe(
-      'Node.js code to execute, should not contain file operations, system settings modification, or external code execution'
+      'Node.js code to execute, should not contain file operations, system settings modification, or external code execution',
     ),
   timeout: z
     .number()
     .optional()
     .default(5000)
-    .describe('Code execution timeout in milliseconds, default 5 seconds')
+    .describe('Code execution timeout in milliseconds, default 5 seconds'),
 })
 
 // E2B 代码执行 Schema
@@ -43,13 +51,15 @@ const E2BRunCodeArgsSchema = z.object({
   code: z
     .string()
     .describe(
-      'Python code to execute in E2B secure sandbox. Supports Jupyter Notebook syntax and has access to common Python libraries.'
+      'Python code to execute in E2B secure sandbox. Supports Jupyter Notebook syntax and has access to common Python libraries.',
     ),
   language: z
     .string()
     .optional()
     .default('python')
-    .describe('Programming language for code execution, currently supports python')
+    .describe(
+      'Programming language for code execution, currently supports python',
+    ),
 })
 
 // 限制和安全配置
@@ -68,7 +78,7 @@ const CODE_EXECUTION_FORBIDDEN_PATTERNS = [
   /global\./gi,
   /__dirname/gi,
   /__filename/gi,
-  /process\.env/gi
+  /process\.env/gi,
 ]
 
 export class PowerpackServer {
@@ -89,13 +99,13 @@ export class PowerpackServer {
     this.server = new Server(
       {
         name: 'deepchat-inmemory/powerpack-server',
-        version: '0.2.0'
+        version: '0.2.0',
       },
       {
         capabilities: {
-          tools: {}
-        }
-      }
+          tools: {},
+        },
+      },
     )
 
     // 设置请求处理器
@@ -110,7 +120,9 @@ export class PowerpackServer {
 
       // 如果启用了 E2B 但没有提供 API Key，记录警告
       if (this.useE2B && !this.e2bApiKey) {
-        console.warn('E2B is enabled but no API key provided. E2B functionality will be disabled.')
+        console.warn(
+          'E2B is enabled but no API key provided. E2B functionality will be disabled.',
+        )
         this.useE2B = false
       }
     }
@@ -151,7 +163,9 @@ export class PowerpackServer {
     }
 
     if (!this.bunRuntimePath && !this.nodeRuntimePath && !this.useE2B) {
-      console.warn('No runtime found (Bun, Node.js, or E2B), code execution will be unavailable')
+      console.warn(
+        'No runtime found (Bun, Node.js, or E2B), code execution will be unavailable',
+      )
     } else if (this.useE2B) {
       console.info('Using E2B for code execution')
     } else if (this.bunRuntimePath) {
@@ -182,7 +196,10 @@ export class PowerpackServer {
   }
 
   // 执行JavaScript代码
-  private async executeJavaScriptCode(code: string, timeout: number): Promise<string> {
+  private async executeJavaScriptCode(
+    code: string,
+    timeout: number,
+  ): Promise<string> {
     // Windows平台只检查Node.js，其他平台检查Bun和Node.js
     const hasRuntime =
       process.platform === 'win32'
@@ -228,7 +245,7 @@ export class PowerpackServer {
       // 执行代码并添加超时控制
       const execPromise = promisify(execFile)(executable, args, {
         timeout,
-        windowsHide: true
+        windowsHide: true,
       })
 
       const { stdout, stderr } = await execPromise
@@ -239,7 +256,8 @@ export class PowerpackServer {
 
       return stdout
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error)
+      const errorMessage =
+        error instanceof Error ? error.message : String(error)
       throw new Error(`Code execution failed: ${errorMessage}`)
     } finally {
       // 清理临时文件
@@ -248,7 +266,7 @@ export class PowerpackServer {
           fs.unlinkSync(tempFile)
         }
       } catch (cleanupError) {
-        console.error('Failed to clean up temporary file:', cleanupError)
+        console.error('❌Failed to clean up temporary file:', cleanupError)
       }
     }
   }
@@ -262,7 +280,7 @@ export class PowerpackServer {
     let sandbox: Sandbox | null = null
     try {
       sandbox = await Sandbox.create({
-        apiKey: this.e2bApiKey
+        apiKey: this.e2bApiKey,
       })
       const result = await sandbox.runCode(code)
 
@@ -274,7 +292,9 @@ export class PowerpackServer {
         for (const res of result.results) {
           if ((res as any).isError) {
             const error = (res as any).error
-            output.push(`Error: ${error?.name || 'Unknown'}: ${error?.value || 'Unknown error'}`)
+            output.push(
+              `Error: ${error?.name || 'Unknown'}: ${error?.value || 'Unknown error'}`,
+            )
             if (error?.traceback) {
               output.push(error.traceback.join('\n'))
             }
@@ -300,7 +320,8 @@ export class PowerpackServer {
 
       return output.join('\n') || 'Code executed successfully (no output)'
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error)
+      const errorMessage =
+        error instanceof Error ? error.message : String(error)
       throw new Error(`E2B execution failed: ${errorMessage}`)
     } finally {
       // 清理沙箱
@@ -308,7 +329,7 @@ export class PowerpackServer {
         try {
           await sandbox.kill()
         } catch (error) {
-          console.error('Failed to close E2B sandbox:', error)
+          console.error('❌Failed to close E2B sandbox:', error)
         }
       }
     }
@@ -326,7 +347,7 @@ export class PowerpackServer {
             'Get formatted time with specified offset from current time. Calculate any time point relative to the current time. ' +
             "For example, get current time, yesterday's time, tomorrow's time, etc. " +
             'Use the offset parameter (milliseconds) to specify the offset relative to the current time, positive for future, negative for past.',
-          inputSchema: zodToJsonSchema(GetTimeArgsSchema)
+          inputSchema: zodToJsonSchema(GetTimeArgsSchema),
         },
         {
           name: 'get_web_info',
@@ -334,8 +355,8 @@ export class PowerpackServer {
             'Get detailed content information from a specified webpage. Extract title, description, main content, and other information. ' +
             'This tool is useful for analyzing webpage content, obtaining article summaries or details. ' +
             'Just provide a valid HTTP or HTTPS URL to get complete webpage content analysis.',
-          inputSchema: zodToJsonSchema(GetWebInfoArgsSchema)
-        }
+          inputSchema: zodToJsonSchema(GetWebInfoArgsSchema),
+        },
       ]
 
       // 根据配置添加代码执行工具
@@ -348,7 +369,7 @@ export class PowerpackServer {
             'The code will be executed in an isolated environment with full Python ecosystem support. ' +
             'This is safer than local execution as it runs in a controlled cloud sandbox. ' +
             'Perfect for data analysis, calculations, visualizations, and any Python programming tasks.',
-          inputSchema: zodToJsonSchema(E2BRunCodeArgsSchema)
+          inputSchema: zodToJsonSchema(E2BRunCodeArgsSchema),
         })
       } else {
         // 使用本地运行时执行代码
@@ -372,7 +393,7 @@ export class PowerpackServer {
               'For security reasons, the code cannot perform file operations, modify system settings, spawn child processes, or execute external code from network. ' +
               'Code execution has a timeout limit, default is 5 seconds, you can adjust it based on the estimated time of the code, generally not recommended to exceed 2 minutes. ' +
               'When a problem can be solved by a simple and secure JavaScript/TypeScript code or you have generated a simple code for the user and want to execute it, please use this tool, providing more reliable information to the user.',
-            inputSchema: zodToJsonSchema(RunNodeCodeArgsSchema)
+            inputSchema: zodToJsonSchema(RunNodeCodeArgsSchema),
           })
         }
       }
@@ -403,9 +424,9 @@ export class PowerpackServer {
               content: [
                 {
                   type: 'text',
-                  text: this.formatRelativeTime(timeDescription, formattedTime)
-                }
-              ]
+                  text: this.formatRelativeTime(timeDescription, formattedTime),
+                },
+              ],
             }
           }
 
@@ -430,7 +451,8 @@ export class PowerpackServer {
             if (enrichedData.content) {
               const truncatedContent =
                 enrichedData.content.length > 1000
-                  ? enrichedData.content.substring(0, 1000) + '...(Content truncated)'
+                  ? enrichedData.content.substring(0, 1000) +
+                    '...(Content truncated)'
                   : enrichedData.content
               formattedContent += `### Main Content\n${truncatedContent}\n\n`
             }
@@ -439,9 +461,9 @@ export class PowerpackServer {
               content: [
                 {
                   type: 'text',
-                  text: formattedContent
-                }
-              ]
+                  text: formattedContent,
+                },
+              ],
             }
           }
 
@@ -463,20 +485,24 @@ export class PowerpackServer {
               content: [
                 {
                   type: 'text',
-                  text: `代码执行结果 (E2B Sandbox):\n\n${result}`
-                }
-              ]
+                  text: `代码执行结果 (E2B Sandbox):\n\n${result}`,
+                },
+              ],
             }
           }
 
           case 'run_node_code': {
             // 本地 JavaScript 代码执行
             if (this.useE2B) {
-              throw new Error('Local code execution is disabled when E2B is enabled')
+              throw new Error(
+                'Local code execution is disabled when E2B is enabled',
+              )
             }
 
             if (!this.bunRuntimePath && !this.nodeRuntimePath) {
-              throw new Error('JavaScript runtime is not available, cannot execute code')
+              throw new Error(
+                'JavaScript runtime is not available, cannot execute code',
+              )
             }
 
             const parsed = RunNodeCodeArgsSchema.safeParse(args)
@@ -491,9 +517,9 @@ export class PowerpackServer {
               content: [
                 {
                   type: 'text',
-                  text: `代码执行结果:\n\n${result}`
-                }
-              ]
+                  text: `代码执行结果:\n\n${result}`,
+                },
+              ],
             }
           }
 
@@ -501,10 +527,11 @@ export class PowerpackServer {
             throw new Error(`Unknown tool: ${name}`)
         }
       } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : String(error)
+        const errorMessage =
+          error instanceof Error ? error.message : String(error)
         return {
           content: [{ type: 'text', text: `错误: ${errorMessage}` }],
-          isError: true
+          isError: true,
         }
       }
     })

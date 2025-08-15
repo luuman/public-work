@@ -5,7 +5,7 @@ import {
   LLMCoreStreamEvent,
   ModelConfig,
   MCPToolDefinition,
-  ChatMessage
+  ChatMessage,
 } from '@shared/presenter'
 import { BaseLLMProvider, SUMMARY_TITLES_PROMPT } from '../baseProvider'
 import { ConfigPresenter } from '../../configPresenter'
@@ -41,16 +41,24 @@ export class AnthropicProvider extends BaseLLMProvider {
         if (this.provider.authMode === 'oauth') {
           // OAuth mode: prioritize OAuth token
           try {
-            const oauthToken = await presenter.oauthPresenter.getAnthropicAccessToken()
+            const oauthToken =
+              await presenter.oauthPresenter.getAnthropicAccessToken()
             if (oauthToken) {
               this.oauthToken = oauthToken
               this.isOAuthMode = true
-              console.log('[Anthropic Provider] Using OAuth token for authentication')
+              console.log(
+                '[Anthropic Provider] Using OAuth token for authentication',
+              )
             } else {
-              console.warn('[Anthropic Provider] OAuth mode selected but no OAuth token available')
+              console.warn(
+                '[Anthropic Provider] OAuth mode selected but no OAuth token available',
+              )
             }
           } catch (error) {
-            console.log('[Anthropic Provider] Failed to get OAuth token:', error)
+            console.log(
+              '[Anthropic Provider] Failed to get OAuth token:',
+              error,
+            )
           }
         } else {
           // API Key mode (default): prioritize API key
@@ -64,27 +72,38 @@ export class AnthropicProvider extends BaseLLMProvider {
         if (!this.isOAuthMode && !apiKey) {
           if (this.provider.authMode === 'oauth') {
             // Fallback to API key if OAuth fails
-            apiKey = this.provider.apiKey || process.env.ANTHROPIC_API_KEY || null
+            apiKey =
+              this.provider.apiKey || process.env.ANTHROPIC_API_KEY || null
             if (apiKey) {
-              console.log('[Anthropic Provider] OAuth failed, falling back to API key')
+              console.log(
+                '[Anthropic Provider] OAuth failed, falling back to API key',
+              )
             }
           } else {
             // Fallback to OAuth if API key not available
             try {
-              const oauthToken = await presenter.oauthPresenter.getAnthropicAccessToken()
+              const oauthToken =
+                await presenter.oauthPresenter.getAnthropicAccessToken()
               if (oauthToken) {
                 this.oauthToken = oauthToken
                 this.isOAuthMode = true
-                console.log('[Anthropic Provider] API key not available, using OAuth token')
+                console.log(
+                  '[Anthropic Provider] API key not available, using OAuth token',
+                )
               }
             } catch (error) {
-              console.log('[Anthropic Provider] Failed to get OAuth token as fallback:', error)
+              console.log(
+                '[Anthropic Provider] Failed to get OAuth token as fallback:',
+                error,
+              )
             }
           }
         }
 
         if (!this.isOAuthMode && !apiKey) {
-          console.warn('[Anthropic Provider] No API key or OAuth token available')
+          console.warn(
+            '[Anthropic Provider] No API key or OAuth token available',
+          )
           return
         }
 
@@ -104,13 +123,13 @@ export class AnthropicProvider extends BaseLLMProvider {
             apiKey: apiKey,
             baseURL: this.provider.baseUrl || 'https://api.anthropic.com',
             defaultHeaders: this.defaultHeaders,
-            fetchOptions
+            fetchOptions,
           })
         }
 
         await super.init()
       } catch (error) {
-        console.error('Failed to initialize Anthropic provider:', error)
+        console.error('❌Failed to initialize Anthropic provider:', error)
       }
     }
   }
@@ -135,7 +154,10 @@ export class AnthropicProvider extends BaseLLMProvider {
           // 确保模型有必要的属性
           if (model.id) {
             // 获取额外的配置信息
-            const modelConfig = this.configPresenter.getModelConfig(model.id, this.provider.id)
+            const modelConfig = this.configPresenter.getModelConfig(
+              model.id,
+              this.provider.id,
+            )
 
             // 提取模型组名称，通常是Claude后面的版本号
 
@@ -149,7 +171,7 @@ export class AnthropicProvider extends BaseLLMProvider {
               contextLength: modelConfig?.contextLength || 200000,
               vision: modelConfig?.vision || false,
               functionCall: modelConfig?.functionCall || false,
-              reasoning: modelConfig?.reasoning || false
+              reasoning: modelConfig?.reasoning || false,
             })
           }
         }
@@ -163,7 +185,7 @@ export class AnthropicProvider extends BaseLLMProvider {
       // 如果API请求失败或返回数据解析失败，返回默认模型列表
       console.log('从API获取模型列表失败，使用默认模型配置')
     } catch (error) {
-      console.error('获取Anthropic模型列表出错:', error)
+      console.error('❌获取Anthropic模型列表出错:', error)
     }
 
     // 默认的模型列表（如API调用失败或数据格式不正确）
@@ -178,7 +200,7 @@ export class AnthropicProvider extends BaseLLMProvider {
         contextLength: 200000,
         vision: true,
         functionCall: true,
-        reasoning: true
+        reasoning: true,
       },
       {
         id: 'claude-sonnet-4-20250514',
@@ -190,7 +212,7 @@ export class AnthropicProvider extends BaseLLMProvider {
         contextLength: 200000,
         vision: true,
         functionCall: true,
-        reasoning: true
+        reasoning: true,
       },
       {
         id: 'claude-3-7-sonnet-20250219',
@@ -202,7 +224,7 @@ export class AnthropicProvider extends BaseLLMProvider {
         contextLength: 200000,
         vision: true,
         functionCall: true,
-        reasoning: true
+        reasoning: true,
       },
       {
         id: 'claude-3-5-sonnet-20241022',
@@ -214,7 +236,7 @@ export class AnthropicProvider extends BaseLLMProvider {
         contextLength: 200000,
         vision: true,
         functionCall: true,
-        reasoning: false
+        reasoning: false,
       },
       {
         id: 'claude-3-5-haiku-20241022',
@@ -226,7 +248,7 @@ export class AnthropicProvider extends BaseLLMProvider {
         contextLength: 200000,
         vision: true,
         functionCall: true,
-        reasoning: false
+        reasoning: false,
       },
       {
         id: 'claude-3-5-sonnet-20240620',
@@ -238,7 +260,7 @@ export class AnthropicProvider extends BaseLLMProvider {
         contextLength: 200000,
         vision: true,
         functionCall: true,
-        reasoning: false
+        reasoning: false,
       },
       {
         id: 'claude-3-opus-20240229',
@@ -250,7 +272,7 @@ export class AnthropicProvider extends BaseLLMProvider {
         contextLength: 200000,
         vision: true,
         functionCall: true,
-        reasoning: false
+        reasoning: false,
       },
       {
         id: 'claude-3-haiku-20240307',
@@ -262,15 +284,19 @@ export class AnthropicProvider extends BaseLLMProvider {
         contextLength: 200000,
         vision: true,
         functionCall: true,
-        reasoning: false
-      }
+        reasoning: false,
+      },
     ]
   }
 
   /**
    * Make OAuth authenticated HTTP request to Anthropic API
    */
-  private async makeOAuthRequest(path: string, method: 'GET' | 'POST', body?: any): Promise<any> {
+  private async makeOAuthRequest(
+    path: string,
+    method: 'GET' | 'POST',
+    body?: any,
+  ): Promise<any> {
     if (!this.oauthToken) {
       throw new Error('No OAuth token available')
     }
@@ -282,7 +308,7 @@ export class AnthropicProvider extends BaseLLMProvider {
       'Content-Type': 'application/json',
       'anthropic-version': '2023-06-01',
       'anthropic-beta': 'oauth-2025-04-20',
-      Authorization: `Bearer ${this.oauthToken}`
+      Authorization: `Bearer ${this.oauthToken}`,
     }
 
     // Get proxy configuration
@@ -290,7 +316,7 @@ export class AnthropicProvider extends BaseLLMProvider {
     const fetchOptions: RequestInit = {
       method,
       headers,
-      ...(body && { body: JSON.stringify(body) })
+      ...(body && { body: JSON.stringify(body) }),
     }
 
     if (proxyUrl) {
@@ -303,7 +329,9 @@ export class AnthropicProvider extends BaseLLMProvider {
 
     if (!response.ok) {
       const errorText = await response.text()
-      throw new Error(`OAuth API request failed: ${response.status} ${errorText}`)
+      throw new Error(
+        `OAuth API request failed: ${response.status} ${errorText}`,
+      )
     }
 
     return await response.json()
@@ -321,7 +349,7 @@ export class AnthropicProvider extends BaseLLMProvider {
           model: this.defaultModel,
           max_tokens: 10,
           system: "You are Claude Code, Anthropic's official CLI for Claude.",
-          messages: [{ role: 'user', content: 'Hello' }]
+          messages: [{ role: 'user', content: 'Hello' }],
         })
       } else {
         if (!this.anthropic) {
@@ -332,14 +360,15 @@ export class AnthropicProvider extends BaseLLMProvider {
         await this.anthropic.messages.create({
           model: this.defaultModel,
           max_tokens: 10,
-          messages: [{ role: 'user', content: 'Hello' }]
+          messages: [{ role: 'user', content: 'Hello' }],
         })
       }
 
       return { isOk: true, errorMsg: null }
     } catch (error: unknown) {
-      console.error('Anthropic API check failed:', error)
-      const errorMessage = error instanceof Error ? error.message : String(error)
+      console.error('❌Anthropic API check failed:', error)
+      const errorMessage =
+        error instanceof Error ? error.message : String(error)
       return { isOk: false, errorMsg: `API check failed: ${errorMessage}` }
     }
   }
@@ -368,7 +397,10 @@ export class AnthropicProvider extends BaseLLMProvider {
 
     // 定义消息组和内容块的类型
     type ContentBlock = Anthropic.ContentBlockParam
-    type ToolCall = { id: string; function: { name: string; arguments?: string } }
+    type ToolCall = {
+      id: string
+      function: { name: string; arguments?: string }
+    }
     type MessageGroup = {
       role: string
       contents: ContentBlock[]
@@ -411,7 +443,7 @@ export class AnthropicProvider extends BaseLLMProvider {
         toolResponseMap.set(toolCallId, {
           type: 'tool_result',
           tool_use_id: toolCallId,
-          content: responseContent
+          content: responseContent,
         } as ContentBlock)
 
         // console.log('记录tool响应，tool_call_id:', toolCallId)
@@ -436,13 +468,15 @@ export class AnthropicProvider extends BaseLLMProvider {
                   ? {
                       type: 'base64',
                       data: c.image_url.url.split(',')[1],
-                      media_type: c.image_url.url.split(';')[0].split(':')[1] as
+                      media_type: c.image_url.url
+                        .split(';')[0]
+                        .split(':')[1] as
                         | 'image/jpeg'
                         | 'image/png'
                         | 'image/gif'
-                        | 'image/webp'
+                        | 'image/webp',
                     }
-                  : { type: 'url', url: c.image_url.url }
+                  : { type: 'url', url: c.image_url.url },
               } as ContentBlock
             } else {
               return { type: 'text', text: c.text || '' } as ContentBlock
@@ -452,7 +486,7 @@ export class AnthropicProvider extends BaseLLMProvider {
 
         currentGroup = {
           role: 'user',
-          contents: formattedContent
+          contents: formattedContent,
         }
 
         // console.log('开始新的用户消息组')
@@ -466,7 +500,9 @@ export class AnthropicProvider extends BaseLLMProvider {
         // 2. 当前组不是assistant
         // 3. 当前组是assistant但包含了工具调用
         const shouldCreateNewGroup =
-          !currentGroup || currentGroup.role !== 'assistant' || currentGroup.hasToolUse === true
+          !currentGroup ||
+          currentGroup.role !== 'assistant' ||
+          currentGroup.hasToolUse === true
 
         if (shouldCreateNewGroup) {
           if (currentGroup) {
@@ -477,7 +513,7 @@ export class AnthropicProvider extends BaseLLMProvider {
             role: 'assistant',
             contents: [],
             toolCalls: [],
-            hasToolUse: false
+            hasToolUse: false,
           }
         }
 
@@ -487,7 +523,7 @@ export class AnthropicProvider extends BaseLLMProvider {
             role: 'assistant',
             contents: [],
             toolCalls: [],
-            hasToolUse: false
+            hasToolUse: false,
           }
         }
 
@@ -504,7 +540,7 @@ export class AnthropicProvider extends BaseLLMProvider {
               if (content.type === 'text') {
                 currentGroup.contents.push({
                   type: 'text',
-                  text: content.text || ''
+                  text: content.text || '',
                 } as ContentBlock)
               } else if (content.type === 'image_url' && content.image_url) {
                 currentGroup.contents.push({
@@ -513,13 +549,15 @@ export class AnthropicProvider extends BaseLLMProvider {
                     ? {
                         type: 'base64',
                         data: content.image_url.url.split(',')[1],
-                        media_type: content.image_url.url.split(';')[0].split(':')[1] as
+                        media_type: content.image_url.url
+                          .split(';')[0]
+                          .split(':')[1] as
                           | 'image/jpeg'
                           | 'image/png'
                           | 'image/gif'
-                          | 'image/webp'
+                          | 'image/webp',
                       }
-                    : { type: 'url', url: content.image_url.url }
+                    : { type: 'url', url: content.image_url.url },
                 } as ContentBlock)
               }
             }
@@ -547,7 +585,7 @@ export class AnthropicProvider extends BaseLLMProvider {
                 type: 'tool_use',
                 id: toolCall.id,
                 name: toolCall.function.name,
-                input: JSON.parse(toolCall.function.arguments || '{}')
+                input: JSON.parse(toolCall.function.arguments || '{}'),
               } as ContentBlock)
 
               // console.log('添加tool_call到当前assistant组:', toolCall.function.name)
@@ -556,7 +594,7 @@ export class AnthropicProvider extends BaseLLMProvider {
               if (!currentGroup.toolCalls) currentGroup.toolCalls = []
               currentGroup.toolCalls.push(toolCall.id)
             } catch (e) {
-              console.error('Error processing tool_call:', e)
+              console.error('❌Error processing tool_call:', e)
             }
           }
         }
@@ -579,19 +617,23 @@ export class AnthropicProvider extends BaseLLMProvider {
       // 添加组的主要内容
       formattedMessages.push({
         role: group.role as 'user' | 'assistant',
-        content: group.contents as Anthropic.ContentBlockParam[]
+        content: group.contents as Anthropic.ContentBlockParam[],
       })
 
       // console.log(`添加${group.role}组，内容项数:${group.contents.length}`)
 
       // 如果是assistant组且有工具调用，添加对应的工具响应
-      if (group.role === 'assistant' && group.toolCalls && group.toolCalls.length > 0) {
+      if (
+        group.role === 'assistant' &&
+        group.toolCalls &&
+        group.toolCalls.length > 0
+      ) {
         for (const toolCallId of group.toolCalls) {
           const toolResponse = toolResponseMap.get(toolCallId)
           if (toolResponse) {
             formattedMessages.push({
               role: 'user',
-              content: [toolResponse]
+              content: [toolResponse],
             })
 
             // console.log('添加工具响应，tool_call_id:', toolCallId)
@@ -614,7 +656,7 @@ export class AnthropicProvider extends BaseLLMProvider {
 
     return {
       system: systemContent || undefined,
-      messages: formattedMessages
+      messages: formattedMessages,
     }
   }
 
@@ -645,7 +687,7 @@ export class AnthropicProvider extends BaseLLMProvider {
     if (originalSystemContent.trim()) {
       result.push({
         role: 'user',
-        content: originalSystemContent.trim()
+        content: originalSystemContent.trim(),
       })
     }
 
@@ -663,7 +705,7 @@ export class AnthropicProvider extends BaseLLMProvider {
           if (msg.content.trim()) {
             content.push({
               type: 'text',
-              text: msg.content
+              text: msg.content,
             })
           }
         } else if (Array.isArray(msg.content)) {
@@ -674,7 +716,7 @@ export class AnthropicProvider extends BaseLLMProvider {
               if (textContent.trim()) {
                 content.push({
                   type: 'text',
-                  text: textContent
+                  text: textContent,
                 })
               }
             } else if (item.type === 'image_url') {
@@ -684,26 +726,32 @@ export class AnthropicProvider extends BaseLLMProvider {
                   ? {
                       type: 'base64',
                       data: item.image_url.url.split(',')[1],
-                      media_type: item.image_url.url.split(';')[0].split(':')[1] as any
+                      media_type: item.image_url.url
+                        .split(';')[0]
+                        .split(':')[1] as any,
                     }
-                  : { type: 'url', url: item.image_url?.url }
+                  : { type: 'url', url: item.image_url?.url },
               })
             }
           }
         }
 
         // Handle tool calls for assistant messages
-        if (msg.role === 'assistant' && 'tool_calls' in msg && Array.isArray(msg.tool_calls)) {
+        if (
+          msg.role === 'assistant' &&
+          'tool_calls' in msg &&
+          Array.isArray(msg.tool_calls)
+        ) {
           for (const toolCall of msg.tool_calls as any[]) {
             try {
               content.push({
                 type: 'tool_use',
                 id: toolCall.id,
                 name: toolCall.function.name,
-                input: JSON.parse(toolCall.function.arguments || '{}')
+                input: JSON.parse(toolCall.function.arguments || '{}'),
               })
             } catch (e) {
-              console.error('Error processing tool_call in OAuth mode:', e)
+              console.error('❌Error processing tool_call in OAuth mode:', e)
             }
           }
         }
@@ -713,27 +761,32 @@ export class AnthropicProvider extends BaseLLMProvider {
           // Add a placeholder for empty messages to prevent API errors
           content.push({
             type: 'text',
-            text: '[Empty message]'
+            text: '[Empty message]',
           })
         }
 
         result.push({
           role: msg.role,
-          content: content.length === 1 && content[0].type === 'text' ? content[0].text : content
+          content:
+            content.length === 1 && content[0].type === 'text'
+              ? content[0].text
+              : content,
         })
       } else if (msg.role === 'tool') {
         // Handle tool result messages
         const toolContent =
-          typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content)
+          typeof msg.content === 'string'
+            ? msg.content
+            : JSON.stringify(msg.content)
         result.push({
           role: 'user',
           content: [
             {
               type: 'tool_result',
               tool_use_id: (msg as any).tool_call_id || '',
-              content: toolContent || '[Empty tool result]'
-            }
-          ]
+              content: toolContent || '[Empty tool result]',
+            },
+          ],
         })
       }
     }
@@ -741,7 +794,10 @@ export class AnthropicProvider extends BaseLLMProvider {
     return result
   }
 
-  public async summaryTitles(messages: ChatMessage[], modelId: string): Promise<string> {
+  public async summaryTitles(
+    messages: ChatMessage[],
+    modelId: string,
+  ): Promise<string> {
     const prompt = `${SUMMARY_TITLES_PROMPT}\n\n${messages.map((m) => `${m.role}: ${m.content}`).join('\n')}`
     const response = await this.generateText(prompt, modelId, 0.3, 50)
 
@@ -752,7 +808,7 @@ export class AnthropicProvider extends BaseLLMProvider {
     messages: ChatMessage[],
     modelId: string,
     temperature?: number,
-    maxTokens?: number
+    maxTokens?: number,
   ): Promise<LLMResponse> {
     try {
       let requestParams: any
@@ -770,10 +826,14 @@ export class AnthropicProvider extends BaseLLMProvider {
           max_tokens: maxTokens || 1024,
           temperature: temperature || 0.7,
           system: "You are Claude Code, Anthropic's official CLI for Claude.",
-          messages: oauthMessages
+          messages: oauthMessages,
         }
 
-        response = await this.makeOAuthRequest('/v1/messages', 'POST', requestParams)
+        response = await this.makeOAuthRequest(
+          '/v1/messages',
+          'POST',
+          requestParams,
+        )
       } else {
         // API Key mode: use standard formatting
         const formattedMessages = this.formatMessages(messages)
@@ -782,7 +842,7 @@ export class AnthropicProvider extends BaseLLMProvider {
           model: modelId,
           max_tokens: maxTokens || 1024,
           temperature: temperature || 0.7,
-          messages: formattedMessages.messages
+          messages: formattedMessages.messages,
         }
 
         // 如果有系统消息，添加到请求参数中
@@ -797,7 +857,7 @@ export class AnthropicProvider extends BaseLLMProvider {
       }
 
       const resultResp: LLMResponse = {
-        content: ''
+        content: '',
       }
 
       // 添加usage信息
@@ -805,7 +865,8 @@ export class AnthropicProvider extends BaseLLMProvider {
         resultResp.totalUsage = {
           prompt_tokens: response.usage.input_tokens,
           completion_tokens: response.usage.output_tokens,
-          total_tokens: response.usage.input_tokens + response.usage.output_tokens
+          total_tokens:
+            response.usage.input_tokens + response.usage.output_tokens,
         }
       }
 
@@ -822,12 +883,16 @@ export class AnthropicProvider extends BaseLLMProvider {
 
         if (thinkEnd > thinkStart) {
           // 提取reasoning_content
-          resultResp.reasoning_content = content.substring(thinkStart + 7, thinkEnd).trim()
+          resultResp.reasoning_content = content
+            .substring(thinkStart + 7, thinkEnd)
+            .trim()
 
           // 合并<think>前后的普通内容
           const beforeThink = content.substring(0, thinkStart).trim()
           const afterThink = content.substring(thinkEnd + 8).trim()
-          resultResp.content = [beforeThink, afterThink].filter(Boolean).join('\n')
+          resultResp.content = [beforeThink, afterThink]
+            .filter(Boolean)
+            .join('\n')
         } else {
           // 如果没有找到配对的结束标签，将所有内容作为普通内容
           resultResp.content = content
@@ -839,7 +904,7 @@ export class AnthropicProvider extends BaseLLMProvider {
 
       return resultResp
     } catch (error) {
-      console.error('Anthropic completions error:', error)
+      console.error('❌Anthropic completions error:', error)
       throw error
     }
   }
@@ -849,7 +914,7 @@ export class AnthropicProvider extends BaseLLMProvider {
     modelId: string,
     temperature?: number,
     maxTokens?: number,
-    systemPrompt?: string
+    systemPrompt?: string,
   ): Promise<LLMResponse> {
     const prompt = `请对以下内容进行摘要:
 
@@ -857,7 +922,13 @@ ${text}
 
 请提供一个简洁明了的摘要。`
 
-    return this.generateText(prompt, modelId, temperature, maxTokens, systemPrompt)
+    return this.generateText(
+      prompt,
+      modelId,
+      temperature,
+      maxTokens,
+      systemPrompt,
+    )
   }
 
   async generateText(
@@ -865,7 +936,7 @@ ${text}
     modelId: string,
     temperature?: number,
     maxTokens?: number,
-    systemPrompt?: string
+    systemPrompt?: string,
   ): Promise<LLMResponse> {
     try {
       let requestParams: any
@@ -887,17 +958,26 @@ ${text}
           max_tokens: maxTokens || 1024,
           temperature: temperature || 0.7,
           system: "You are Claude Code, Anthropic's official CLI for Claude.",
-          messages: [{ role: 'user', content: finalPrompt }]
+          messages: [{ role: 'user', content: finalPrompt }],
         }
 
-        response = await this.makeOAuthRequest('/v1/messages', 'POST', requestParams)
+        response = await this.makeOAuthRequest(
+          '/v1/messages',
+          'POST',
+          requestParams,
+        )
       } else {
         // API Key mode: use standard approach
         requestParams = {
           model: modelId,
           max_tokens: maxTokens || 1024,
           temperature: temperature || 0.7,
-          messages: [{ role: 'user' as const, content: [{ type: 'text' as const, text: prompt }] }]
+          messages: [
+            {
+              role: 'user' as const,
+              content: [{ type: 'text' as const, text: prompt }],
+            },
+          ],
         }
 
         // 如果提供了系统提示，添加到请求中
@@ -916,10 +996,10 @@ ${text}
           .filter((block: any) => block.type === 'text')
           .map((block: any) => (block.type === 'text' ? block.text : ''))
           .join(''),
-        reasoning_content: undefined
+        reasoning_content: undefined,
       }
     } catch (error) {
-      console.error('Anthropic generate text error:', error)
+      console.error('❌Anthropic generate text error:', error)
       throw error
     }
   }
@@ -929,7 +1009,7 @@ ${text}
     modelId: string,
     temperature?: number,
     maxTokens?: number,
-    systemPrompt?: string
+    systemPrompt?: string,
   ): Promise<string[]> {
     const prompt = `
 根据下面的上下文，给出3个可能的回复建议，每个建议一行，不要有编号或者额外的解释：
@@ -956,17 +1036,26 @@ ${context}
           max_tokens: maxTokens || 1024,
           temperature: temperature || 0.7,
           system: "You are Claude Code, Anthropic's official CLI for Claude.",
-          messages: [{ role: 'user', content: finalPrompt }]
+          messages: [{ role: 'user', content: finalPrompt }],
         }
 
-        response = await this.makeOAuthRequest('/v1/messages', 'POST', requestParams)
+        response = await this.makeOAuthRequest(
+          '/v1/messages',
+          'POST',
+          requestParams,
+        )
       } else {
         // API Key mode: use standard approach
         requestParams = {
           model: modelId,
           max_tokens: maxTokens || 1024,
           temperature: temperature || 0.7,
-          messages: [{ role: 'user' as const, content: [{ type: 'text' as const, text: prompt }] }]
+          messages: [
+            {
+              role: 'user' as const,
+              content: [{ type: 'text' as const, text: prompt }],
+            },
+          ],
         }
 
         // 如果提供了系统提示，添加到请求中
@@ -991,7 +1080,7 @@ ${context}
 
       return suggestions
     } catch (error) {
-      console.error('Anthropic suggestions error:', error)
+      console.error('❌Anthropic suggestions error:', error)
       return ['建议生成失败']
     }
   }
@@ -1003,14 +1092,21 @@ ${context}
     modelConfig: ModelConfig,
     temperature: number,
     maxTokens: number,
-    mcpTools: MCPToolDefinition[]
+    mcpTools: MCPToolDefinition[],
   ): AsyncGenerator<LLMCoreStreamEvent> {
     if (!modelId) throw new Error('Model ID is required')
     console.log('modelConfig', modelConfig, modelId)
 
     if (this.isOAuthMode) {
       // OAuth mode: use custom streaming implementation
-      yield* this.coreStreamOAuth(messages, modelId, modelConfig, temperature, maxTokens, mcpTools)
+      yield* this.coreStreamOAuth(
+        messages,
+        modelId,
+        modelConfig,
+        temperature,
+        maxTokens,
+        mcpTools,
+      )
       return
     }
 
@@ -1022,7 +1118,10 @@ ${context}
       // 将MCP工具转换为Anthropic工具格式
       const anthropicTools =
         mcpTools.length > 0
-          ? await presenter.mcpPresenter.mcpToolsToAnthropicTools(mcpTools, this.provider.id)
+          ? await presenter.mcpPresenter.mcpToolsToAnthropicTools(
+              mcpTools,
+              this.provider.id,
+            )
           : undefined
 
       // 创建基本请求参数
@@ -1031,7 +1130,7 @@ ${context}
         max_tokens: maxTokens || 1024,
         temperature: temperature || 0.7,
         messages: formattedMessagesObject.messages,
-        stream: true
+        stream: true,
       } as Anthropic.Messages.MessageCreateParamsStreaming
 
       // 启用Claude 3.7模型的思考功能
@@ -1070,10 +1169,14 @@ ${context}
 
         // 处理工具调用开始
         // @ts-ignore - Anthropic SDK类型定义不完整
-        if (chunk.type === 'content_block_start' && chunk.content_block?.type === 'tool_use') {
+        if (
+          chunk.type === 'content_block_start' &&
+          chunk.content_block?.type === 'tool_use'
+        ) {
           toolUseDetected = true
           // @ts-ignore - content_block不在类型定义中
-          currentToolId = chunk.content_block.id || `anthropic-tool-${Date.now()}`
+          currentToolId =
+            chunk.content_block.id || `anthropic-tool-${Date.now()}`
           // @ts-ignore - content_block不在类型定义中
           currentToolName = chunk.content_block.name || ''
           currentToolInputs = {}
@@ -1084,7 +1187,7 @@ ${context}
             yield {
               type: 'tool_call_start',
               tool_call_id: currentToolId,
-              tool_call_name: currentToolName
+              tool_call_name: currentToolName,
             }
           }
           continue
@@ -1092,7 +1195,10 @@ ${context}
 
         // 处理工具调用参数更新 - input_json_delta
         // @ts-ignore - 类型定义中没有工具相关字段
-        if (chunk.type === 'content_block_delta' && chunk.delta?.type === 'input_json_delta') {
+        if (
+          chunk.type === 'content_block_delta' &&
+          chunk.delta?.type === 'input_json_delta'
+        ) {
           // @ts-ignore - partial_json不在类型定义中
           const partialJson = chunk.delta.partial_json
           if (partialJson) {
@@ -1102,7 +1208,7 @@ ${context}
             yield {
               type: 'tool_call_chunk',
               tool_call_id: currentToolId,
-              tool_call_arguments_chunk: partialJson
+              tool_call_arguments_chunk: partialJson,
             }
           }
           continue
@@ -1110,7 +1216,10 @@ ${context}
 
         // 处理工具使用更新 - tool_use_delta
         // @ts-ignore - 类型定义中没有工具相关字段
-        if (chunk.type === 'content_block_delta' && chunk.delta?.type === 'tool_use_delta') {
+        if (
+          chunk.type === 'content_block_delta' &&
+          chunk.delta?.type === 'tool_use_delta'
+        ) {
           // @ts-ignore - delta.name不在类型定义中
           if (chunk.delta.name && !currentToolName) {
             // @ts-ignore - 访问delta.name
@@ -1118,7 +1227,7 @@ ${context}
             yield {
               type: 'tool_call_start',
               tool_call_id: currentToolId,
-              tool_call_name: currentToolName
+              tool_call_name: currentToolName,
             }
           }
 
@@ -1127,7 +1236,7 @@ ${context}
             currentToolInputs = {
               ...currentToolInputs,
               // @ts-ignore - 访问delta.input
-              ...chunk.delta.input
+              ...chunk.delta.input,
             }
           }
           continue
@@ -1140,18 +1249,21 @@ ${context}
             try {
               // 尝试解析完整的JSON
               const jsonStr = accumulatedJson.trim()
-              if (jsonStr && (jsonStr.startsWith('{') || jsonStr.startsWith('['))) {
+              if (
+                jsonStr &&
+                (jsonStr.startsWith('{') || jsonStr.startsWith('['))
+              ) {
                 try {
                   const jsonObject = JSON.parse(jsonStr)
                   if (jsonObject && typeof jsonObject === 'object') {
                     currentToolInputs = { ...currentToolInputs, ...jsonObject }
                   }
                 } catch (e) {
-                  console.error('解析完整JSON失败:', e)
+                  console.error('❌解析完整JSON失败:', e)
                 }
               }
             } catch (e) {
-              console.error('处理累积JSON失败:', e)
+              console.error('❌处理累积JSON失败:', e)
             }
 
             // 发送工具调用结束事件
@@ -1159,7 +1271,7 @@ ${context}
             yield {
               type: 'tool_call_end',
               tool_call_id: currentToolId,
-              tool_call_arguments_complete: argsString
+              tool_call_arguments_complete: argsString,
             }
 
             // 重置工具调用状态
@@ -1169,27 +1281,36 @@ ${context}
         }
 
         // 检查消息是否因为工具调用而停止
-        if (chunk.type === 'message_delta' && chunk.delta?.stop_reason === 'tool_use') {
+        if (
+          chunk.type === 'message_delta' &&
+          chunk.delta?.stop_reason === 'tool_use'
+        ) {
           // 设置为工具使用停止，主循环会处理工具调用
           continue
         }
 
         // 处理思考内容（如果有）
         // @ts-ignore - 类型定义中没有thinking相关字段
-        if (chunk.type === 'content_block_delta' && chunk.delta?.type === 'thinking_delta') {
+        if (
+          chunk.type === 'content_block_delta' &&
+          chunk.delta?.type === 'thinking_delta'
+        ) {
           // @ts-ignore - delta.thinking不在类型定义中
           const thinkingText = chunk.delta.thinking
           if (thinkingText) {
             yield {
               type: 'reasoning',
-              reasoning_content: thinkingText
+              reasoning_content: thinkingText,
             }
           }
           continue
         }
 
         // 处理常规文本内容
-        if (chunk.type === 'content_block_delta' && chunk.delta.type === 'text_delta') {
+        if (
+          chunk.type === 'content_block_delta' &&
+          chunk.delta.type === 'text_delta'
+        ) {
           const text = chunk.delta.text
           if (text) {
             // 处理<think>标签
@@ -1198,7 +1319,7 @@ ${context}
               if (parts[0]) {
                 yield {
                   type: 'text',
-                  content: parts[0]
+                  content: parts[0],
                 }
               }
 
@@ -1208,19 +1329,19 @@ ${context}
                 if (thinkParts.length > 1) {
                   yield {
                     type: 'reasoning',
-                    reasoning_content: thinkParts[0]
+                    reasoning_content: thinkParts[0],
                   }
 
                   if (thinkParts[1]) {
                     yield {
                       type: 'text',
-                      content: thinkParts[1]
+                      content: thinkParts[1],
                     }
                   }
                 } else {
                   yield {
                     type: 'reasoning',
-                    reasoning_content: parts[1]
+                    reasoning_content: parts[1],
                   }
                 }
               }
@@ -1228,19 +1349,19 @@ ${context}
               const parts = text.split('</think>')
               yield {
                 type: 'reasoning',
-                reasoning_content: parts[0]
+                reasoning_content: parts[0],
               }
 
               if (parts[1]) {
                 yield {
                   type: 'text',
-                  content: parts[1]
+                  content: parts[1],
                 }
               }
             } else {
               yield {
                 type: 'text',
-                content: text
+                content: text,
               }
             }
           }
@@ -1253,20 +1374,21 @@ ${context}
           usage: {
             prompt_tokens: usageMetadata.input_tokens,
             completion_tokens: usageMetadata.output_tokens,
-            total_tokens: usageMetadata.input_tokens + usageMetadata.output_tokens
-          }
+            total_tokens:
+              usageMetadata.input_tokens + usageMetadata.output_tokens,
+          },
         }
       }
       // 发送停止事件
       yield {
         type: 'stop',
-        stop_reason: toolUseDetected ? 'tool_use' : 'complete'
+        stop_reason: toolUseDetected ? 'tool_use' : 'complete',
       }
     } catch (error) {
-      console.error('Anthropic coreStream error:', error)
+      console.error('❌Anthropic coreStream error:', error)
       yield {
         type: 'error',
-        error_message: error instanceof Error ? error.message : '未知错误'
+        error_message: error instanceof Error ? error.message : '未知错误',
       }
       yield { type: 'stop', stop_reason: 'error' }
     }
@@ -1282,7 +1404,7 @@ ${context}
     _modelConfig: ModelConfig,
     temperature: number,
     maxTokens: number,
-    mcpTools: MCPToolDefinition[]
+    mcpTools: MCPToolDefinition[],
   ): AsyncGenerator<LLMCoreStreamEvent> {
     if (!this.oauthToken) {
       throw new Error('OAuth token is not available')
@@ -1295,7 +1417,10 @@ ${context}
       // 将MCP工具转换为Anthropic工具格式
       const anthropicTools =
         mcpTools.length > 0
-          ? await presenter.mcpPresenter.mcpToolsToAnthropicTools(mcpTools, this.provider.id)
+          ? await presenter.mcpPresenter.mcpToolsToAnthropicTools(
+              mcpTools,
+              this.provider.id,
+            )
           : undefined
 
       // 创建基本请求参数
@@ -1305,7 +1430,7 @@ ${context}
         temperature: temperature || 0.7,
         system: "You are Claude Code, Anthropic's official CLI for Claude.",
         messages: oauthMessages,
-        stream: true
+        stream: true,
       }
 
       // 启用Claude 3.7模型的思考功能
@@ -1327,7 +1452,7 @@ ${context}
         'anthropic-version': '2023-06-01',
         'anthropic-beta': 'oauth-2025-04-20',
         Authorization: `Bearer ${this.oauthToken}`,
-        Accept: 'text/event-stream'
+        Accept: 'text/event-stream',
       }
 
       // Get proxy configuration
@@ -1335,7 +1460,7 @@ ${context}
       const fetchOptions: RequestInit = {
         method: 'POST',
         headers,
-        body: JSON.stringify(streamParams)
+        body: JSON.stringify(streamParams),
       }
 
       if (proxyUrl) {
@@ -1348,7 +1473,9 @@ ${context}
 
       if (!response.ok) {
         const errorText = await response.text()
-        throw new Error(`OAuth streaming request failed: ${response.status} ${errorText}`)
+        throw new Error(
+          `OAuth streaming request failed: ${response.status} ${errorText}`,
+        )
       }
 
       if (!response.body) {
@@ -1387,7 +1514,8 @@ ${context}
                   chunk.content_block?.type === 'tool_use'
                 ) {
                   toolUseDetected = true
-                  currentToolId = chunk.content_block.id || `anthropic-tool-${Date.now()}`
+                  currentToolId =
+                    chunk.content_block.id || `anthropic-tool-${Date.now()}`
                   currentToolName = chunk.content_block.name || ''
                   accumulatedJson = ''
 
@@ -1395,7 +1523,7 @@ ${context}
                     yield {
                       type: 'tool_call_start',
                       tool_call_id: currentToolId,
-                      tool_call_name: currentToolName
+                      tool_call_name: currentToolName,
                     }
                   }
                 } else if (
@@ -1408,15 +1536,18 @@ ${context}
                     yield {
                       type: 'tool_call_chunk',
                       tool_call_id: currentToolId,
-                      tool_call_arguments_chunk: partialJson
+                      tool_call_arguments_chunk: partialJson,
                     }
                   }
-                } else if (chunk.type === 'content_block_stop' && toolUseDetected) {
+                } else if (
+                  chunk.type === 'content_block_stop' &&
+                  toolUseDetected
+                ) {
                   if (accumulatedJson) {
                     yield {
                       type: 'tool_call_end',
                       tool_call_id: currentToolId,
-                      tool_call_arguments_complete: accumulatedJson
+                      tool_call_arguments_complete: accumulatedJson,
                     }
                   }
                   accumulatedJson = ''
@@ -1428,10 +1559,13 @@ ${context}
                   if (text) {
                     yield {
                       type: 'text',
-                      content: text
+                      content: text,
                     }
                   }
-                } else if (chunk.type === 'message_start' && chunk.message?.usage) {
+                } else if (
+                  chunk.type === 'message_start' &&
+                  chunk.message?.usage
+                ) {
                   // Handle usage info if needed
                 } else if (chunk.type === 'message_delta' && chunk.usage) {
                   yield {
@@ -1440,12 +1574,13 @@ ${context}
                       prompt_tokens: chunk.usage.input_tokens || 0,
                       completion_tokens: chunk.usage.output_tokens || 0,
                       total_tokens:
-                        (chunk.usage.input_tokens || 0) + (chunk.usage.output_tokens || 0)
-                    }
+                        (chunk.usage.input_tokens || 0) +
+                        (chunk.usage.output_tokens || 0),
+                    },
                   }
                 }
               } catch (parseError) {
-                console.error('Failed to parse chunk:', parseError, data)
+                console.error('❌Failed to parse chunk:', parseError, data)
               }
             }
           }
@@ -1457,13 +1592,13 @@ ${context}
       // Send stop event
       yield {
         type: 'stop',
-        stop_reason: toolUseDetected ? 'tool_use' : 'complete'
+        stop_reason: toolUseDetected ? 'tool_use' : 'complete',
       }
     } catch (error) {
-      console.error('Anthropic OAuth coreStream error:', error)
+      console.error('❌Anthropic OAuth coreStream error:', error)
       yield {
         type: 'error',
-        error_message: error instanceof Error ? error.message : 'Unknown error'
+        error_message: error instanceof Error ? error.message : 'Unknown error',
       }
       yield { type: 'stop', stop_reason: 'error' }
     }

@@ -37,10 +37,12 @@ export class PdfFileAdapter extends BaseFileAdapter {
             // 获取当前页面的文本内容
             const renderOptions = {
               normalizeWhitespace: false,
-              disableCombineTextItems: false
+              disableCombineTextItems: false,
             }
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            return pageData.getTextContent(renderOptions).then(function (textContent: any) {
+            return pageData.getTextContent(renderOptions).then(function (
+              textContent: any,
+            ) {
               let lastY: number | null = null
               let text = ''
 
@@ -59,7 +61,7 @@ export class PdfFileAdapter extends BaseFileAdapter {
               pageTexts.push(text)
               return text
             })
-          }
+          },
         }
 
         try {
@@ -67,7 +69,7 @@ export class PdfFileAdapter extends BaseFileAdapter {
           // 将每页内容添加到 pdfData 对象中
           this.pdfData.pageContents = pageTexts
         } catch (error) {
-          console.error('Error parsing PDF:', error)
+          console.error('❌Error parsing PDF:', error)
           return undefined
         }
       }
@@ -141,7 +143,11 @@ export class PdfFileAdapter extends BaseFileAdapter {
         }
 
         // Possible section heading (short, no punctuation at end)
-        if (paragraph.length < 60 && !/[.,:;?!]$/.test(paragraph) && /^[A-Z0-9]/.test(paragraph)) {
+        if (
+          paragraph.length < 60 &&
+          !/[.,:;?!]$/.test(paragraph) &&
+          /^[A-Z0-9]/.test(paragraph)
+        ) {
           return `### ${paragraph}`
         }
       }
@@ -187,7 +193,9 @@ export class PdfFileAdapter extends BaseFileAdapter {
   }
 
   // 获取指定页面的Markdown格式内容
-  public async getPageMarkdown(pageNumber: number): Promise<string | undefined> {
+  public async getPageMarkdown(
+    pageNumber: number,
+  ): Promise<string | undefined> {
     const pageContent = await this.getPageContent(pageNumber)
     if (!pageContent) return undefined
 
@@ -199,7 +207,9 @@ export class PdfFileAdapter extends BaseFileAdapter {
     const pdfData = await this.loadPdfData()
     if (!pdfData || !pdfData.pageContents) return undefined
 
-    return pdfData.pageContents.map((pageContent) => this.convertTextToMarkdown(pageContent))
+    return pdfData.pageContents.map((pageContent) =>
+      this.convertTextToMarkdown(pageContent),
+    )
   }
 
   async getContent(): Promise<string | undefined> {
@@ -208,7 +218,9 @@ export class PdfFileAdapter extends BaseFileAdapter {
       if (pdfData) {
         // 如果有分页内容，则使用分页内容
         if (pdfData.pageContents && pdfData.pageContents.length > 0) {
-          this.fileContent = pdfData.pageContents.join('\n\n--- Page Separator ---\n\n')
+          this.fileContent = pdfData.pageContents.join(
+            '\n\n--- Page Separator ---\n\n',
+          )
         } else {
           // 否则使用整体内容
           this.fileContent = pdfData.text

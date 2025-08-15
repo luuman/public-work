@@ -8,7 +8,7 @@ import {
   ModelConfig,
   LLMCoreStreamEvent,
   ChatMessage,
-  LLM_EMBEDDING_ATTRS
+  LLM_EMBEDDING_ATTRS,
 } from '@shared/presenter'
 import { BaseLLMProvider, SUMMARY_TITLES_PROMPT } from '../baseProvider'
 import { ConfigPresenter } from '../../configPresenter'
@@ -43,11 +43,11 @@ export class OllamaProvider extends BaseLLMProvider {
     if (this.provider.apiKey) {
       this.ollama = new Ollama({
         host: this.provider.baseUrl,
-        headers: { Authorization: `Bearer ${this.provider.apiKey}` }
+        headers: { Authorization: `Bearer ${this.provider.apiKey}` },
       })
     } else {
       this.ollama = new Ollama({
-        host: this.provider.baseUrl
+        host: this.provider.baseUrl,
       })
     }
     this.init()
@@ -69,10 +69,10 @@ export class OllamaProvider extends BaseLLMProvider {
         maxTokens: 2048, // 添加必需的 maxTokens 字段
         isCustom: false,
         group: model.details?.family || 'default',
-        description: `${model.details?.parameter_size || ''} ${model.details?.family || ''} model`
+        description: `${model.details?.parameter_size || ''} ${model.details?.family || ''} model`,
       }))
     } catch (error) {
-      console.error('Failed to fetch Ollama models:', error)
+      console.error('❌Failed to fetch Ollama models:', error)
       return []
     }
   }
@@ -83,7 +83,7 @@ export class OllamaProvider extends BaseLLMProvider {
       if (typeof msg.content === 'string') {
         return {
           role: msg.role,
-          content: msg.content
+          content: msg.content,
         }
       } else {
         // 分离文本和图片内容
@@ -106,7 +106,7 @@ export class OllamaProvider extends BaseLLMProvider {
         return {
           role: msg.role,
           content: text,
-          ...(images.length > 0 && { images })
+          ...(images.length > 0 && { images }),
         }
       }
     })
@@ -118,15 +118,18 @@ export class OllamaProvider extends BaseLLMProvider {
       await this.ollama.list()
       return { isOk: true, errorMsg: null }
     } catch (error) {
-      console.error('Ollama service check failed:', error)
+      console.error('❌Ollama service check failed:', error)
       return {
         isOk: false,
-        errorMsg: `无法连接到 Ollama 服务: ${(error as Error).message}`
+        errorMsg: `无法连接到 Ollama 服务: ${(error as Error).message}`,
       }
     }
   }
 
-  public async summaryTitles(messages: ChatMessage[], modelId: string): Promise<string> {
+  public async summaryTitles(
+    messages: ChatMessage[],
+    modelId: string,
+  ): Promise<string> {
     try {
       const prompt = `${SUMMARY_TITLES_PROMPT}\n\n${messages.map((m) => `${m.role}: ${m.content}`).join('\n')}`
 
@@ -135,13 +138,13 @@ export class OllamaProvider extends BaseLLMProvider {
         prompt: prompt,
         options: {
           temperature: 0.3,
-          num_predict: 30
-        }
+          num_predict: 30,
+        },
       })
 
       return response.response.trim()
     } catch (error) {
-      console.error('Failed to generate title with Ollama:', error)
+      console.error('❌Failed to generate title with Ollama:', error)
       return '新对话'
     }
   }
@@ -150,7 +153,7 @@ export class OllamaProvider extends BaseLLMProvider {
     messages: ChatMessage[],
     modelId: string,
     temperature?: number,
-    maxTokens?: number
+    maxTokens?: number,
   ): Promise<LLMResponse> {
     try {
       const response = await this.ollama.chat({
@@ -158,20 +161,24 @@ export class OllamaProvider extends BaseLLMProvider {
         messages: this.formatMessages(messages),
         options: {
           temperature: temperature || 0.7,
-          num_predict: maxTokens
-        }
+          num_predict: maxTokens,
+        },
       })
 
       const resultResp: LLMResponse = {
-        content: ''
+        content: '',
       }
 
       // Ollama可能不提供完整的token计数
-      if (response.prompt_eval_count !== undefined || response.eval_count !== undefined) {
+      if (
+        response.prompt_eval_count !== undefined ||
+        response.eval_count !== undefined
+      ) {
         resultResp.totalUsage = {
           prompt_tokens: response.prompt_eval_count || 0,
           completion_tokens: response.eval_count || 0,
-          total_tokens: (response.prompt_eval_count || 0) + (response.eval_count || 0)
+          total_tokens:
+            (response.prompt_eval_count || 0) + (response.eval_count || 0),
         }
       }
 
@@ -183,12 +190,16 @@ export class OllamaProvider extends BaseLLMProvider {
 
         if (thinkEnd > thinkStart) {
           // 提取reasoning_content
-          resultResp.reasoning_content = content.substring(thinkStart + 7, thinkEnd).trim()
+          resultResp.reasoning_content = content
+            .substring(thinkStart + 7, thinkEnd)
+            .trim()
 
           // 合并<think>前后的普通内容
           const beforeThink = content.substring(0, thinkStart).trim()
           const afterThink = content.substring(thinkEnd + 8).trim()
-          resultResp.content = [beforeThink, afterThink].filter(Boolean).join('\n')
+          resultResp.content = [beforeThink, afterThink]
+            .filter(Boolean)
+            .join('\n')
         } else {
           // 如果没有找到配对的结束标签，将所有内容作为普通内容
           resultResp.content = content
@@ -200,7 +211,7 @@ export class OllamaProvider extends BaseLLMProvider {
 
       return resultResp
     } catch (error) {
-      console.error('Ollama completions failed:', error)
+      console.error('❌Ollama completions failed:', error)
       throw error
     }
   }
@@ -209,7 +220,7 @@ export class OllamaProvider extends BaseLLMProvider {
     text: string,
     modelId: string,
     temperature?: number,
-    maxTokens?: number
+    maxTokens?: number,
   ): Promise<LLMResponse> {
     try {
       const prompt = `请对以下内容进行总结：\n\n${text}`
@@ -219,16 +230,16 @@ export class OllamaProvider extends BaseLLMProvider {
         prompt: prompt,
         options: {
           temperature: temperature || 0.5,
-          num_predict: maxTokens
-        }
+          num_predict: maxTokens,
+        },
       })
 
       return {
         content: response.response,
-        reasoning_content: undefined
+        reasoning_content: undefined,
       }
     } catch (error) {
-      console.error('Ollama summaries failed:', error)
+      console.error('❌Ollama summaries failed:', error)
       throw error
     }
   }
@@ -237,7 +248,7 @@ export class OllamaProvider extends BaseLLMProvider {
     prompt: string,
     modelId: string,
     temperature?: number,
-    maxTokens?: number
+    maxTokens?: number,
   ): Promise<LLMResponse> {
     try {
       const response = await this.ollama.generate({
@@ -245,16 +256,16 @@ export class OllamaProvider extends BaseLLMProvider {
         prompt: prompt,
         options: {
           temperature: temperature || 0.7,
-          num_predict: maxTokens
-        }
+          num_predict: maxTokens,
+        },
       })
 
       return {
         content: response.response,
-        reasoning_content: undefined
+        reasoning_content: undefined,
       }
     } catch (error) {
-      console.error('Ollama generate text failed:', error)
+      console.error('❌Ollama generate text failed:', error)
       throw error
     }
   }
@@ -263,7 +274,7 @@ export class OllamaProvider extends BaseLLMProvider {
     context: string,
     modelId: string,
     temperature?: number,
-    maxTokens?: number
+    maxTokens?: number,
   ): Promise<string[]> {
     try {
       const prompt = `基于以下上下文，生成5个可能的后续问题或建议：\n\n${context}`
@@ -273,8 +284,8 @@ export class OllamaProvider extends BaseLLMProvider {
         prompt: prompt,
         options: {
           temperature: temperature || 0.8,
-          num_predict: maxTokens || 200
-        }
+          num_predict: maxTokens || 200,
+        },
       })
 
       // 简单处理返回的文本，按行分割，并过滤掉空行
@@ -284,7 +295,7 @@ export class OllamaProvider extends BaseLLMProvider {
         .filter((line) => line && line.length > 0)
         .slice(0, 5) // 最多返回5个建议
     } catch (error) {
-      console.error('Ollama suggestions failed:', error)
+      console.error('❌Ollama suggestions failed:', error)
       return []
     }
   }
@@ -302,9 +313,9 @@ export class OllamaProvider extends BaseLLMProvider {
       ...model,
       model_info: {
         context_length,
-        embedding_length
+        embedding_length,
       },
-      capabilities
+      capabilities,
     }
   }
 
@@ -314,9 +325,11 @@ export class OllamaProvider extends BaseLLMProvider {
       const response = await this.ollama.list()
       const models = response.models as unknown as OllamaModel[]
       // FIXME: Merge model properties, optimize after ollama list API is improved
-      return await Promise.all(models.map(async (model) => this.attachModelInfo(model)))
+      return await Promise.all(
+        models.map(async (model) => this.attachModelInfo(model)),
+      )
     } catch (error) {
-      console.error('Failed to list Ollama models:', (error as Error).message)
+      console.error('❌Failed to list Ollama models:', (error as Error).message)
       return []
     }
   }
@@ -326,22 +339,27 @@ export class OllamaProvider extends BaseLLMProvider {
       const response = await this.ollama.ps()
       const runningModels = response.models as unknown as OllamaModel[]
       // FIXME: Merge model properties, optimize after ollama list API is improved
-      return await Promise.all(runningModels.map(async (model) => this.attachModelInfo(model)))
+      return await Promise.all(
+        runningModels.map(async (model) => this.attachModelInfo(model)),
+      )
     } catch (error) {
-      console.error('Failed to list running Ollama models:', (error as Error).message)
+      console.error(
+        '❌Failed to list running Ollama models:',
+        (error as Error).message,
+      )
       return []
     }
   }
 
   public async pullModel(
     modelName: string,
-    onProgress?: (progress: ProgressResponse) => void
+    onProgress?: (progress: ProgressResponse) => void,
   ): Promise<boolean> {
     try {
       const stream = await this.ollama.pull({
         model: modelName,
         insecure: true,
-        stream: true
+        stream: true,
       })
 
       for await (const chunk of stream) {
@@ -352,7 +370,10 @@ export class OllamaProvider extends BaseLLMProvider {
 
       return true
     } catch (error) {
-      console.error(`Failed to pull Ollama model ${modelName}:`, (error as Error).message)
+      console.error(
+        `Failed to pull Ollama model ${modelName}:`,
+        (error as Error).message,
+      )
       return false
     }
   }
@@ -360,11 +381,14 @@ export class OllamaProvider extends BaseLLMProvider {
   public async deleteModel(modelName: string): Promise<boolean> {
     try {
       await this.ollama.delete({
-        model: modelName
+        model: modelName,
       })
       return true
     } catch (error) {
-      console.error(`Failed to delete Ollama model ${modelName}:`, (error as Error).message)
+      console.error(
+        `Failed to delete Ollama model ${modelName}:`,
+        (error as Error).message,
+      )
       return false
     }
   }
@@ -372,27 +396,35 @@ export class OllamaProvider extends BaseLLMProvider {
   public async showModelInfo(modelName: string): Promise<ShowResponse> {
     try {
       const response = await this.ollama.show({
-        model: modelName
+        model: modelName,
       })
       return response
     } catch (error) {
-      console.error(`Failed to show Ollama model info for ${modelName}:`, (error as Error).message)
+      console.error(
+        `Failed to show Ollama model info for ${modelName}:`,
+        (error as Error).message,
+      )
       throw error
     }
   }
 
   // 辅助方法：将 MCP 工具转换为 Ollama 工具格式
-  private async convertToOllamaTools(mcpTools: MCPToolDefinition[]): Promise<OllamaTool[]> {
+  private async convertToOllamaTools(
+    mcpTools: MCPToolDefinition[],
+  ): Promise<OllamaTool[]> {
     const openAITools = await presenter.mcpPresenter.mcpToolsToOpenAITools(
       mcpTools,
-      this.provider.id
+      this.provider.id,
     )
     return openAITools.map((rawTool) => {
       const tool = rawTool as unknown as {
         function: {
           name: string
           description?: string
-          parameters: { properties: Record<string, unknown>; required?: string[] }
+          parameters: {
+            properties: Record<string, unknown>
+            required?: string[]
+          }
         }
       }
       const properties = tool.function.parameters.properties || {}
@@ -403,11 +435,15 @@ export class OllamaProvider extends BaseLLMProvider {
 
       for (const [key, value] of Object.entries(properties)) {
         if (typeof value === 'object' && value !== null) {
-          const param = value as { type: unknown; description: unknown; enum?: string[] }
+          const param = value as {
+            type: unknown
+            description: unknown
+            enum?: string[]
+          }
           convertedProperties[key] = {
             type: String(param.type || 'string'),
             description: String(param.description || ''),
-            ...(param.enum ? { enum: param.enum } : {})
+            ...(param.enum ? { enum: param.enum } : {}),
           }
         }
       }
@@ -420,9 +456,9 @@ export class OllamaProvider extends BaseLLMProvider {
           parameters: {
             type: 'object' as const,
             properties: convertedProperties,
-            required: tool.function.parameters.required || []
-          }
-        }
+            required: tool.function.parameters.required || [],
+          },
+        },
       }
     })
   }
@@ -434,7 +470,7 @@ export class OllamaProvider extends BaseLLMProvider {
     modelConfig: ModelConfig,
     temperature: number,
     maxTokens: number,
-    mcpTools: MCPToolDefinition[]
+    mcpTools: MCPToolDefinition[],
   ): AsyncGenerator<LLMCoreStreamEvent> {
     if (!modelId) throw new Error('Model ID is required')
     // Ollama 不需要图片生成分支，直接处理聊天完成
@@ -444,7 +480,7 @@ export class OllamaProvider extends BaseLLMProvider {
       modelConfig,
       temperature,
       maxTokens,
-      mcpTools
+      mcpTools,
     )
   }
 
@@ -465,7 +501,7 @@ export class OllamaProvider extends BaseLLMProvider {
     modelConfig: ModelConfig,
     temperature: number,
     maxTokens: number,
-    mcpTools: MCPToolDefinition[]
+    mcpTools: MCPToolDefinition[],
   ): AsyncGenerator<LLMCoreStreamEvent> {
     try {
       const tools = mcpTools || []
@@ -480,7 +516,10 @@ export class OllamaProvider extends BaseLLMProvider {
           ollamaTools = await this.convertToOllamaTools(tools)
         } else {
           // 不支持原生函数调用，使用提示词包装
-          processedMessages = this.prepareFunctionCallPrompt(processedMessages, tools)
+          processedMessages = this.prepareFunctionCallPrompt(
+            processedMessages,
+            tools,
+          )
           // Ollama对于非原生支持通常情况下也不需要传递tools参数
           ollamaTools = undefined
         }
@@ -492,12 +531,12 @@ export class OllamaProvider extends BaseLLMProvider {
         messages: processedMessages,
         options: {
           temperature: temperature || 0.7,
-          num_predict: maxTokens
+          num_predict: maxTokens,
         },
         stream: true as const,
         ...(supportsFunctionCall && ollamaTools && ollamaTools.length > 0
           ? { tools: ollamaTools }
-          : {})
+          : {}),
       }
 
       // 创建流
@@ -525,7 +564,7 @@ export class OllamaProvider extends BaseLLMProvider {
         '``` tool_code',
         '``` tool',
         '```function_call',
-        '``` function_call'
+        '``` function_call',
       ]
       const codeBlockEndMarker = '```'
 
@@ -549,11 +588,15 @@ export class OllamaProvider extends BaseLLMProvider {
       // --- 流处理循环 ---
       for await (const chunk of stream) {
         // 处理使用统计
-        if (chunk.prompt_eval_count !== undefined || chunk.eval_count !== undefined) {
+        if (
+          chunk.prompt_eval_count !== undefined ||
+          chunk.eval_count !== undefined
+        ) {
           usage = {
             prompt_tokens: chunk.prompt_eval_count || 0,
             completion_tokens: chunk.eval_count || 0,
-            total_tokens: (chunk.prompt_eval_count || 0) + (chunk.eval_count || 0)
+            total_tokens:
+              (chunk.prompt_eval_count || 0) + (chunk.eval_count || 0),
           }
         }
 
@@ -565,32 +608,37 @@ export class OllamaProvider extends BaseLLMProvider {
         ) {
           toolUseDetected = true
           for (const toolCall of chunk.message.tool_calls) {
-            const toolId = toolCall.function?.name || `ollama-tool-${Date.now()}`
+            const toolId =
+              toolCall.function?.name || `ollama-tool-${Date.now()}`
             if (!nativeToolCalls[toolId]) {
               nativeToolCalls[toolId] = {
                 name: toolCall.function?.name || '',
-                arguments: JSON.stringify(toolCall.function?.arguments || {})
+                arguments: JSON.stringify(toolCall.function?.arguments || {}),
               }
 
               // 发送工具调用开始事件
               yield {
                 type: 'tool_call_start',
                 tool_call_id: toolId,
-                tool_call_name: toolCall.function?.name || ''
+                tool_call_name: toolCall.function?.name || '',
               }
 
               // 发送工具调用参数块事件
               yield {
                 type: 'tool_call_chunk',
                 tool_call_id: toolId,
-                tool_call_arguments_chunk: JSON.stringify(toolCall.function?.arguments || {})
+                tool_call_arguments_chunk: JSON.stringify(
+                  toolCall.function?.arguments || {},
+                ),
               }
 
               // 发送工具调用结束事件
               yield {
                 type: 'tool_call_end',
                 tool_call_id: toolId,
-                tool_call_arguments_complete: JSON.stringify(toolCall.function?.arguments || {})
+                tool_call_arguments_complete: JSON.stringify(
+                  toolCall.function?.arguments || {},
+                ),
               }
             }
           }
@@ -616,7 +664,10 @@ export class OllamaProvider extends BaseLLMProvider {
             if (codeBlockBuffer.endsWith(codeBlockEndMarker)) {
               isInCodeBlock = false
               const codeContent = codeBlockBuffer
-                .substring(0, codeBlockBuffer.length - codeBlockEndMarker.length)
+                .substring(
+                  0,
+                  codeBlockBuffer.length - codeBlockEndMarker.length,
+                )
                 .trim()
 
               try {
@@ -624,11 +675,15 @@ export class OllamaProvider extends BaseLLMProvider {
                 let parsedCall
                 try {
                   // 移除可能的语言标识和开头的空白
-                  const cleanContent = codeContent.replace(/^tool_code\s*/i, '').trim()
+                  const cleanContent = codeContent
+                    .replace(/^tool_code\s*/i, '')
+                    .trim()
                   parsedCall = JSON.parse(cleanContent)
                 } catch {
                   // 尝试修复通用JSON格式问题
-                  const cleanContent = codeContent.replace(/^tool_code\s*/i, '').trim()
+                  const cleanContent = codeContent
+                    .replace(/^tool_code\s*/i, '')
+                    .trim()
                   const repaired = cleanContent
                     .replace(/,\s*}/g, '}') // 移除对象末尾的逗号
                     .replace(/,\s*\]/g, ']') // 移除数组末尾的逗号
@@ -640,10 +695,16 @@ export class OllamaProvider extends BaseLLMProvider {
                 // 提取函数名和参数
                 let functionName, functionArgs
 
-                if (parsedCall.function_call && typeof parsedCall.function_call === 'object') {
+                if (
+                  parsedCall.function_call &&
+                  typeof parsedCall.function_call === 'object'
+                ) {
                   functionName = parsedCall.function_call.name
                   functionArgs = parsedCall.function_call.arguments
-                } else if (parsedCall.name && parsedCall.arguments !== undefined) {
+                } else if (
+                  parsedCall.name &&
+                  parsedCall.arguments !== undefined
+                ) {
                   functionName = parsedCall.name
                   functionArgs = parsedCall.arguments
                 } else if (
@@ -670,19 +731,19 @@ export class OllamaProvider extends BaseLLMProvider {
                 yield {
                   type: 'tool_call_start',
                   tool_call_id: id,
-                  tool_call_name: functionName
+                  tool_call_name: functionName,
                 }
 
                 yield {
                   type: 'tool_call_chunk',
                   tool_call_id: id,
-                  tool_call_arguments_chunk: functionArgs
+                  tool_call_arguments_chunk: functionArgs,
                 }
 
                 yield {
                   type: 'tool_call_end',
                   tool_call_id: id,
-                  tool_call_arguments_complete: functionArgs
+                  tool_call_arguments_complete: functionArgs,
                 }
 
                 stopReason = 'tool_use'
@@ -690,7 +751,7 @@ export class OllamaProvider extends BaseLLMProvider {
                 // 解析失败，将内容作为普通文本输出
                 yield {
                   type: 'text',
-                  content: '```tool_code\n' + codeContent + '\n```'
+                  content: '```tool_code\n' + codeContent + '\n```',
                 }
               }
 
@@ -720,7 +781,10 @@ export class OllamaProvider extends BaseLLMProvider {
               thinkState = 'end'
               processedChar = true
             } else if (pendingBuffer.length >= thinkEndMarker.length) {
-              const charsToYield = pendingBuffer.slice(0, -thinkEndMarker.length + 1)
+              const charsToYield = pendingBuffer.slice(
+                0,
+                -thinkEndMarker.length + 1,
+              )
               if (charsToYield) {
                 thinkBuffer += charsToYield
                 yield { type: 'reasoning', reasoning_content: charsToYield }
@@ -778,30 +842,33 @@ export class OllamaProvider extends BaseLLMProvider {
 
                 const parsedCalls = this.parseFunctionCalls(
                   `${funcStartMarker}${funcCallBuffer}${funcEndMarker}`,
-                  `non-native-${this.provider.id}`
+                  `non-native-${this.provider.id}`,
                 )
                 for (const parsedCall of parsedCalls) {
                   yield {
                     type: 'tool_call_start',
                     tool_call_id: parsedCall.id,
-                    tool_call_name: parsedCall.function.name
+                    tool_call_name: parsedCall.function.name,
                   }
                   yield {
                     type: 'tool_call_chunk',
                     tool_call_id: parsedCall.id,
-                    tool_call_arguments_chunk: parsedCall.function.arguments
+                    tool_call_arguments_chunk: parsedCall.function.arguments,
                   }
                   yield {
                     type: 'tool_call_end',
                     tool_call_id: parsedCall.id,
-                    tool_call_arguments_complete: parsedCall.function.arguments
+                    tool_call_arguments_complete: parsedCall.function.arguments,
                   }
                 }
                 funcCallBuffer = ''
               } else if (funcEndMarker.startsWith(pendingBuffer)) {
                 funcState = 'end'
               } else if (pendingBuffer.length >= funcEndMarker.length) {
-                const charsToAdd = pendingBuffer.slice(0, -funcEndMarker.length + 1)
+                const charsToAdd = pendingBuffer.slice(
+                  0,
+                  -funcEndMarker.length + 1,
+                )
                 funcCallBuffer += charsToAdd
                 pendingBuffer = pendingBuffer.slice(-funcEndMarker.length + 1)
                 if (funcEndMarker.startsWith(pendingBuffer)) {
@@ -824,23 +891,23 @@ export class OllamaProvider extends BaseLLMProvider {
 
                 const parsedCalls = this.parseFunctionCalls(
                   `${funcStartMarker}${funcCallBuffer}${funcEndMarker}`,
-                  `non-native-${this.provider.id}`
+                  `non-native-${this.provider.id}`,
                 )
                 for (const parsedCall of parsedCalls) {
                   yield {
                     type: 'tool_call_start',
                     tool_call_id: parsedCall.id,
-                    tool_call_name: parsedCall.function.name
+                    tool_call_name: parsedCall.function.name,
                   }
                   yield {
                     type: 'tool_call_chunk',
                     tool_call_id: parsedCall.id,
-                    tool_call_arguments_chunk: parsedCall.function.arguments
+                    tool_call_arguments_chunk: parsedCall.function.arguments,
                   }
                   yield {
                     type: 'tool_call_end',
                     tool_call_id: parsedCall.id,
-                    tool_call_arguments_complete: parsedCall.function.arguments
+                    tool_call_arguments_complete: parsedCall.function.arguments,
                   }
                 }
                 funcCallBuffer = ''
@@ -856,10 +923,14 @@ export class OllamaProvider extends BaseLLMProvider {
           if (!processedChar) {
             let potentialThink = thinkStartMarker.startsWith(pendingBuffer)
             let potentialFunc =
-              !supportsFunctionCall && tools.length > 0 && funcStartMarker.startsWith(pendingBuffer)
+              !supportsFunctionCall &&
+              tools.length > 0 &&
+              funcStartMarker.startsWith(pendingBuffer)
             const matchedThink = pendingBuffer.endsWith(thinkStartMarker)
             const matchedFunc =
-              !supportsFunctionCall && tools.length > 0 && pendingBuffer.endsWith(funcStartMarker)
+              !supportsFunctionCall &&
+              tools.length > 0 &&
+              pendingBuffer.endsWith(funcStartMarker)
 
             // 检查代码块标记
             let codeBlockDetected = false
@@ -872,7 +943,10 @@ export class OllamaProvider extends BaseLLMProvider {
 
             // --- 首先处理完整匹配 ---
             if (matchedThink) {
-              const textBefore = pendingBuffer.slice(0, -thinkStartMarker.length)
+              const textBefore = pendingBuffer.slice(
+                0,
+                -thinkStartMarker.length,
+              )
               if (textBefore) {
                 yield { type: 'text', content: textBefore }
               }
@@ -920,7 +994,8 @@ export class OllamaProvider extends BaseLLMProvider {
               pendingBuffer = pendingBuffer.slice(1)
               // 使用缩短的缓冲区立即重新评估潜在匹配
               potentialThink =
-                pendingBuffer.length > 0 && thinkStartMarker.startsWith(pendingBuffer)
+                pendingBuffer.length > 0 &&
+                thinkStartMarker.startsWith(pendingBuffer)
               potentialFunc =
                 pendingBuffer.length > 0 &&
                 !supportsFunctionCall &&
@@ -956,7 +1031,7 @@ export class OllamaProvider extends BaseLLMProvider {
         try {
           const parsedCalls = this.parseFunctionCalls(
             potentialContent,
-            `non-native-incomplete-${this.provider.id}`
+            `non-native-incomplete-${this.provider.id}`,
           )
           if (parsedCalls.length > 0) {
             toolUseDetected = true
@@ -964,17 +1039,17 @@ export class OllamaProvider extends BaseLLMProvider {
               yield {
                 type: 'tool_call_start',
                 tool_call_id: parsedCall.id + '-incomplete',
-                tool_call_name: parsedCall.function.name
+                tool_call_name: parsedCall.function.name,
               }
               yield {
                 type: 'tool_call_chunk',
                 tool_call_id: parsedCall.id + '-incomplete',
-                tool_call_arguments_chunk: parsedCall.function.arguments
+                tool_call_arguments_chunk: parsedCall.function.arguments,
               }
               yield {
                 type: 'tool_call_end',
                 tool_call_id: parsedCall.id + '-incomplete',
-                tool_call_arguments_complete: parsedCall.function.arguments
+                tool_call_arguments_complete: parsedCall.function.arguments,
               }
             }
           } else {
@@ -982,7 +1057,7 @@ export class OllamaProvider extends BaseLLMProvider {
             yield { type: 'text', content: potentialContent }
           }
         } catch (e) {
-          console.error('解析不完整的函数调用缓冲区时出错:', e)
+          console.error('❌解析不完整的函数调用缓冲区时出错:', e)
           yield { type: 'text', content: potentialContent }
         }
         funcCallBuffer = ''
@@ -992,7 +1067,7 @@ export class OllamaProvider extends BaseLLMProvider {
       if (isInCodeBlock && codeBlockBuffer) {
         yield {
           type: 'text',
-          content: '```' + codeBlockBuffer
+          content: '```' + codeBlockBuffer,
         }
       }
 
@@ -1006,17 +1081,17 @@ export class OllamaProvider extends BaseLLMProvider {
               yield {
                 type: 'tool_call_end',
                 tool_call_id: toolId,
-                tool_call_arguments_complete: tool.arguments
+                tool_call_arguments_complete: tool.arguments,
               }
             } catch (e) {
               console.error(
                 `[handleChatCompletion] 工具 ${toolId} 参数解析错误: ${tool.arguments}`,
-                e
+                e,
               )
               yield {
                 type: 'tool_call_end',
                 tool_call_id: toolId,
-                tool_call_arguments_complete: tool.arguments
+                tool_call_arguments_complete: tool.arguments,
               }
             }
           }
@@ -1024,8 +1099,10 @@ export class OllamaProvider extends BaseLLMProvider {
       }
 
       // 记录状态警告
-      if (thinkState !== 'none') console.warn(`流在thinkState: ${thinkState} 时结束`)
-      if (funcState !== 'none') console.warn(`流在funcState: ${funcState} 时结束`)
+      if (thinkState !== 'none')
+        console.warn(`流在thinkState: ${thinkState} 时结束`)
+      if (funcState !== 'none')
+        console.warn(`流在funcState: ${funcState} 时结束`)
 
       // 输出使用情况
       if (usage) {
@@ -1038,26 +1115,31 @@ export class OllamaProvider extends BaseLLMProvider {
     } catch (error: unknown) {
       yield {
         type: 'error',
-        error_message: error instanceof Error ? error.message : String(error)
+        error_message: error instanceof Error ? error.message : String(error),
       }
       yield { type: 'stop', stop_reason: 'error' }
     }
   }
 
   // 用于包装不支持函数调用的提示词
-  private prepareFunctionCallPrompt(messages: Message[], mcpTools: MCPToolDefinition[]): Message[] {
+  private prepareFunctionCallPrompt(
+    messages: Message[],
+    mcpTools: MCPToolDefinition[],
+  ): Message[] {
     // 创建消息副本
     const result = [...messages]
 
     const functionCallPrompt = this.getFunctionCallWrapPrompt(mcpTools)
-    const userMessageIndex = result.findLastIndex((message) => message.role === 'user')
+    const userMessageIndex = result.findLastIndex(
+      (message) => message.role === 'user',
+    )
 
     if (userMessageIndex !== -1) {
       const userMessage = result[userMessageIndex]
       // 添加提示词到用户消息
       result[userMessageIndex] = {
         ...userMessage,
-        content: `${functionCallPrompt}\n\n${userMessage.content || ''}`
+        content: `${functionCallPrompt}\n\n${userMessage.content || ''}`,
       }
     }
 
@@ -1067,11 +1149,17 @@ export class OllamaProvider extends BaseLLMProvider {
   // 解析函数调用标签
   protected parseFunctionCalls(
     response: string,
-    fallbackIdPrefix: string = 'ollama-tool'
-  ): Array<{ id: string; type: string; function: { name: string; arguments: string } }> {
+    fallbackIdPrefix: string = 'ollama-tool',
+  ): Array<{
+    id: string
+    type: string
+    function: { name: string; arguments: string }
+  }> {
     try {
       // 使用非贪婪模式匹配function_call标签对
-      const functionCallMatches = response.match(/<function_call>([\s\S]*?)<\/function_call>/gs)
+      const functionCallMatches = response.match(
+        /<function_call>([\s\S]*?)<\/function_call>/gs,
+      )
       if (!functionCallMatches) {
         return []
       }
@@ -1097,7 +1185,10 @@ export class OllamaProvider extends BaseLLMProvider {
             // 提取函数名和参数
             let functionName, functionArgs
 
-            if (parsedCall.function_call && typeof parsedCall.function_call === 'object') {
+            if (
+              parsedCall.function_call &&
+              typeof parsedCall.function_call === 'object'
+            ) {
               functionName = parsedCall.function_call.name
               functionArgs = parsedCall.function_call.arguments
             } else if (parsedCall.name && parsedCall.arguments !== undefined) {
@@ -1120,15 +1211,16 @@ export class OllamaProvider extends BaseLLMProvider {
             }
 
             // 生成唯一ID
-            const id = parsedCall.id || `${fallbackIdPrefix}-${index}-${Date.now()}`
+            const id =
+              parsedCall.id || `${fallbackIdPrefix}-${index}-${Date.now()}`
 
             return {
               id: String(id),
               type: 'function',
               function: {
                 name: String(functionName),
-                arguments: functionArgs
-              }
+                arguments: functionArgs,
+              },
             }
           } catch {
             return null
@@ -1156,7 +1248,7 @@ export class OllamaProvider extends BaseLLMProvider {
     for (const text of texts) {
       const resp = await this.ollama.embeddings({
         model: modelId,
-        prompt: text
+        prompt: text,
       })
       if (resp && Array.isArray(resp.embedding)) {
         results.push(resp.embedding)
@@ -1171,7 +1263,7 @@ export class OllamaProvider extends BaseLLMProvider {
     const res = await this.getEmbeddings(modelId, [EMBEDDING_TEST_KEY])
     return {
       dimensions: res[0].length,
-      normalized: isNormalized(res[0])
+      normalized: isNormalized(res[0]),
     }
   }
 }

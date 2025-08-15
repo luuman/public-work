@@ -8,7 +8,7 @@ import {
   ISQLitePresenter,
   SQLITE_MESSAGE,
   CONVERSATION,
-  CONVERSATION_SETTINGS
+  CONVERSATION_SETTINGS,
 } from '@shared/presenter'
 import { MessageAttachmentsTable } from './tables/messageAttachments'
 
@@ -17,7 +17,7 @@ import { MessageAttachmentsTable } from './tables/messageAttachments'
  */
 export enum ImportMode {
   INCREMENT = 'increment', // 增量导入
-  OVERWRITE = 'overwrite' // 覆盖导入
+  OVERWRITE = 'overwrite', // 覆盖导入
 }
 
 export class SQLitePresenter implements ISQLitePresenter {
@@ -59,14 +59,14 @@ export class SQLitePresenter implements ISQLitePresenter {
       // 执行迁移
       this.migrate()
     } catch (error) {
-      console.error('Database initialization failed:', error)
+      console.error('❌Database initialization failed:', error)
 
       // 如果数据库已经打开，先关闭它
       if (this.db) {
         try {
           this.db.close()
         } catch (closeError) {
-          console.error('Error closing database:', closeError)
+          console.error('❌Error closing database:', closeError)
         }
       }
 
@@ -105,12 +105,16 @@ export class SQLitePresenter implements ISQLitePresenter {
         console.log(`Database backed up to: ${backupPath}`)
       }
     } catch (error) {
-      console.error('Error creating database backup:', error)
+      console.error('❌Error creating database backup:', error)
     }
   }
 
   private cleanupDatabaseFiles(): void {
-    const filesToDelete = [this.dbPath, `${this.dbPath}-wal`, `${this.dbPath}-shm`]
+    const filesToDelete = [
+      this.dbPath,
+      `${this.dbPath}-wal`,
+      `${this.dbPath}-shm`,
+    ]
 
     for (const file of filesToDelete) {
       try {
@@ -124,7 +128,10 @@ export class SQLitePresenter implements ISQLitePresenter {
     }
   }
 
-  renameConversation(conversationId: string, title: string): Promise<CONVERSATION> {
+  renameConversation(
+    conversationId: string,
+    title: string,
+  ): Promise<CONVERSATION> {
     this.conversationsTable.rename(conversationId, title)
     return this.getConversation(conversationId)
   }
@@ -150,7 +157,9 @@ export class SQLitePresenter implements ISQLitePresenter {
       )
     `)
 
-    const result = this.db.prepare('SELECT MAX(version) as version FROM schema_versions').get() as {
+    const result = this.db
+      .prepare('SELECT MAX(version) as version FROM schema_versions')
+      .get() as {
       version: number
       applied_at: number
     }
@@ -164,7 +173,7 @@ export class SQLitePresenter implements ISQLitePresenter {
       this.conversationsTable,
       this.messagesTable,
       this.attachmentsTable,
-      this.messageAttachmentsTable
+      this.messageAttachmentsTable,
     ]
 
     // 获取最新的迁移版本
@@ -175,7 +184,11 @@ export class SQLitePresenter implements ISQLitePresenter {
 
     // 只迁移未执行的版本
     tables.forEach((table) => {
-      for (let version = this.currentVersion + 1; version <= latestVersion; version++) {
+      for (
+        let version = this.currentVersion + 1;
+        version <= latestVersion;
+        version++
+      ) {
         const sql = table.getMigrationSQL?.(version)
         if (sql) {
           if (!migrations.has(version)) {
@@ -199,7 +212,9 @@ export class SQLitePresenter implements ISQLitePresenter {
             this.db.exec(sql)
           })
           this.db
-            .prepare('INSERT INTO schema_versions (version, applied_at) VALUES (?, ?)')
+            .prepare(
+              'INSERT INTO schema_versions (version, applied_at) VALUES (?, ?)',
+            )
             .run(version, Date.now())
         })()
       }
@@ -214,7 +229,7 @@ export class SQLitePresenter implements ISQLitePresenter {
   // 创建新对话
   public async createConversation(
     title: string,
-    settings: Partial<CONVERSATION_SETTINGS> = {}
+    settings: Partial<CONVERSATION_SETTINGS> = {},
   ): Promise<string> {
     return this.conversationsTable.create(title, settings)
   }
@@ -227,7 +242,7 @@ export class SQLitePresenter implements ISQLitePresenter {
   // 更新对话信息
   public async updateConversation(
     conversationId: string,
-    data: Partial<CONVERSATION>
+    data: Partial<CONVERSATION>,
   ): Promise<void> {
     return this.conversationsTable.update(conversationId, data)
   }
@@ -235,7 +250,7 @@ export class SQLitePresenter implements ISQLitePresenter {
   // 获取对话列表
   public async getConversationList(
     page: number,
-    pageSize: number
+    pageSize: number,
   ): Promise<{ total: number; list: CONVERSATION[] }> {
     return this.conversationsTable.list(page, pageSize)
   }
@@ -261,7 +276,7 @@ export class SQLitePresenter implements ISQLitePresenter {
     tokenCount: number = 0,
     status: string = 'pending',
     isContextEdge: number = 0,
-    isVariant: number = 0
+    isVariant: number = 0,
   ): Promise<string> {
     return this.messagesTable.insert(
       conversationId,
@@ -273,12 +288,14 @@ export class SQLitePresenter implements ISQLitePresenter {
       tokenCount,
       status,
       isContextEdge,
-      isVariant
+      isVariant,
     )
   }
 
   // 查询消息
-  public async queryMessages(conversationId: string): Promise<SQLITE_MESSAGE[]> {
+  public async queryMessages(
+    conversationId: string,
+  ): Promise<SQLITE_MESSAGE[]> {
     return this.messagesTable.query(conversationId)
   }
 
@@ -291,7 +308,7 @@ export class SQLitePresenter implements ISQLitePresenter {
       metadata?: string
       isContextEdge?: number
       tokenCount?: number
-    }
+    },
   ): Promise<void> {
     return this.messagesTable.update(messageId, data)
   }
@@ -307,7 +324,9 @@ export class SQLitePresenter implements ISQLitePresenter {
   }
 
   // 获取消息变体
-  public async getMessageVariants(messageId: string): Promise<SQLITE_MESSAGE[]> {
+  public async getMessageVariants(
+    messageId: string,
+  ): Promise<SQLITE_MESSAGE[]> {
     return this.messagesTable.getVariants(messageId)
   }
 
@@ -326,13 +345,15 @@ export class SQLitePresenter implements ISQLitePresenter {
     await this.db.transaction(operations)()
   }
 
-  public async getLastUserMessage(conversationId: string): Promise<SQLITE_MESSAGE | null> {
+  public async getLastUserMessage(
+    conversationId: string,
+  ): Promise<SQLITE_MESSAGE | null> {
     return this.messagesTable.getLastUserMessage(conversationId)
   }
 
   public async getMainMessageByParentId(
     conversationId: string,
-    parentId: string
+    parentId: string,
   ): Promise<SQLITE_MESSAGE | null> {
     return this.messagesTable.getMainMessageByParentId(conversationId, parentId)
   }
@@ -341,15 +362,19 @@ export class SQLitePresenter implements ISQLitePresenter {
   public async addMessageAttachment(
     messageId: string,
     attachmentType: string,
-    attachmentData: string
+    attachmentData: string,
   ): Promise<void> {
-    return this.messageAttachmentsTable.add(messageId, attachmentType, attachmentData)
+    return this.messageAttachmentsTable.add(
+      messageId,
+      attachmentType,
+      attachmentData,
+    )
   }
 
   // 获取消息附件
   public async getMessageAttachments(
     messageId: string,
-    type: string
+    type: string,
   ): Promise<{ content: string }[]> {
     return this.messageAttachmentsTable.get(messageId, type)
   }

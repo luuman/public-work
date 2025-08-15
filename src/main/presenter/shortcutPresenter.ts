@@ -1,288 +1,358 @@
-import { app, globalShortcut } from 'electron';
-
-import { presenter } from '.';
-import { SHORTCUT_EVENTS, TRAY_EVENTS } from '@/events/events';
-import { eventBus, SendTarget } from '@/events/eventbus';
+import { app, globalShortcut, dialog } from 'electron'
+import { presenter } from '.'
+import { SHORTCUT_EVENTS, TRAY_EVENTS } from '@/events/events'
+import { eventBus, SendTarget } from '@/events/eventbus'
 import {
-  CommandKey,
   defaultShortcutKey,
+  ShortcutDefinition,
   ShortcutKeySetting,
-} from './configPresenter/shortcutKeySettings';
-import { ConfigPresenter } from './configPresenter';
+} from './configPresenter/shortcutKeySettings'
+import { ConfigPresenter } from './configPresenter'
 
+console.log('🥢Registering shortcuts defaultShortcutKey', defaultShortcutKey)
+
+type ShortcutHandler = () => void
+
+/**
+ * 全局快捷键管理类
+ * 功能：注册/注销系统级快捷键，并处理快捷键触发的事件
+ * 注意：所有快捷键仅在应用获得焦点时生效（部分功能需额外检查窗口状态）
+ */
 export class ShortcutPresenter {
-  private isActive: boolean = false;
-  private configPresenter: ConfigPresenter;
+  private isActive: boolean = false
+  // 标记快捷键是否已注册
+  private configPresenter: ConfigPresenter
+  // 配置管理实例（用于获取用户自定义快捷键）
   private shortcutKeys: ShortcutKeySetting = {
-    ...defaultShortcutKey,
-  };
+    ...(defaultShortcutKey as ShortcutKeySetting),
+    // 默认快捷键配置（用户未自定义时使用）
+  }
+  // private isActive = false
+  // private readonly configPresenter: ConfigPresenter
+  // private shortcutKeys: ShortcutKeySetting
+  private registeredHandlers = new Map<string, ShortcutHandler>()
 
   /**
-   * 创建一个新的 ShortcutPresenter 实例
-   * @param shortKey 可选的自定义快捷键设置
+   * 构造函数
+   * @param configPresenter 配置管理实例，用于获取用户自定义的快捷键设置
    */
   constructor(configPresenter: ConfigPresenter) {
-    this.configPresenter = configPresenter;
+    this.configPresenter = configPresenter
   }
 
-  registerShortcuts(): void {
-    if (this.isActive) return;
-    console.log('reg shortcuts');
+  /**
+   * 注册所有全局快捷键
+   * 逻辑：合并默认配置和用户自定义配置，按功能分类注册
+   */
+  async registerShortcuts(): Promise<void> {
+    if (this.isActive) return
+    // 避免重复注册
+    console.log('Registering shortcuts', this.shortcutKeys.NewConversation)
 
-    this.shortcutKeys = {
+    // 合并默认配置和用户自定义配置（后者优先级更高）
+    const mergedKeys = {
       ...defaultShortcutKey,
       ...this.configPresenter.getShortcutKey(),
-    };
+    }
+    // Ensure all values are ShortcutDefinition with value as string
+    this.shortcutKeys = Object.fromEntries(
+      Object.entries(mergedKeys).map(([k, v]) => [
+        k,
+        {
+          ...v,
+          value: String((v as any).value),
+        },
+      ]),
+    ) as ShortcutKeySetting
+    console.log('Registering shortcuts', this.shortcutKeys)
 
-    // Command+N 或 Ctrl+N 创建新会话
-    if (this.shortcutKeys.NewConversation) {
-      globalShortcut.register(this.shortcutKeys.NewConversation, async () => {
-        const focusedWindow = presenter.windowPresenter.getFocusedWindow();
-        if (focusedWindow?.isFocused()) {
-          presenter.windowPresenter.sendToActiveTab(
-            focusedWindow.id,
-            SHORTCUT_EVENTS.CREATE_NEW_CONVERSATION,
-          );
-        }
-      });
+    const failedShortcuts: ShortcutDefinition[] = []
+
+    for (const key in this.shortcutKeys) {
+      const shortcut = this.shortcutKeys[key as keyof ShortcutKeySetting]
+      if (!shortcut) continue
+      console.log('🥢Registering shortcuts shortcut', shortcut)
+
+      const handler = await this.getHandlerForKey(
+        key as keyof ShortcutKeySetting,
+      )
+      if (!handler) continue
+
+      const success = await this.registerShortcut(shortcut.value, handler)
+      if (!success) {
+        failedShortcuts.push(shortcut)
+      }
     }
 
-    // Command+Shift+N 或 Ctrl+Shift+N 创建新窗口
-    if (this.shortcutKeys.NewWindow) {
-      globalShortcut.register(this.shortcutKeys.NewWindow, () => {
-        const focusedWindow = presenter.windowPresenter.getFocusedWindow();
-        if (focusedWindow?.isFocused()) {
-          eventBus.sendToMain(SHORTCUT_EVENTS.CREATE_NEW_WINDOW);
-        }
-      });
+    if (failedShortcuts.length > 0) {
+      await this.showRegistrationWarning(failedShortcuts)
     }
+    console.log('Registering failedShortcuts', failedShortcuts)
 
-    // Command+T 或 Ctrl+T 在当前窗口创建新标签页
-    if (this.shortcutKeys.NewTab) {
-      globalShortcut.register(this.shortcutKeys.NewTab, () => {
-        const focusedWindow = presenter.windowPresenter.getFocusedWindow();
-        if (focusedWindow?.isFocused()) {
-          eventBus.sendToMain(SHORTCUT_EVENTS.CREATE_NEW_TAB, focusedWindow.id);
-        }
-      });
-    }
-
-    // Command+W 或 Ctrl+W 关闭当前标签页
-    if (this.shortcutKeys.CloseTab) {
-      globalShortcut.register(this.shortcutKeys.CloseTab, () => {
-        const focusedWindow = presenter.windowPresenter.getFocusedWindow();
-        if (focusedWindow?.isFocused()) {
-          eventBus.sendToMain(
-            SHORTCUT_EVENTS.CLOSE_CURRENT_TAB,
-            focusedWindow.id,
-          );
-        }
-      });
-    }
-
-    // Command+Q 或 Ctrl+Q 退出程序
-    if (this.shortcutKeys.Quit) {
-      globalShortcut.register(this.shortcutKeys.Quit, () => {
-        app.quit();
-      });
-    }
-
-    // Command+= 或 Ctrl+= 放大字体
-    if (this.shortcutKeys.ZoomIn) {
-      globalShortcut.register(this.shortcutKeys.ZoomIn, () => {
-        eventBus.send(SHORTCUT_EVENTS.ZOOM_IN, SendTarget.ALL_WINDOWS);
-      });
-    }
-
-    // Command+- 或 Ctrl+- 缩小字体
-    if (this.shortcutKeys.ZoomOut) {
-      globalShortcut.register(this.shortcutKeys.ZoomOut, () => {
-        eventBus.send(SHORTCUT_EVENTS.ZOOM_OUT, SendTarget.ALL_WINDOWS);
-      });
-    }
-
-    // Command+0 或 Ctrl+0 重置字体大小
-    if (this.shortcutKeys.ZoomResume) {
-      globalShortcut.register(this.shortcutKeys.ZoomResume, () => {
-        eventBus.send(SHORTCUT_EVENTS.ZOOM_RESUME, SendTarget.ALL_WINDOWS);
-      });
-    }
-
-    // Command+, 或 Ctrl+, 打开设置
-    if (this.shortcutKeys.GoSettings) {
-      globalShortcut.register(this.shortcutKeys.GoSettings, () => {
-        const focusedWindow = presenter.windowPresenter.getFocusedWindow();
-        if (focusedWindow?.isFocused()) {
-          presenter.windowPresenter.sendToActiveTab(
-            focusedWindow.id,
-            SHORTCUT_EVENTS.GO_SETTINGS,
-          );
-        }
-      });
-    }
-
-    // Command+L 或 Ctrl+L 清除聊天历史
-    if (this.shortcutKeys.CleanChatHistory) {
-      globalShortcut.register(this.shortcutKeys.CleanChatHistory, () => {
-        const focusedWindow = presenter.windowPresenter.getFocusedWindow();
-        if (focusedWindow?.isFocused()) {
-          presenter.windowPresenter.sendToActiveTab(
-            focusedWindow.id,
-            SHORTCUT_EVENTS.CLEAN_CHAT_HISTORY,
-          );
-        }
-      });
-    }
-
-    // Command+D 或 Ctrl+D 清除聊天历史
-    if (this.shortcutKeys.DeleteConversation) {
-      globalShortcut.register(this.shortcutKeys.DeleteConversation, () => {
-        const focusedWindow = presenter.windowPresenter.getFocusedWindow();
-        if (focusedWindow?.isFocused()) {
-          presenter.windowPresenter.sendToActiveTab(
-            focusedWindow.id,
-            SHORTCUT_EVENTS.DELETE_CONVERSATION,
-          );
-        }
-      });
-    }
-
-    // 添加标签页切换相关快捷键
-
-    // Command+Tab 或 Ctrl+Tab 切换到下一个标签页
-    if (this.shortcutKeys.SwitchNextTab) {
-      globalShortcut.register(this.shortcutKeys.SwitchNextTab, () => {
-        const focusedWindow = presenter.windowPresenter.getFocusedWindow();
-        if (focusedWindow?.isFocused()) {
-          this.switchToNextTab(focusedWindow.id);
-        }
-      });
-    }
-
-    // Ctrl+Shift+Tab 切换到上一个标签页
-    if (this.shortcutKeys.SwitchPrevTab) {
-      globalShortcut.register(this.shortcutKeys.SwitchPrevTab, () => {
-        const focusedWindow = presenter.windowPresenter.getFocusedWindow();
-        if (focusedWindow?.isFocused()) {
-          this.switchToPreviousTab(focusedWindow.id);
-        }
-      });
-    }
-
-    // 注册标签页数字快捷键 (1-8)
-    for (let i = 1; i <= 8; i++) {
-      globalShortcut.register(`${CommandKey}+${i}`, () => {
-        const focusedWindow = presenter.windowPresenter.getFocusedWindow();
-        if (focusedWindow?.isFocused()) {
-          this.switchToTabByIndex(focusedWindow.id, i - 1); // 索引从0开始
-        }
-      });
-    }
-
-    // Command+9 或 Ctrl+9 切换到最后一个标签页
-    if (this.shortcutKeys.SwtichToLastTab) {
-      globalShortcut.register(this.shortcutKeys.SwtichToLastTab, () => {
-        const focusedWindow = presenter.windowPresenter.getFocusedWindow();
-        if (focusedWindow?.isFocused()) {
-          this.switchToLastTab(focusedWindow.id);
-        }
-      });
-    }
-
-    this.showHideWindow();
-
-    this.isActive = true;
+    this.isActive = true
+    // 标记为已激活状态
   }
 
-  // 切换到下一个标签页
+  /**
+   * 根据快捷键配置键返回对应的处理函数
+   * @param key shortcutKeys 的键名
+   * @returns 对应的快捷键处理函数，若无效返回 null
+   */
+  private getHandlerForKey(key: keyof ShortcutKeySetting): (() => void) | null {
+    // 获取当前聚焦窗口（所有需要窗口的快捷键共用此检查）
+    const getFocusedWindowId = (): number | null => {
+      const focusedWindow = presenter.windowPresenter.getFocusedWindow()
+      return focusedWindow?.isFocused() ? focusedWindow.id : null
+    }
+    console.log('Registering getHandlerForKey', key)
+
+    // 根据不同的快捷键类型返回对应的处理函数
+    switch (key) {
+      // === 会话管理 ===
+      case 'NewConversation':
+        return () => {
+          const windowId = getFocusedWindowId()
+          if (windowId) {
+            presenter.windowPresenter.sendToActiveTab(
+              windowId,
+              SHORTCUT_EVENTS.CREATE_NEW_CONVERSATION,
+            )
+          }
+        }
+
+      case 'NewWindow':
+        return () => eventBus.sendToMain(SHORTCUT_EVENTS.CREATE_NEW_WINDOW)
+
+      // === 标签页管理 ===
+      case 'NewTab':
+        return () => {
+          const windowId = getFocusedWindowId()
+          if (windowId) {
+            eventBus.sendToMain(SHORTCUT_EVENTS.CREATE_NEW_TAB, windowId)
+          }
+        }
+
+      case 'CloseTab':
+        return () => {
+          const windowId = getFocusedWindowId()
+          if (windowId) {
+            eventBus.sendToMain(SHORTCUT_EVENTS.CLOSE_CURRENT_TAB, windowId)
+          }
+        }
+
+      // === 应用控制 ===
+      case 'Quit':
+        return () => app.quit()
+
+      // === 视图控制 ===
+      case 'ZoomIn':
+        return () =>
+          eventBus.send(SHORTCUT_EVENTS.ZOOM_IN, SendTarget.ALL_WINDOWS)
+
+      case 'ZoomOut':
+        return () =>
+          eventBus.send(SHORTCUT_EVENTS.ZOOM_OUT, SendTarget.ALL_WINDOWS)
+
+      // case 'ZoomReset':
+      //     return () => eventBus.send(SHORTCUT_EVENTS.ZOOM_RESET, SendTarget.ALL_WINDOWS);
+
+      // === 导航功能 ===
+      case 'GoSettings':
+        return () => {
+          const windowId = getFocusedWindowId()
+          if (windowId) {
+            presenter.windowPresenter.sendToActiveTab(
+              windowId,
+              SHORTCUT_EVENTS.GO_SETTINGS,
+            )
+          }
+        }
+
+      // === 数据管理 ===
+      case 'CleanChatHistory':
+        return () => {
+          const windowId = getFocusedWindowId()
+          if (windowId) {
+            presenter.windowPresenter.sendToActiveTab(
+              windowId,
+              SHORTCUT_EVENTS.CLEAN_CHAT_HISTORY,
+            )
+          }
+        }
+
+      case 'DeleteConversation':
+        return () => {
+          const windowId = getFocusedWindowId()
+          if (windowId) {
+            presenter.windowPresenter.sendToActiveTab(
+              windowId,
+              SHORTCUT_EVENTS.DELETE_CONVERSATION,
+            )
+          }
+        }
+      case 'SwitchNextTab':
+        return () => {
+          const windowId = getFocusedWindowId()
+          if (windowId) this.switchToNextTab(windowId)
+        }
+
+      case 'SwitchPrevTab':
+        return () => {
+          const windowId = getFocusedWindowId()
+          if (windowId) this.switchToPreviousTab(windowId)
+        }
+
+      // case 'SwitchToLastTab':
+      //     return () => {
+      //         const windowId = getFocusedWindowId();
+      //         if (windowId) this.switchToLastTab(windowId);
+      //     };
+      // 注册窗口显示/隐藏快捷键
+      case 'ShowHideWindow':
+        console.log('Registering ShowHideWindow', key)
+        return () => eventBus.sendToMain(TRAY_EVENTS.SHOW_HIDDEN_WINDOW)
+      // === 数字快捷键（动态生成）===
+      default:
+        // if (key.startsWith('SwitchToTab')) {
+        //     const tabIndex = parseInt(key.replace('SwitchToTab', ''), 10);
+        //     if (!isNaN(tabIndex) {
+        //         return () => {
+        //             const windowId = getFocusedWindowId();
+        //             if (windowId) this.switchToTabByIndex(windowId, tabIndex - 1);
+        //         };
+        //     }
+        // }
+        return null
+    }
+  }
+
+  /**
+   * 切换到下一个标签页（循环模式）
+   * @param windowId 目标窗口ID
+   */
   private async switchToNextTab(windowId: number): Promise<void> {
     try {
-      const tabsData = await presenter.tabPresenter.getWindowTabsData(windowId);
-      if (!tabsData || tabsData.length <= 1) return; // 只有一个或没有标签页时不执行切换
+      const tabsData = await presenter.tabPresenter.getWindowTabsData(windowId)
+      if (!tabsData || tabsData.length <= 1) return
+      // 无标签页或只有一个时不操作
 
-      // 找到当前活动标签的索引
-      const activeTabIndex = tabsData.findIndex((tab) => tab.isActive);
-      if (activeTabIndex === -1) return;
+      const activeTabIndex = tabsData.findIndex((tab) => tab.isActive)
+      if (activeTabIndex === -1) return
 
-      // 计算下一个标签页的索引（循环到第一个）
-      const nextTabIndex = (activeTabIndex + 1) % tabsData.length;
-
-      // 切换到下一个标签页
-      await presenter.tabPresenter.switchTab(tabsData[nextTabIndex].id);
+      const nextTabIndex = (activeTabIndex + 1) % tabsData.length
+      // 循环计算
+      await presenter.tabPresenter.switchTab(tabsData[nextTabIndex].id)
     } catch (error) {
-      console.error('切换到下一个标签页失败:', error);
+      console.error('❌Failed to switch to next tab:', error)
     }
   }
 
-  // 切换到上一个标签页
+  /**
+   * 切换到上一个标签页（循环模式）
+   * @param windowId 目标窗口ID
+   */
   private async switchToPreviousTab(windowId: number): Promise<void> {
     try {
-      const tabsData = await presenter.tabPresenter.getWindowTabsData(windowId);
-      if (!tabsData || tabsData.length <= 1) return; // 只有一个或没有标签页时不执行切换
+      const tabsData = await presenter.tabPresenter.getWindowTabsData(windowId)
+      if (!tabsData || tabsData.length <= 1) return
 
-      // 找到当前活动标签的索引
-      const activeTabIndex = tabsData.findIndex((tab) => tab.isActive);
-      if (activeTabIndex === -1) return;
+      const activeTabIndex = tabsData.findIndex((tab) => tab.isActive)
+      if (activeTabIndex === -1) return
 
-      // 计算上一个标签页的索引（循环到最后一个）
       const previousTabIndex =
-        (activeTabIndex - 1 + tabsData.length) % tabsData.length;
-
-      // 切换到上一个标签页
-      await presenter.tabPresenter.switchTab(tabsData[previousTabIndex].id);
+        (activeTabIndex - 1 + tabsData.length) % tabsData.length
+      // 处理负数情况
+      await presenter.tabPresenter.switchTab(tabsData[previousTabIndex].id)
     } catch (error) {
-      console.error('切换到上一个标签页失败:', error);
+      console.error('❌Failed to switch to previous tab:', error)
     }
   }
 
-  // 切换到指定索引的标签页
-  private async switchToTabByIndex(
-    windowId: number,
-    index: number,
-  ): Promise<void> {
-    try {
-      const tabsData = await presenter.tabPresenter.getWindowTabsData(windowId);
-      if (!tabsData || index >= tabsData.length) return; // 索引超出范围
-
-      // 切换到指定索引的标签页
-      await presenter.tabPresenter.switchTab(tabsData[index].id);
-    } catch (error) {
-      console.error(`切换到索引 ${index} 的标签页失败:`, error);
-    }
-  }
-
-  // 切换到最后一个标签页
+  /**
+   * 切换到最后一个标签页
+   * @param windowId 目标窗口ID
+   */
   private async switchToLastTab(windowId: number): Promise<void> {
     try {
-      const tabsData = await presenter.tabPresenter.getWindowTabsData(windowId);
-      if (!tabsData || tabsData.length === 0) return;
+      const tabsData = await presenter.tabPresenter.getWindowTabsData(windowId)
+      if (!tabsData || tabsData.length === 0) return
 
-      // 切换到最后一个标签页
-      await presenter.tabPresenter.switchTab(tabsData[tabsData.length - 1].id);
+      await presenter.tabPresenter.switchTab(tabsData[tabsData.length - 1].id)
     } catch (error) {
-      console.error('切换到最后一个标签页失败:', error);
+      console.error('❌Failed to switch to last tab:', error)
     }
   }
 
-  // Command+O 或 Ctrl+O 显示/隐藏窗口
-  private async showHideWindow() {
-    // Command+O 或 Ctrl+O 显示/隐藏窗口
-    if (this.shortcutKeys.ShowHideWindow) {
-      globalShortcut.register(this.shortcutKeys.ShowHideWindow, () => {
-        eventBus.sendToMain(TRAY_EVENTS.SHOW_HIDDEN_WINDOW);
-      });
+  /**
+   * 安全注册快捷键
+   */
+  private async registerShortcut(
+    shortcut: string,
+    handler: ShortcutHandler,
+  ): Promise<boolean> {
+    if (!shortcut) return false
+
+    try {
+      // 检查是否已注册
+      if (globalShortcut.isRegistered(shortcut)) {
+        console.warn(`Shortcut conflict: ${shortcut} is already registered`)
+        return false
+      }
+
+      // 注册快捷键
+      const success = globalShortcut.register(shortcut, handler)
+      if (success) {
+        this.registeredHandlers.set(shortcut, handler)
+        return true
+      }
+      return false
+    } catch (error) {
+      console.error(`Failed to register shortcut ${shortcut}:`, error)
+      return false
     }
   }
 
+  /**
+   * 注销所有快捷键（保留窗口显隐快捷键）
+   */
   unregisterShortcuts(): void {
-    console.log('unreg shortcuts');
-    globalShortcut.unregisterAll();
+    //  try {
+    //   // 注销所有已注册的快捷键
+    //   this.registeredHandlers.forEach((_, shortcut) => {
+    //     globalShortcut.unregister(shortcut)
+    //   })
+    //   this.registeredHandlers.clear()
 
-    this.showHideWindow();
-    this.isActive = false;
+    //   this.isActive = false
+    //   console.log('Shortcuts unregistered successfully')
+    // } catch (error) {
+    //   console.error('❌Failed to unregister shortcuts:', error)
+    // }
+
+    console.log('Unregistering shortcuts')
+    globalShortcut.unregisterAll()
+    // this.showHideWindow()
+    this.isActive = false
   }
 
+  /**
+   * 销毁实例时的清理操作
+   */
   destroy(): void {
-    this.unregisterShortcuts();
+    this.unregisterShortcuts()
+  }
+
+  private async showRegistrationWarning(
+    failedShortcuts: ShortcutDefinition[],
+  ): Promise<void> {
+    await dialog.showMessageBox({
+      type: 'warning',
+      title: '快捷键注册警告',
+      message: '部分快捷键注册失败',
+      detail: `以下快捷键可能被占用:\n${failedShortcuts
+        .map((item, idx) => `${idx + 1}. ${item.value} (${item.scope ?? ''})`)
+        .join('\n')}`,
+      buttons: ['确定'],
+    })
   }
 }

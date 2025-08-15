@@ -5,243 +5,624 @@ import { ShowResponse } from 'ollama'
 import { ShortcutKeySetting } from '@/presenter/configPresenter/shortcutKeySettings'
 import { ModelType } from '@shared/model'
 
+/**
+ * SQLite数据库中存储的消息类型
+ */
 export type SQLITE_MESSAGE = {
+  // 消息唯一ID
   id: string
+  // 所属会话ID
   conversation_id: string
+  // 父消息ID（可选）
   parent_id?: string
+  // 消息角色（用户/助手/系统/函数）
   role: MESSAGE_ROLE
+  // 消息内容
   content: string
+  // 创建时间戳
   created_at: number
+  // 消息顺序号
   order_seq: number
+  // token数量
   token_count: number
+  // 消息状态
   status: MESSAGE_STATUS
-  metadata: string // JSON string of MESSAGE_METADATA
-  is_context_edge: number // 0 or 1
+  // 元数据（JSON字符串）
+  metadata: string
+  // 是否是上下文边界（0或1）
+  is_context_edge: number
+  // 是否是变体消息
   is_variant: number
+  // 变体消息数组（可选）
   variants?: SQLITE_MESSAGE[]
 }
 
+/**
+ * 目录元数据接口
+ */
 export interface DirectoryMetaData {
+  // 目录名称
   dirName: string
+  // 目录路径
   dirPath: string
+  // 创建时间
   dirCreated: Date
+  // 修改时间
   dirModified: Date
 }
 
+/**
+ * MCP客户端接口
+ */
 export interface McpClient {
+  // 客户端名称
   name: string
+  // 客户端图标
   icon: string
+  // 是否正在运行
   isRunning: boolean
+  // 工具定义数组
   tools: MCPToolDefinition[]
+  // 提示词列表（可选）
   prompts?: PromptListEntry[]
+  // 资源列表（可选）
   resources?: ResourceListEntry[]
 }
 
+/**
+ * 资源接口
+ */
 export interface Resource {
+  // 资源URI
   uri: string
+  // MIME类型（可选）
   mimeType?: string
+  // 文本内容（可选）
   text?: string
+  // 二进制内容（可选）
   blob?: string
 }
+
+/**
+ * 文件项接口
+ */
 export interface FileItem {
+  // 文件ID
   id: string
+  // 文件名
   name: string
+  // 文件类型
   type: string
+  // 文件大小
   size: number
+  // 文件路径
   path: string
+  // 文件描述（可选）
   description?: string
+  // 文件内容（可选）
   content?: string
+  // 创建时间戳
   createdAt: number
 }
 
+/**
+ * 提示词接口
+ */
 export interface Prompt {
+  // 提示词ID
   id: string
+  // 名称
   name: string
+  // 描述
   description: string
+  // 内容（可选）
   content?: string
+  // 参数数组（可选）
   parameters?: Array<{
+    // 参数名
     name: string
+    // 参数描述
     description: string
+    // 是否必需
     required: boolean
   }>
-  files?: FileItem[] // 关联的文件
-  messages?: Array<{ role: string; content: { text: string } }> // 根据 getPrompt 示例添加
-  enabled?: boolean // 是否启用
-  source?: 'local' | 'imported' | 'builtin' // 来源类型
-  createdAt?: number // 创建时间
-  updatedAt?: number // 更新时间
+  // 关联文件（可选）
+  files?: FileItem[]
+  // 消息数组（可选）
+  messages?: Array<{ role: string; content: { text: string } }>
+  // 是否启用（可选）
+  enabled?: boolean
+  // 来源类型（可选）
+  source?: 'local' | 'imported' | 'builtin'
+  // 创建时间（可选）
+  createdAt?: number
+  // 更新时间（可选）
+  updatedAt?: number
 }
+
+/**
+ * 提示词列表项接口
+ */
 export interface PromptListEntry {
+  // 名称
   name: string
+  // 描述（可选）
   description?: string
+  // 参数数组（可选）
   arguments?: {
+    // 参数名
     name: string
+    // 参数描述（可选）
     description?: string
+    // 是否必需
     required: boolean
   }[]
-  files?: FileItem[] // 关联的文件
+  // 关联文件（可选）
+  files?: FileItem[]
+  // 所属客户端
   client: {
+    // 客户端名称
     name: string
+    // 客户端图标
     icon: string
   }
 }
-// 定义工具调用结果的接口
+
+/**
+ * 工具调用结果接口
+ */
 export interface ToolCallResult {
+  // 是否错误（可选）
   isError?: boolean
+  // 内容数组
   content: Array<{
+    // 类型
     type: string
+    // 文本
     text: string
   }>
 }
 
-// 定义工具列表的接口
+/**
+ * 工具接口
+ */
 export interface Tool {
+  // 工具名称
   name: string
+  // 工具描述
   description: string
+  // 输入模式
   inputSchema: Record<string, unknown>
+  // 注解（可选）
   annotations?: {
-    title?: string // A human-readable title for the tool.
-    readOnlyHint?: boolean // default false
-    destructiveHint?: boolean // default true
-    idempotentHint?: boolean // default false
-    openWorldHint?: boolean // default true
+    // 人类可读的标题
+    title?: string
+    // 是否只读（默认false）
+    readOnlyHint?: boolean
+    // 是否具有破坏性（默认true）
+    destructiveHint?: boolean
+    // 是否幂等（默认false）
+    idempotentHint?: boolean
+    // 是否开放世界（默认true）
+    openWorldHint?: boolean
   }
 }
 
+/**
+ * 资源列表项接口
+ */
 export interface ResourceListEntry {
+  // 资源URI
   uri: string
+  // 资源名称（可选）
   name?: string
+  // 所属客户端
   client: {
+    // 客户端名称
     name: string
+    // 客户端图标
     icon: string
   }
 }
 
+/**
+ * 模型配置接口
+ */
 export interface ModelConfig {
+  // 最大token数
   maxTokens: number
+  // 上下文长度
   contextLength: number
+  // 温度参数
   temperature: number
+  // 是否支持视觉
   vision: boolean
+  // 是否支持函数调用
   functionCall: boolean
+  // 是否支持推理
   reasoning: boolean
+  // 模型类型
   type: ModelType
-  // Whether this config is user-defined (true) or default config (false)
+  // 是否用户定义（可选）
   isUserDefined?: boolean
+  // 思考预算（可选）
   thinkingBudget?: number
 }
 
+/**
+ * 模型配置接口（带ID和提供者ID）
+ */
 export interface IModelConfig {
+  // 配置ID
   id: string
+  // 提供者ID
   providerId: string
+  // 模型配置
   config: ModelConfig
 }
+
+/**
+ * 提供者模型配置映射
+ */
 export interface ProviderModelConfigs {
+  // 模型ID到配置的映射
   [modelId: string]: ModelConfig
 }
 
+/**
+ * 标签页数据接口
+ */
 export interface TabData {
+  // 标签页ID
   id: number
+  // 标题
   title: string
+  // 是否激活
   isActive: boolean
+  // 位置
   position: number
+  // 是否可关闭
   closable: boolean
+  // URL地址
   url: string
+  // 图标（可选）
   icon?: string
 }
 
+/**
+ * 窗口呈现器接口
+ */
 export interface IWindowPresenter {
+  // 创建Shell窗口
+
   createShellWindow(options?: {
+    // 激活的标签页ID（可选）
     activateTabId?: number
-    initialTab?: {
-      url: string
-      type?: string
-      icon?: string
-    }
+    // 初始标签页（可选）
+    initialTab?: { url: string; type?: string; icon?: string }
+    // 是否为移动的标签页（可选）
     forMovedTab?: boolean
+    // X坐标（可选）
     x?: number
+    // Y坐标（可选）
     y?: number
   }): Promise<number | null>
+
+  // 主窗口实例
   mainWindow: BrowserWindow | undefined
+  // 预览文件
   previewFile(filePath: string): void
+  // 最小化窗口
   minimize(windowId: number): void
+  // 最大化窗口
   maximize(windowId: number): void
+  // 关闭窗口
   close(windowId: number): void
+  // 隐藏窗口
   hide(windowId: number): void
+  // 显示窗口
   show(windowId?: number): void
+  // 检查是否最大化
   isMaximized(windowId: number): boolean
+  // 检查主窗口是否聚焦
   isMainWindowFocused(windowId: number): boolean
+  // 发送消息到所有窗口
   sendToAllWindows(channel: string, ...args: unknown[]): void
+  // 发送消息到指定窗口
   sendToWindow(windowId: number, channel: string, ...args: unknown[]): boolean
-  sendToDefaultTab(channel: string, switchToTarget?: boolean, ...args: unknown[]): Promise<boolean>
+  sendToDefaultTab(
+    channel: string,
+    switchToTarget?: boolean,
+    ...args: unknown[]
+    // 发送消息到默认标签页
+  ): Promise<boolean>
+  // 关闭窗口
   closeWindow(windowId: number, forceClose?: boolean): Promise<void>
 }
 
+/**
+ * 标签页呈现器接口 - 管理标签页的创建、切换、移动等操作
+ */
 export interface ITabPresenter {
-  createTab(windowId: number, url: string, options?: TabCreateOptions): Promise<number | null>
+  /**
+   * 创建新标签页
+   * @param windowId 窗口ID
+   * @param url 要加载的URL
+   * @param options 创建选项
+   * @returns 返回新标签页ID或null
+   */
+  createTab(
+    windowId: number,
+    url: string,
+    options?: TabCreateOptions,
+  ): Promise<number | null>
+
+  /**
+   * 关闭标签页
+   * @param tabId 要关闭的标签页ID
+   */
   closeTab(tabId: number): Promise<boolean>
+
+  /**
+   * 切换到指定标签页
+   * @param tabId 要切换到的标签页ID
+   */
   switchTab(tabId: number): Promise<boolean>
+
+  /**
+   * 获取标签页视图实例
+   * @param tabId 标签页ID
+   * @returns 返回BrowserView实例或undefined
+   */
   getTab(tabId: number): Promise<BrowserView | undefined>
+
+  /**
+   * 从当前窗口分离标签页
+   * @param tabId 要分离的标签页ID
+   */
   detachTab(tabId: number): Promise<boolean>
-  attachTab(tabId: number, targetWindowId: number, index?: number): Promise<boolean>
-  moveTab(tabId: number, targetWindowId: number, index?: number): Promise<boolean>
+
+  /**
+   * 附加标签页到目标窗口
+   * @param tabId 要附加的标签页ID
+   * @param targetWindowId 目标窗口ID
+   * @param index 插入位置索引(可选)
+   */
+  attachTab(
+    tabId: number,
+    targetWindowId: number,
+    index?: number,
+  ): Promise<boolean>
+
+  /**
+   * 移动标签页到目标窗口
+   * @param tabId 要移动的标签页ID
+   * @param targetWindowId 目标窗口ID
+   * @param index 目标位置索引(可选)
+   */
+  moveTab(
+    tabId: number,
+    targetWindowId: number,
+    index?: number,
+  ): Promise<boolean>
+
+  /**
+   * 获取窗口所有标签页数据
+   * @param windowId 窗口ID
+   */
   getWindowTabsData(windowId: number): Promise<Array<TabData>>
+
+  /**
+   * 获取窗口当前活动标签页ID
+   * @param windowId 窗口ID
+   */
   getActiveTabId(windowId: number): Promise<number | undefined>
+
+  /**
+   * 通过WebContentsID获取标签页ID
+   * @param webContentsId Electron的WebContents ID
+   */
   getTabIdByWebContentsId(webContentsId: number): number | undefined
+
+  /**
+   * 通过WebContentsID获取窗口ID
+   * @param webContentsId Electron的WebContents ID
+   */
   getWindowIdByWebContentsId(webContentsId: number): number | undefined
+
+  /**
+   * 重新排序标签页
+   * @param windowId 窗口ID
+   * @param tabIds 按新顺序排列的标签页ID数组
+   */
   reorderTabs(windowId: number, tabIds: number[]): Promise<boolean>
-  moveTabToNewWindow(tabId: number, screenX?: number, screenY?: number): Promise<boolean>
+
+  /**
+   * 移动标签页到新窗口
+   * @param tabId 要移动的标签页ID
+   * @param screenX 新窗口X坐标(可选)
+   * @param screenY 新窗口Y坐标(可选)
+   */
+  moveTabToNewWindow(
+    tabId: number,
+    screenX?: number,
+    screenY?: number,
+  ): Promise<boolean>
+
+  /**
+   * 捕获标签页区域为图片
+   * @param tabId 标签页ID
+   * @param rect 要捕获的区域坐标和尺寸
+   * @returns 返回base64编码的图片数据或null
+   */
   captureTabArea(
     tabId: number,
-    rect: { x: number; y: number; width: number; height: number }
+    rect: { x: number; y: number; width: number; height: number },
   ): Promise<string | null>
+
+  /**
+   * 拼接多张图片并添加水印
+   * @param imageDataList 图片数据数组
+   * @param options 水印选项
+   * @returns 返回拼接后的base64图片数据或null
+   */
   stitchImagesWithWatermark(
     imageDataList: string[],
     options?: {
+      // 是否使用深色主题
       isDark?: boolean
+      // 版本号
       version?: string
+      // 水印文本
       texts?: {
+        // 品牌文本
         brand?: string
+        // 时间文本
         time?: string
+        // 提示文本
         tip?: string
       }
-    }
+    },
   ): Promise<string | null>
-  // 新增渲染进程Tab事件处理方法
+
+  // 以下是渲染进程相关方法
+
+  /**
+   * 当渲染进程标签页准备就绪时调用
+   * @param tabId 标签页ID
+   */
   onRendererTabReady(tabId: number): Promise<void>
+
+  /**
+   * 当渲染进程标签页激活时调用
+   * @param threadId 线程ID
+   */
   onRendererTabActivated(threadId: string): Promise<void>
+
+  /**
+   * 检查是否是窗口中最后一个标签页
+   * @param tabId 标签页ID
+   */
   isLastTabInWindow(tabId: number): Promise<boolean>
+
+  /**
+   * 重置标签页为空白页
+   * @param tabId 标签页ID
+   */
   resetTabToBlank(tabId: number): Promise<void>
 }
 
+/**
+ * 标签页创建选项
+ */
 export interface TabCreateOptions {
+  // 是否立即激活
   active?: boolean
+  // 插入位置
   position?: number
 }
 
+/**
+ * LlamaCpp模型呈现器接口
+ */
 export interface ILlamaCppPresenter {
+  // 初始化
   init(): void
+  // 发送提示词
   prompt(text: string): Promise<string>
+  // 开始新对话
   startNewChat(): void
+  // 销毁实例
   destroy(): Promise<void>
 }
 
+/**
+ * 快捷键呈现器接口
+ */
 export interface IShortcutPresenter {
+  // 注册快捷键
   registerShortcuts(): void
+  // 销毁快捷键
   destroy(): void
 }
 
+/**
+ * SQLite数据库呈现器接口
+ */
 export interface ISQLitePresenter {
+  // 关闭数据库连接
   close(): void
-  createConversation(title: string, settings?: Partial<CONVERSATION_SETTINGS>): Promise<string>
+
+  /**
+   * 创建新会话
+   * @param title 会话标题
+   * @param settings 会话设置(可选)
+   */
+  createConversation(
+    title: string,
+    settings?: Partial<CONVERSATION_SETTINGS>,
+  ): Promise<string>
+
+  /**
+   * 删除会话
+   * @param conversationId 会话ID
+   */
   deleteConversation(conversationId: string): Promise<void>
-  renameConversation(conversationId: string, title: string): Promise<CONVERSATION>
+
+  /**
+   * 重命名会话
+   * @param conversationId 会话ID
+   * @param title 新标题
+   */
+  renameConversation(
+    conversationId: string,
+    title: string,
+  ): Promise<CONVERSATION>
+
+  /**
+   * 获取会话详情
+   * @param conversationId 会话ID
+   */
   getConversation(conversationId: string): Promise<CONVERSATION>
-  updateConversation(conversationId: string, data: Partial<CONVERSATION>): Promise<void>
+
+  /**
+   * 更新会话数据
+   * @param conversationId 会话ID
+   * @param data 要更新的数据
+   */
+  updateConversation(
+    conversationId: string,
+    data: Partial<CONVERSATION>,
+  ): Promise<void>
+
+  /**
+   * 获取会话列表(分页)
+   * @param page 页码
+   * @param pageSize 每页数量
+   */
   getConversationList(
     page: number,
-    pageSize: number
+    pageSize: number,
   ): Promise<{ total: number; list: CONVERSATION[] }>
+
+  /**
+   * 获取会话总数
+   */
   getConversationCount(): Promise<number>
+
+  /**
+   * 插入消息
+   * @param conversationId 会话ID
+   * @param content 消息内容
+   * @param role 消息角色
+   * @param parentId 父消息ID
+   * @param metadata 元数据(JSON字符串)
+   * @param orderSeq 顺序号
+   * @param tokenCount token数量
+   * @param status 消息状态
+   * @param isContextEdge 是否上下文边界
+   * @param isVariant 是否变体消息
+   */
   insertMessage(
     conversationId: string,
     content: string,
@@ -252,84 +633,271 @@ export interface ISQLitePresenter {
     tokenCount: number,
     status: string,
     isContextEdge: number,
-    isVariant: number
+    isVariant: number,
   ): Promise<string>
+
+  /**
+   * 查询会话消息
+   * @param conversationId 会话ID
+   */
   queryMessages(conversationId: string): Promise<Array<SQLITE_MESSAGE>>
+
+  /**
+   * 删除所有消息
+   */
   deleteAllMessages(): Promise<void>
+
+  /**
+   * 执行事务
+   * @param operations 事务操作函数
+   */
   runTransaction(operations: () => void): Promise<void>
 
-  // 新增的消息管理方法
+  // 以下是消息管理方法
+
+  /**
+   * 获取消息详情
+   * @param messageId 消息ID
+   */
   getMessage(messageId: string): Promise<SQLITE_MESSAGE | null>
+
+  /**
+   * 获取消息的所有变体
+   * @param messageId 消息ID
+   */
   getMessageVariants(messageId: string): Promise<SQLITE_MESSAGE[]>
+
+  /**
+   * 更新消息
+   * @param messageId 消息ID
+   * @param data 要更新的数据
+   */
   updateMessage(
     messageId: string,
     data: {
+      // 新内容(可选)
       content?: string
+      // 新状态(可选)
       status?: string
+      // 新元数据(可选)
       metadata?: string
+      // 是否上下文边界(可选)
       isContextEdge?: number
+      // token数量(可选)
       tokenCount?: number
-    }
+    },
   ): Promise<void>
+
+  /**
+   * 删除消息
+   * @param messageId 消息ID
+   */
   deleteMessage(messageId: string): Promise<void>
+
+  /**
+   * 获取会话中最大顺序号
+   * @param conversationId 会话ID
+   */
   getMaxOrderSeq(conversationId: string): Promise<number>
+
+  /**
+   * 添加消息附件
+   * @param messageId 消息ID
+   * @param attachmentType 附件类型
+   * @param attachmentData 附件数据
+   */
   addMessageAttachment(
     messageId: string,
     attachmentType: string,
-    attachmentData: string
+    attachmentData: string,
   ): Promise<void>
-  getMessageAttachments(messageId: string, type: string): Promise<{ content: string }[]>
+
+  /**
+   * 获取消息附件
+   * @param messageId 消息ID
+   * @param type 附件类型
+   */
+  getMessageAttachments(
+    messageId: string,
+    type: string,
+  ): Promise<{ content: string }[]>
+
+  /**
+   * 获取会话中最后一条用户消息
+   * @param conversationId 会话ID
+   */
   getLastUserMessage(conversationId: string): Promise<SQLITE_MESSAGE | null>
-  getMainMessageByParentId(conversationId: string, parentId: string): Promise<SQLITE_MESSAGE | null>
+
+  /**
+   * 通过父消息ID获取主消息
+   * @param conversationId 会话ID
+   * @param parentId 父消息ID
+   */
+  getMainMessageByParentId(
+    conversationId: string,
+    parentId: string,
+  ): Promise<SQLITE_MESSAGE | null>
+
+  /**
+   * 删除会话中所有消息
+   * @param conversationId 会话ID
+   */
   deleteAllMessagesInConversation(conversationId: string): Promise<void>
 }
 
+/**
+ * OAuth认证呈现器接口
+ */
 export interface IOAuthPresenter {
+  /**
+   * 启动OAuth登录流程
+   * @param providerId 提供者ID
+   * @param config OAuth配置
+   */
   startOAuthLogin(providerId: string, config: OAuthConfig): Promise<boolean>
+
+  /**
+   * 启动GitHub Copilot登录
+   * @param providerId 提供者ID
+   */
   startGitHubCopilotLogin(providerId: string): Promise<boolean>
+
+  /**
+   * 启动GitHub Copilot设备流登录
+   * @param providerId 提供者ID
+   */
   startGitHubCopilotDeviceFlowLogin(providerId: string): Promise<boolean>
+
+  /**
+   * 启动Anthropic OAuth流程
+   */
   startAnthropicOAuthFlow(): Promise<string>
+
+  /**
+   * 使用授权码完成Anthropic OAuth
+   * @param code 授权码
+   */
   completeAnthropicOAuthWithCode(code: string): Promise<boolean>
+
+  /**
+   * 取消Anthropic OAuth流程
+   */
   cancelAnthropicOAuthFlow(): Promise<void>
+
+  /**
+   * 检查是否有Anthropic凭证
+   */
   hasAnthropicCredentials(): Promise<boolean>
+
+  /**
+   * 获取Anthropic访问令牌
+   */
   getAnthropicAccessToken(): Promise<string | null>
+
+  /**
+   * 清除Anthropic凭证
+   */
   clearAnthropicCredentials(): Promise<void>
 }
 
+/**
+ * OAuth配置
+ */
 export interface OAuthConfig {
+  // 认证URL
   authUrl: string
+  // 重定向URI
   redirectUri: string
+  // 客户端ID
   clientId: string
+  // 客户端密钥(可选)
   clientSecret?: string
+  // 请求范围
   scope: string
+  // 响应类型
   responseType: string
 }
 
+/**
+ * 主呈现器接口 - 聚合所有子呈现器
+ */
 export interface IPresenter {
-  windowPresenter: IWindowPresenter
-  sqlitePresenter: ISQLitePresenter
-  llmproviderPresenter: ILlmProviderPresenter
-  configPresenter: IConfigPresenter
-  threadPresenter: IThreadPresenter
-  devicePresenter: IDevicePresenter
-  upgradePresenter: IUpgradePresenter
-  shortcutPresenter: IShortcutPresenter
-  filePresenter: IFilePresenter
-  mcpPresenter: IMCPPresenter
-  syncPresenter: ISyncPresenter
-  deeplinkPresenter: IDeeplinkPresenter
-  notificationPresenter: INotificationPresenter
-  tabPresenter: ITabPresenter
-  oauthPresenter: IOAuthPresenter
-  dialogPresenter: IDialogPresenter
-  knowledgePresenter: IKnowledgePresenter
+  // 所有子 presenter 实例（这里是公共属性，方便外部 IPC 动态访问）
+  // 配置管理，包括读取和写入应用配置
+  configPresenter: ConfigPresenter
+  // 窗口管理
+  windowPresenter: WindowPresenter
+  // 设备管理
+  devicePresenter: DevicePresenter
+  // 快捷键管理
+  shortcutPresenter: ShortcutPresenter
+  // 文件管理
+  filePresenter: FilePresenter
+  // 通知管理
+  notificationPresenter: NotificationPresenter
+  // 系统托盘管理
+  trayPresenter: TrayPresenter
+  // 对话框管理
+  dialogPresenter: DialogPresenter
+  // 悬浮按钮管理
+  floatingButtonPresenter: FloatingButtonPresenter
+  // 应用升级与版本控制管理
+  // upgradePresenter: UpgradePresenter
+  // 标签页管理
+  tabPresenter: TabPresenter
+  // 数据同步管理
+  // syncPresenter: SyncPresenter
+  // 线程或异步任务管理
+  // threadPresenter: ThreadPresenter
+  // OAuth 授权认证流程管理
+  // oauthPresenter: OAuthPresenter
+  // MCP（模型-控制器-呈现器）架构核心协调管理
+  // mcpPresenter: McpPresenter
+  // 深链接处理与跳转管理
+  // deeplinkPresenter: DeeplinkPresenter
+  // SQLite 数据库操作和管理
+  // sqlitePresenter: SQLitePresenter
+  // 大语言模型服务提供者接口管理
+  // llmproviderPresenter: LLMProviderPresenter
+  // 知识库相关业务逻辑管理
+  // knowledgePresenter: KnowledgePresenter
+  // LlamaCpp 模型管理（注释掉暂不使用）
+  // llamaCppPresenter: LlamaCppPresenter // 保留原始注释
+
+  // 初始化
   init(): void
+  // 销毁
   destroy(): void
 }
 
+/**
+ * 通知呈现器接口
+ */
 export interface INotificationPresenter {
-  showNotification(options: { id: string; title: string; body: string; silent?: boolean }): void
+  /**
+   * 显示通知
+   * @param options 通知选项
+   */
+  showNotification(options: {
+    // 通知ID
+    id: string
+    // 标题
+    title: string
+    // 内容
+    body: string
+    // 是否静默(可选)
+    silent?: boolean
+  }): void
+
+  /**
+   * 清除指定通知
+   * @param id 通知ID
+   */
   clearNotification(id: string): void
+
+  /**
+   * 清除所有通知
+   */
   clearAllNotifications(): void
 }
 
@@ -344,7 +912,9 @@ export interface IConfigPresenter {
   setProviderModels(providerId: string, models: MODEL_META[]): void
   getEnabledProviders(): LLM_PROVIDER[]
   getModelDefaultConfig(modelId: string, providerId?: string): ModelConfig
-  getAllEnabledModels(): Promise<{ providerId: string; models: RENDERER_MODEL_META[] }[]>
+  getAllEnabledModels(): Promise<
+    { providerId: string; models: RENDERER_MODEL_META[] }[]
+  >
   // 音效设置
   getSoundEnabled(): boolean
   setSoundEnabled(enabled: boolean): void
@@ -363,14 +933,21 @@ export interface IConfigPresenter {
   setCustomModels(providerId: string, models: MODEL_META[]): void
   addCustomModel(providerId: string, model: MODEL_META): void
   removeCustomModel(providerId: string, modelId: string): void
-  updateCustomModel(providerId: string, modelId: string, updates: Partial<MODEL_META>): void
+  updateCustomModel(
+    providerId: string,
+    modelId: string,
+    updates: Partial<MODEL_META>,
+  ): void
   // 关闭行为设置
   getCloseToQuit(): boolean
   setCloseToQuit(value: boolean): void
   getModelStatus(providerId: string, modelId: string): boolean
   setModelStatus(providerId: string, modelId: string, enabled: boolean): void
   // 批量获取模型状态
-  getBatchModelStatus(providerId: string, modelIds: string[]): Record<string, boolean>
+  getBatchModelStatus(
+    providerId: string,
+    modelIds: string[],
+  ): Record<string, boolean>
   // 语言设置
   getLanguage(): string
   setLanguage(language: string): void
@@ -407,16 +984,24 @@ export interface IConfigPresenter {
   setMcpEnabled(enabled: boolean): Promise<void>
   addMcpServer(serverName: string, config: MCPServerConfig): Promise<boolean>
   removeMcpServer(serverName: string): Promise<void>
-  updateMcpServer(serverName: string, config: Partial<MCPServerConfig>): Promise<void>
+  updateMcpServer(
+    serverName: string,
+    config: Partial<MCPServerConfig>,
+  ): Promise<void>
   getMcpConfHelper(): any // 用于获取MCP配置助手
   getModelConfig(modelId: string, providerId?: string): ModelConfig
   setModelConfig(modelId: string, providerId: string, config: ModelConfig): void
   resetModelConfig(modelId: string, providerId: string): void
   getAllModelConfigs(): Record<string, IModelConfig>
-  getProviderModelConfigs(providerId: string): Array<{ modelId: string; config: ModelConfig }>
+  getProviderModelConfigs(
+    providerId: string,
+  ): Array<{ modelId: string; config: ModelConfig }>
   hasUserModelConfig(modelId: string, providerId: string): boolean
   exportModelConfigs(): Record<string, IModelConfig>
-  importModelConfigs(configs: Record<string, IModelConfig>, overwrite: boolean): void
+  importModelConfigs(
+    configs: Record<string, IModelConfig>,
+    overwrite: boolean,
+  ): void
   setNotificationsEnabled(enabled: boolean): void
   getNotificationsEnabled(): boolean
   // 主题设置
@@ -526,16 +1111,20 @@ export interface ILlmProviderPresenter {
   getProviders(): LLM_PROVIDER[]
   getProviderById(id: string): LLM_PROVIDER
   getModelList(providerId: string): Promise<MODEL_META[]>
-  updateModelStatus(providerId: string, modelId: string, enabled: boolean): Promise<void>
+  updateModelStatus(
+    providerId: string,
+    modelId: string,
+    enabled: boolean,
+  ): Promise<void>
   addCustomModel(
     providerId: string,
-    model: Omit<MODEL_META, 'providerId' | 'isCustom' | 'group'>
+    model: Omit<MODEL_META, 'providerId' | 'isCustom' | 'group'>,
   ): Promise<MODEL_META>
   removeCustomModel(providerId: string, modelId: string): Promise<boolean>
   updateCustomModel(
     providerId: string,
     modelId: string,
-    updates: Partial<MODEL_META>
+    updates: Partial<MODEL_META>,
   ): Promise<boolean>
   getCustomModels(providerId: string): Promise<MODEL_META[]>
   startStreamCompletion(
@@ -546,35 +1135,46 @@ export interface ILlmProviderPresenter {
     temperature?: number,
     maxTokens?: number,
     enabledMcpTools?: string[],
-    thinkingBudget?: number
+    thinkingBudget?: number,
   ): AsyncGenerator<LLMAgentEvent, void, unknown>
   generateCompletion(
     providerId: string,
     messages: { role: 'system' | 'user' | 'assistant'; content: string }[],
     modelId: string,
     temperature?: number,
-    maxTokens?: number
+    maxTokens?: number,
   ): Promise<string>
   stopStream(eventId: string): Promise<void>
-  check(providerId: string, modelId?: string): Promise<{ isOk: boolean; errorMsg: string | null }>
+  check(
+    providerId: string,
+    modelId?: string,
+  ): Promise<{ isOk: boolean; errorMsg: string | null }>
   getKeyStatus(providerId: string): Promise<KeyStatus | null>
   refreshModels(providerId: string): Promise<void>
   summaryTitles(
     messages: { role: 'system' | 'user' | 'assistant'; content: string }[],
     providerId: string,
-    modelId: string
+    modelId: string,
   ): Promise<string>
   listOllamaModels(): Promise<OllamaModel[]>
   showOllamaModelInfo(modelName: string): Promise<ShowResponse>
   listOllamaRunningModels(): Promise<OllamaModel[]>
   pullOllamaModels(modelName: string): Promise<boolean>
   deleteOllamaModel(modelName: string): Promise<boolean>
-  getEmbeddings(providerId: string, modelId: string, texts: string[]): Promise<number[][]>
+  getEmbeddings(
+    providerId: string,
+    modelId: string,
+    texts: string[],
+  ): Promise<number[][]>
   getDimensions(
     providerId: string,
-    modelId: string
+    modelId: string,
   ): Promise<{ data: LLM_EMBEDDING_ATTRS; errorMsg?: string }>
-  updateProviderRateLimit(providerId: string, enabled: boolean, qpsLimit: number): void
+  updateProviderRateLimit(
+    providerId: string,
+    enabled: boolean,
+    qpsLimit: number,
+  ): void
   getProviderRateLimitStatus(providerId: string): {
     config: { enabled: boolean; qpsLimit: number }
     currentQps: number
@@ -620,15 +1220,18 @@ export interface IThreadPresenter {
     title: string,
     settings: Partial<CONVERSATION_SETTINGS>,
     tabId: number,
-    options?: { forceNewAndActivate?: boolean } // 新增 options 参数, 支持强制新建会话，避免空会话的单例检测
+    options?: { forceNewAndActivate?: boolean }, // 新增 options 参数, 支持强制新建会话，避免空会话的单例检测
   ): Promise<string>
   deleteConversation(conversationId: string): Promise<void>
   getConversation(conversationId: string): Promise<CONVERSATION>
-  renameConversation(conversationId: string, title: string): Promise<CONVERSATION>
+  renameConversation(
+    conversationId: string,
+    title: string,
+  ): Promise<CONVERSATION>
   updateConversationTitle(conversationId: string, title: string): Promise<void>
   updateConversationSettings(
     conversationId: string,
-    settings: Partial<CONVERSATION_SETTINGS>
+    settings: Partial<CONVERSATION_SETTINGS>,
   ): Promise<void>
 
   // 会话分支操作
@@ -636,13 +1239,13 @@ export interface IThreadPresenter {
     targetConversationId: string,
     targetMessageId: string,
     newTitle: string,
-    settings?: Partial<CONVERSATION_SETTINGS>
+    settings?: Partial<CONVERSATION_SETTINGS>,
   ): Promise<string>
 
   // 对话列表和激活状态
   getConversationList(
     page: number,
-    pageSize: number
+    pageSize: number,
   ): Promise<{ total: number; list: CONVERSATION[] }>
   loadMoreThreads(): Promise<{ hasMore: boolean; total: number }>
   setActiveConversation(conversationId: string, tabId: number): Promise<void>
@@ -657,18 +1260,31 @@ export interface IThreadPresenter {
   getMessages(
     conversationId: string,
     page: number,
-    pageSize: number
+    pageSize: number,
   ): Promise<{ total: number; list: MESSAGE[] }>
-  sendMessage(conversationId: string, content: string, role: MESSAGE_ROLE): Promise<MESSAGE | null>
-  startStreamCompletion(conversationId: string, queryMsgId?: string): Promise<void>
+  sendMessage(
+    conversationId: string,
+    content: string,
+    role: MESSAGE_ROLE,
+  ): Promise<MESSAGE | null>
+  startStreamCompletion(
+    conversationId: string,
+    queryMsgId?: string,
+  ): Promise<void>
   editMessage(messageId: string, content: string): Promise<MESSAGE>
   deleteMessage(messageId: string): Promise<void>
   retryMessage(messageId: string, modelId?: string): Promise<MESSAGE>
   getMessage(messageId: string): Promise<MESSAGE>
   getMessageVariants(messageId: string): Promise<MESSAGE[]>
   updateMessageStatus(messageId: string, status: MESSAGE_STATUS): Promise<void>
-  updateMessageMetadata(messageId: string, metadata: Partial<MESSAGE_METADATA>): Promise<void>
-  getMessageExtraInfo(messageId: string, type: string): Promise<Record<string, unknown>[]>
+  updateMessageMetadata(
+    messageId: string,
+    metadata: Partial<MESSAGE_METADATA>,
+  ): Promise<void>
+  getMessageExtraInfo(
+    messageId: string,
+    type: string,
+  ): Promise<Record<string, unknown>[]>
 
   // popup 操作
   translateText(text: string, tabId: number): Promise<string>
@@ -688,10 +1304,19 @@ export interface IThreadPresenter {
   testSearchEngine(query?: string): Promise<boolean>
   // 搜索助手模型设置
   setSearchAssistantModel(model: MODEL_META, providerId: string): void
-  getMainMessageByParentId(conversationId: string, parentId: string): Promise<Message | null>
+  getMainMessageByParentId(
+    conversationId: string,
+    parentId: string,
+  ): Promise<Message | null>
   destroy(): void
-  continueStreamCompletion(conversationId: string, queryMsgId: string): Promise<AssistantMessage>
-  toggleConversationPinned(conversationId: string, isPinned: boolean): Promise<void>
+  continueStreamCompletion(
+    conversationId: string,
+    queryMsgId: string,
+  ): Promise<AssistantMessage>
+  toggleConversationPinned(
+    conversationId: string,
+    isPinned: boolean,
+  ): Promise<void>
   findTabForConversation(conversationId: string): Promise<number | null>
 
   // Permission handling
@@ -700,11 +1325,11 @@ export interface IThreadPresenter {
     toolCallId: string,
     granted: boolean,
     permissionType: 'read' | 'write' | 'all',
-    remember?: boolean
+    remember?: boolean,
   ): Promise<void>
   exportConversation(
     conversationId: string,
-    format: 'markdown' | 'html' | 'txt'
+    format: 'markdown' | 'html' | 'txt',
   ): Promise<{ filename: string; content: string }>
 }
 
@@ -733,7 +1358,7 @@ export interface IMessageManager {
     role: MESSAGE_ROLE,
     parentId: string,
     isVariant: boolean,
-    metadata: MESSAGE_METADATA
+    metadata: MESSAGE_METADATA,
   ): Promise<MESSAGE>
   editMessage(messageId: string, content: string): Promise<MESSAGE>
   deleteMessage(messageId: string): Promise<void>
@@ -745,16 +1370,22 @@ export interface IMessageManager {
   getMessageThread(
     conversationId: string,
     page: number,
-    pageSize: number
+    pageSize: number,
   ): Promise<{
     total: number
     list: MESSAGE[]
   }>
-  getContextMessages(conversationId: string, contextLength: number): Promise<MESSAGE[]>
+  getContextMessages(
+    conversationId: string,
+    contextLength: number,
+  ): Promise<MESSAGE[]>
 
   // 消息状态管理
   updateMessageStatus(messageId: string, status: MESSAGE_STATUS): Promise<void>
-  updateMessageMetadata(messageId: string, metadata: Partial<MESSAGE_METADATA>): Promise<void>
+  updateMessageMetadata(
+    messageId: string,
+    metadata: Partial<MESSAGE_METADATA>,
+  ): Promise<void>
 
   // 上下文管理
   markMessageAsContextEdge(messageId: string, isEdge: boolean): Promise<void>
@@ -767,7 +1398,9 @@ export interface IDevicePresenter {
   getMemoryUsage(): Promise<MemoryInfo>
   getDiskSpace(): Promise<DiskInfo>
   resetData(): Promise<void>
-  resetDataByType(resetType: 'chat' | 'knowledge' | 'config' | 'all'): Promise<void>
+  resetDataByType(
+    resetType: 'chat' | 'knowledge' | 'config' | 'all',
+  ): Promise<void>
 
   // 目录选择和应用重启
   selectDirectory(): Promise<{ canceled: boolean; filePaths: string[] }>
@@ -901,10 +1534,13 @@ export interface IFilePresenter {
   prepareFileCompletely(
     absPath: string,
     typeInfo?: string,
-    contentType?: null | 'origin' | 'llm-friendly'
+    contentType?: null | 'origin' | 'llm-friendly',
   ): Promise<MessageFile>
   prepareDirectory(absPath: string): Promise<MessageFile>
-  writeTemp(file: { name: string; content: string | Buffer | ArrayBuffer }): Promise<string>
+  writeTemp(file: {
+    name: string
+    content: string | Buffer | ArrayBuffer
+  }): Promise<string>
   isDirectory(absPath: string): Promise<boolean>
   getMimeType(filePath: string): Promise<string>
   writeImageBase64(file: { name: string; content: string }): Promise<string>
@@ -1037,7 +1673,10 @@ export interface MCPToolResponse {
 }
 
 /** 内容项类型 */
-export type MCPContentItem = MCPTextContent | MCPImageContent | MCPResourceContent
+export type MCPContentItem =
+  | MCPTextContent
+  | MCPImageContent
+  | MCPResourceContent
 
 /** 文本内容 */
 export interface MCPTextContent {
@@ -1074,14 +1713,24 @@ export interface IMCPPresenter {
   toggleMcpDefaultServer(serverName: string): Promise<void>
   addMcpServer(serverName: string, config: MCPServerConfig): Promise<boolean>
   removeMcpServer(serverName: string): Promise<void>
-  updateMcpServer(serverName: string, config: Partial<MCPServerConfig>): Promise<void>
+  updateMcpServer(
+    serverName: string,
+    config: Partial<MCPServerConfig>,
+  ): Promise<void>
   isServerRunning(serverName: string): Promise<boolean>
   startServer(serverName: string): Promise<void>
   stopServer(serverName: string): Promise<void>
   getAllToolDefinitions(): Promise<MCPToolDefinition[]>
-  getAllPrompts(): Promise<Array<PromptListEntry & { client: { name: string; icon: string } }>>
-  getAllResources(): Promise<Array<ResourceListEntry & { client: { name: string; icon: string } }>>
-  getPrompt(prompt: PromptListEntry, args?: Record<string, unknown>): Promise<unknown>
+  getAllPrompts(): Promise<
+    Array<PromptListEntry & { client: { name: string; icon: string } }>
+  >
+  getAllResources(): Promise<
+    Array<ResourceListEntry & { client: { name: string; icon: string } }>
+  >
+  getPrompt(
+    prompt: PromptListEntry,
+    args?: Record<string, unknown>,
+  ): Promise<unknown>
   readResource(resource: ResourceListEntry): Promise<Resource>
   callTool(request: {
     id: string
@@ -1099,7 +1748,7 @@ export interface IMCPPresenter {
   grantPermission(
     serverName: string,
     permissionType: 'read' | 'write' | 'all',
-    remember?: boolean
+    remember?: boolean,
   ): Promise<void>
   // NPM Registry 管理方法
   getNpmRegistryStatus?(): Promise<{
@@ -1147,7 +1796,9 @@ export interface ISyncPresenter {
   getBackupStatus(): Promise<{ isBackingUp: boolean; lastBackupTime: number }>
 
   // 导入相关操作
-  importFromSync(importMode?: ImportMode): Promise<{ success: boolean; message: string }>
+  importFromSync(
+    importMode?: ImportMode,
+  ): Promise<{ success: boolean; message: string }>
   checkSyncFolder(): Promise<{ exists: boolean; path: string }>
   openSyncFolder(): Promise<void>
 
@@ -1189,7 +1840,12 @@ export interface LLMCoreStreamEvent {
     queueLength: number
     estimatedWaitTime?: number
   }
-  stop_reason?: 'tool_use' | 'max_tokens' | 'stop_sequence' | 'error' | 'complete' // 用于 type 'stop'
+  stop_reason?:
+    | 'tool_use'
+    | 'max_tokens'
+    | 'stop_sequence'
+    | 'error'
+    | 'complete' // 用于 type 'stop'
   image_data?: {
     // 用于 type 'image_data'
     data: string // Base64 编码的图像数据
@@ -1235,7 +1891,13 @@ export interface LLMAgentEventData {
   tool_call_server_description?: string
 
   tool_call_response_raw?: any
-  tool_call?: 'start' | 'running' | 'end' | 'error' | 'update' | 'permission-required'
+  tool_call?:
+    | 'start'
+    | 'running'
+    | 'end'
+    | 'error'
+    | 'update'
+    | 'permission-required'
 
   // Permission request related fields
   permission_request?: {
@@ -1267,7 +1929,10 @@ export type LLMAgentEvent =
   | { type: 'error'; data: { eventId: string; error: string } }
   | { type: 'end'; data: { eventId: string; userStop: boolean } }
 
-export { ShortcutKey, ShortcutKeySetting } from '@/presenter/configPresenter/shortcutKeySettings'
+export {
+  ShortcutKey,
+  ShortcutKeySetting,
+} from '@/presenter/configPresenter/shortcutKeySettings'
 
 export interface DefaultModelSetting {
   id: string
@@ -1352,7 +2017,11 @@ export type KnowledgeFileMetadata = {
   errorReason?: string
 }
 
-export type KnowledgeTaskStatus = 'processing' | 'completed' | 'error' | 'paused'
+export type KnowledgeTaskStatus =
+  | 'processing'
+  | 'completed'
+  | 'error'
+  | 'paused'
 
 export type KnowledgeFileMessage = {
   id: string
@@ -1638,7 +2307,10 @@ export interface IVectorDatabasePresenter {
    *   - threshold: Minimum distance threshold (optional)
    * @returns Promise<QueryResult[]> Array of search results, including id, metadata, and distance
    */
-  similarityQuery(vector: number[], options: QueryOptions): Promise<QueryResult[]>
+  similarityQuery(
+    vector: number[],
+    options: QueryOptions,
+  ): Promise<QueryResult[]>
   /**
    * Delete vector records by file_id
    * @param id File ID
@@ -1665,7 +2337,9 @@ export interface IVectorDatabasePresenter {
    * @param where Query condition
    * @returns Array of file data
    */
-  queryFiles(where: Partial<KnowledgeFileMessage>): Promise<KnowledgeFileMessage[]>
+  queryFiles(
+    where: Partial<KnowledgeFileMessage>,
+  ): Promise<KnowledgeFileMessage[]>
   /**
    * List all files in the knowledge base
    * @returns Array of file data
@@ -1687,13 +2361,19 @@ export interface IVectorDatabasePresenter {
    * @param status New status
    * @param error Error message
    */
-  updateChunkStatus(chunkId: string, status: KnowledgeTaskStatus, error?: string): Promise<void>
+  updateChunkStatus(
+    chunkId: string,
+    status: KnowledgeTaskStatus,
+    error?: string,
+  ): Promise<void>
   /**
    * Query chunks by condition
    * @param where Query condition
    * @returns Array of chunk data
    */
-  queryChunks(where: Partial<KnowledgeChunkMessage>): Promise<KnowledgeChunkMessage[]>
+  queryChunks(
+    where: Partial<KnowledgeChunkMessage>,
+  ): Promise<KnowledgeChunkMessage[]>
   /**
    * Delete all chunks associated with file id
    * @param fileId File ID

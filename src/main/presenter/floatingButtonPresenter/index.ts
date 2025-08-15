@@ -1,24 +1,24 @@
-import { FloatingButtonWindow } from './FloatingButtonWindow';
+import { FloatingButtonWindow } from './FloatingButtonWindow'
 import {
   FloatingButtonConfig,
   FloatingButtonState,
   DEFAULT_FLOATING_BUTTON_CONFIG,
-} from './types';
-import { ConfigPresenter } from '../configPresenter';
-import { ipcMain } from 'electron';
-import { FLOATING_BUTTON_EVENTS } from '@/events/events';
-import { handleShowHiddenWindow } from '@/utils';
+} from './types'
+import { ConfigPresenter } from '../configPresenter'
+import { ipcMain } from 'electron'
+import { FLOATING_BUTTON_EVENTS } from '@/events/events'
+import { handleShowHiddenWindow } from '@/utils'
 
 export class FloatingButtonPresenter {
-  private floatingWindow: FloatingButtonWindow | null = null;
-  private config: FloatingButtonConfig;
-  private configPresenter: ConfigPresenter;
+  private floatingWindow: FloatingButtonWindow | null = null
+  private config: FloatingButtonConfig
+  private configPresenter: ConfigPresenter
 
   constructor(configPresenter: ConfigPresenter) {
-    this.configPresenter = configPresenter;
+    this.configPresenter = configPresenter
     this.config = {
       ...DEFAULT_FLOATING_BUTTON_CONFIG,
-    };
+    }
   }
 
   /**
@@ -28,23 +28,23 @@ export class FloatingButtonPresenter {
     config?: Partial<FloatingButtonConfig>,
   ): Promise<void> {
     const floatingButtonEnabled =
-      this.configPresenter.getFloatingButtonEnabled();
+      this.configPresenter.getFloatingButtonEnabled()
     try {
       this.config = {
         ...this.config,
         ...config,
         enabled: floatingButtonEnabled,
-      };
-
-      if (!this.config.enabled) {
-        console.log('FloatingButton is disabled, skipping window creation');
-        return;
       }
 
-      await this.createFloatingWindow();
+      if (!this.config.enabled) {
+        console.log('FloatingButton is disabled, skipping window creation')
+        return
+      }
+
+      await this.createFloatingWindow()
     } catch (error) {
-      console.error('Failed to initialize FloatingButtonPresenter:', error);
-      throw error;
+      console.error('❌Failed to initialize FloatingButtonPresenter:', error)
+      throw error
     }
   }
 
@@ -52,12 +52,12 @@ export class FloatingButtonPresenter {
    * 销毁悬浮按钮功能
    */
   public destroy(): void {
-    this.config.enabled = false;
+    this.config.enabled = false
 
-    ipcMain.removeAllListeners(FLOATING_BUTTON_EVENTS.CLICKED);
+    ipcMain.removeAllListeners(FLOATING_BUTTON_EVENTS.CLICKED)
     if (this.floatingWindow) {
-      this.floatingWindow.destroy();
-      this.floatingWindow = null;
+      this.floatingWindow.destroy()
+      this.floatingWindow = null
     }
   }
 
@@ -70,18 +70,18 @@ export class FloatingButtonPresenter {
       this.config.enabled,
       'has window:',
       !!this.floatingWindow,
-    );
+    )
 
-    this.config.enabled = true;
+    this.config.enabled = true
 
     if (this.floatingWindow) {
-      console.log('FloatingButton window already exists, showing it');
-      this.floatingWindow.show();
-      return; // 已经存在窗口，只需显示
+      console.log('FloatingButton window already exists, showing it')
+      this.floatingWindow.show()
+      return // 已经存在窗口，只需显示
     }
 
-    console.log('Creating new floating button window');
-    await this.createFloatingWindow();
+    console.log('Creating new floating button window')
+    await this.createFloatingWindow()
   }
 
   /**
@@ -89,9 +89,9 @@ export class FloatingButtonPresenter {
    */
   public async setEnabled(enabled: boolean): Promise<void> {
     if (enabled) {
-      await this.enable();
+      await this.enable()
     } else {
-      this.destroy();
+      this.destroy()
     }
   }
 
@@ -99,35 +99,35 @@ export class FloatingButtonPresenter {
    * 获取当前配置
    */
   public getConfig(): FloatingButtonConfig {
-    return { ...this.config };
+    return { ...this.config }
   }
 
   /**
    * 获取当前状态
    */
   public getState(): FloatingButtonState | null {
-    return this.floatingWindow?.getState() || null;
+    return this.floatingWindow?.getState() || null
   }
 
   /**
    * 创建悬浮窗口
    */
   private async createFloatingWindow(): Promise<void> {
-    ipcMain.removeAllListeners(FLOATING_BUTTON_EVENTS.CLICKED);
+    ipcMain.removeAllListeners(FLOATING_BUTTON_EVENTS.CLICKED)
 
     ipcMain.on(FLOATING_BUTTON_EVENTS.CLICKED, () => {
       try {
         // 触发内置事件处理器
-        handleShowHiddenWindow(true);
+        handleShowHiddenWindow(true)
       } catch {}
-    });
+    })
 
     if (!this.floatingWindow) {
-      this.floatingWindow = new FloatingButtonWindow(this.config);
-      await this.floatingWindow.create();
+      this.floatingWindow = new FloatingButtonWindow(this.config)
+      await this.floatingWindow.create()
     }
 
     // 悬浮按钮创建后立即显示
-    this.floatingWindow.show();
+    this.floatingWindow.show()
   }
 }

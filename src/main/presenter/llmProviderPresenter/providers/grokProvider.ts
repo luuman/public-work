@@ -1,7 +1,11 @@
 import { LLM_PROVIDER, LLMResponse, ChatMessage } from '@shared/presenter'
 import { OpenAICompatibleProvider } from './openAICompatibleProvider'
 import { ConfigPresenter } from '../../configPresenter'
-import { ModelConfig, MCPToolDefinition, LLMCoreStreamEvent } from '@shared/presenter'
+import {
+  ModelConfig,
+  MCPToolDefinition,
+  LLMCoreStreamEvent,
+} from '@shared/presenter'
 
 export class GrokProvider extends OpenAICompatibleProvider {
   // 图像生成模型ID
@@ -21,7 +25,7 @@ export class GrokProvider extends OpenAICompatibleProvider {
     messages: ChatMessage[],
     modelId: string,
     temperature?: number,
-    maxTokens?: number
+    maxTokens?: number,
   ): Promise<LLMResponse> {
     // 图像生成模型需要特殊处理
     if (this.isImageModel(modelId)) {
@@ -34,7 +38,7 @@ export class GrokProvider extends OpenAICompatibleProvider {
     text: string,
     modelId: string,
     temperature?: number,
-    maxTokens?: number
+    maxTokens?: number,
   ): Promise<LLMResponse> {
     // 图像生成模型不支持摘要
     if (this.isImageModel(modelId)) {
@@ -44,12 +48,12 @@ export class GrokProvider extends OpenAICompatibleProvider {
       [
         {
           role: 'user',
-          content: `请总结以下内容，使用简洁的语言，突出重点：\n${text}`
-        }
+          content: `请总结以下内容，使用简洁的语言，突出重点：\n${text}`,
+        },
       ],
       modelId,
       temperature,
-      maxTokens
+      maxTokens,
     )
   }
 
@@ -57,7 +61,7 @@ export class GrokProvider extends OpenAICompatibleProvider {
     prompt: string,
     modelId: string,
     temperature?: number,
-    maxTokens?: number
+    maxTokens?: number,
   ): Promise<LLMResponse> {
     // 图像生成模型使用特殊处理
     if (this.isImageModel(modelId)) {
@@ -67,18 +71,18 @@ export class GrokProvider extends OpenAICompatibleProvider {
       [
         {
           role: 'user',
-          content: prompt
-        }
+          content: prompt,
+        },
       ],
       modelId,
       temperature,
-      maxTokens
+      maxTokens,
     )
   }
 
   // 处理图像生成请求的特殊方法
   private async handleImageGeneration(
-    messages: ChatMessage[]
+    messages: ChatMessage[],
   ): Promise<LLMResponse & { imageData?: string; mimeType?: string }> {
     if (!this.isInitialized) {
       throw new Error('Provider not initialized')
@@ -103,7 +107,7 @@ export class GrokProvider extends OpenAICompatibleProvider {
       const response = await this.openai.images.generate({
         model: GrokProvider.IMAGE_MODEL_ID,
         prompt,
-        response_format: 'b64_json'
+        response_format: 'b64_json',
       })
       // 处理响应
       if (response.data && response.data.length > 0) {
@@ -113,19 +117,21 @@ export class GrokProvider extends OpenAICompatibleProvider {
           return {
             content: `![生成的图像](data:image/png;base64,${imageData.b64_json})`,
             imageData: imageData.b64_json,
-            mimeType: 'image/png'
+            mimeType: 'image/png',
           }
         } else if (imageData.url) {
           // 返回图像URL
           return {
-            content: `![生成的图像](${imageData.url})`
+            content: `![生成的图像](${imageData.url})`,
           }
         }
       }
       throw new Error('No image data received from API')
     } catch (error: unknown) {
-      console.error('Image generation failed:', error)
-      throw new Error(`图像生成失败: ${error instanceof Error ? error.message : '未知错误'}`)
+      console.error('❌Image generation failed:', error)
+      throw new Error(
+        `图像生成失败: ${error instanceof Error ? error.message : '未知错误'}`,
+      )
     }
   }
 
@@ -135,7 +141,7 @@ export class GrokProvider extends OpenAICompatibleProvider {
     modelConfig: ModelConfig,
     temperature: number,
     maxTokens: number,
-    tools: MCPToolDefinition[]
+    tools: MCPToolDefinition[],
   ): AsyncGenerator<LLMCoreStreamEvent> {
     if (this.isImageModel(modelId)) {
       const result = await this.handleImageGeneration(messages)
@@ -145,20 +151,27 @@ export class GrokProvider extends OpenAICompatibleProvider {
           type: 'image_data',
           image_data: {
             data: result.imageData,
-            mimeType: result.mimeType
-          }
+            mimeType: result.mimeType,
+          },
         }
       } else {
         // 如果没有imageData字段，回退到文本形式
         yield {
           type: 'text',
-          content: result.content
+          content: result.content,
         }
       }
       // 添加短暂延迟，确保所有 RESPONSE 事件已处理完毕
       await new Promise((resolve) => setTimeout(resolve, 300))
     } else {
-      yield* super.coreStream(messages, modelId, modelConfig, temperature, maxTokens, tools)
+      yield* super.coreStream(
+        messages,
+        modelId,
+        modelConfig,
+        temperature,
+        maxTokens,
+        tools,
+      )
     }
   }
 }

@@ -28,13 +28,13 @@ export class OAuthPresenter {
       const response = await fetch('https://api.github.com/user', {
         headers: {
           Authorization: `Bearer ${token}`,
-          'User-Agent': 'DeepChat/1.0.0'
-        }
+          'User-Agent': 'DeepChat/1.0.0',
+        },
       })
 
       return response.ok
     } catch (error) {
-      console.error('Token validation failed:', error)
+      console.error('❌Token validation failed:', error)
       return false
     }
   }
@@ -42,9 +42,14 @@ export class OAuthPresenter {
   /**
    * 开始GitHub Copilot Device Flow登录流程（推荐）
    */
-  async startGitHubCopilotDeviceFlowLogin(providerId: string): Promise<boolean> {
+  async startGitHubCopilotDeviceFlowLogin(
+    providerId: string,
+  ): Promise<boolean> {
     try {
-      console.log('Starting GitHub Copilot Device Flow login for provider:', providerId)
+      console.log(
+        'Starting GitHub Copilot Device Flow login for provider:',
+        providerId,
+      )
 
       // 使用专门的GitHub Copilot Device Flow实现
       console.log('Creating GitHub Device Flow instance...')
@@ -77,7 +82,7 @@ export class OAuthPresenter {
 
       return true
     } catch (error) {
-      console.error('GitHub Copilot Device Flow login failed:', error)
+      console.error('❌GitHub Copilot Device Flow login failed:', error)
       return false
     }
   }
@@ -87,7 +92,10 @@ export class OAuthPresenter {
    */
   async startGitHubCopilotLogin(providerId: string): Promise<boolean> {
     try {
-      console.log('Starting GitHub Copilot OAuth login for provider:', providerId)
+      console.log(
+        'Starting GitHub Copilot OAuth login for provider:',
+        providerId,
+      )
 
       // 使用专门的GitHub Copilot OAuth实现
       console.log('Creating GitHub OAuth instance...')
@@ -126,10 +134,19 @@ export class OAuthPresenter {
       console.log('GitHub Copilot OAuth login completed successfully')
       return true
     } catch (error) {
-      console.error('GitHub Copilot OAuth login failed:')
-      console.error('Error type:', error instanceof Error ? error.constructor.name : typeof error)
-      console.error('Error message:', error instanceof Error ? error.message : error)
-      console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace')
+      console.error('❌GitHub Copilot OAuth login failed:')
+      console.error(
+        '❌Error type:',
+        error instanceof Error ? error.constructor.name : typeof error,
+      )
+      console.error(
+        '❌Error message:',
+        error instanceof Error ? error.message : error,
+      )
+      console.error(
+        '❌Error stack:',
+        error instanceof Error ? error.stack : 'No stack trace',
+      )
       return false
     }
   }
@@ -142,7 +159,7 @@ export class OAuthPresenter {
       const anthropicOAuth = createAnthropicOAuth()
       return await anthropicOAuth.hasCredentials()
     } catch (error) {
-      console.error('Failed to check Anthropic credentials:', error)
+      console.error('❌Failed to check Anthropic credentials:', error)
       return false
     }
   }
@@ -155,7 +172,7 @@ export class OAuthPresenter {
       const anthropicOAuth = createAnthropicOAuth()
       return await anthropicOAuth.getValidAccessToken()
     } catch (error) {
-      console.error('Failed to get Anthropic access token:', error)
+      console.error('❌Failed to get Anthropic access token:', error)
       return null
     }
   }
@@ -168,7 +185,7 @@ export class OAuthPresenter {
       const anthropicOAuth = createAnthropicOAuth()
       await anthropicOAuth.clearCredentials()
     } catch (error) {
-      console.error('Failed to clear Anthropic credentials:', error)
+      console.error('❌Failed to clear Anthropic credentials:', error)
       throw error
     }
   }
@@ -184,7 +201,7 @@ export class OAuthPresenter {
       console.log('OAuth URL opened in external browser:', authUrl)
       return authUrl
     } catch (error) {
-      console.error('Failed to start Anthropic OAuth flow:', error)
+      console.error('❌Failed to start Anthropic OAuth flow:', error)
       throw error
     }
   }
@@ -199,14 +216,14 @@ export class OAuthPresenter {
       const accessToken = await anthropicOAuth.completeOAuthWithCode(code)
 
       if (!accessToken) {
-        console.error('Failed to get access token from code exchange')
+        console.error('❌Failed to get access token from code exchange')
         return false
       }
 
       console.log('Successfully obtained access token')
       return true
     } catch (error) {
-      console.error('Failed to complete Anthropic OAuth with code:', error)
+      console.error('❌Failed to complete Anthropic OAuth with code:', error)
       return false
     }
   }
@@ -220,14 +237,17 @@ export class OAuthPresenter {
       const anthropicOAuth = createAnthropicOAuth()
       anthropicOAuth.cancelOAuthFlow()
     } catch (error) {
-      console.error('Failed to cancel Anthropic OAuth flow:', error)
+      console.error('❌Failed to cancel Anthropic OAuth flow:', error)
     }
   }
 
   /**
    * 开始OAuth登录流程（通用方法）
    */
-  async startOAuthLogin(providerId: string, config: OAuthConfig): Promise<boolean> {
+  async startOAuthLogin(
+    providerId: string,
+    config: OAuthConfig,
+  ): Promise<boolean> {
     try {
       // 启动回调服务器
       await this.startCallbackServer()
@@ -250,7 +270,7 @@ export class OAuthPresenter {
 
       return true
     } catch (error) {
-      console.error('OAuth login failed:', error)
+      console.error('❌OAuth login failed:', error)
       this.stopCallbackServer()
 
       return false
@@ -340,12 +360,14 @@ export class OAuthPresenter {
       })
 
       this.callbackServer.listen(this.callbackPort, 'localhost', () => {
-        console.log(`OAuth callback server started on http://localhost:${this.callbackPort}`)
+        console.log(
+          `OAuth callback server started on http://localhost:${this.callbackPort}`,
+        )
         resolve()
       })
 
       this.callbackServer.on('error', (error) => {
-        console.error('Callback server error:', error)
+        console.error('❌Callback server error:', error)
         reject(error)
       })
     })
@@ -369,9 +391,12 @@ export class OAuthPresenter {
   /**
    * 处理服务器回调
    */
-  private handleServerCallback(code: string | null, error: string | null): void {
+  private handleServerCallback(
+    code: string | null,
+    error: string | null,
+  ): void {
     if (error) {
-      console.error('OAuth server callback error:', error)
+      console.error('❌OAuth server callback error:', error)
       this.callbackReject?.(new Error(`OAuth授权失败: ${error}`))
     } else if (code) {
       console.log('OAuth server callback success, received code:', code)
@@ -399,10 +424,10 @@ export class OAuthPresenter {
         show: false,
         webPreferences: {
           nodeIntegration: false,
-          contextIsolation: true
+          contextIsolation: true,
         },
         autoHideMenuBar: true,
-        title: 'GitHub 授权登录'
+        title: 'GitHub 授权登录',
       })
 
       // 构建授权URL
@@ -424,27 +449,39 @@ export class OAuthPresenter {
       })
 
       // 处理加载错误
-      this.authWindow.webContents.on('did-fail-load', (_event, errorCode, errorDescription) => {
-        console.error('OAuth page load failed:', errorCode, errorDescription)
-        this.closeAuthWindow()
-        if (this.callbackReject) {
-          this.callbackReject(new Error(`加载授权页面失败: ${errorDescription}`))
-          this.callbackReject = null
-          this.callbackResolve = null
-        }
-      })
+      this.authWindow.webContents.on(
+        'did-fail-load',
+        (_event, errorCode, errorDescription) => {
+          console.error(
+            '❌OAuth page load failed:',
+            errorCode,
+            errorDescription,
+          )
+          this.closeAuthWindow()
+          if (this.callbackReject) {
+            this.callbackReject(
+              new Error(`加载授权页面失败: ${errorDescription}`),
+            )
+            this.callbackReject = null
+            this.callbackResolve = null
+          }
+        },
+      )
 
       // 监听页面导航，检查是否到达了回调页面
-      this.authWindow.webContents.on('did-navigate', (_event, navigationUrl) => {
-        console.log('OAuth window navigated to:', navigationUrl)
-        // 如果导航到了我们的回调页面，说明授权流程已经完成
-        if (navigationUrl.includes('deepchatai.cn/auth/github/callback')) {
-          // 关闭授权窗口，因为回调服务器会处理剩余的逻辑
-          setTimeout(() => {
-            this.closeAuthWindow()
-          }, 2000) // 2秒后关闭，让用户看到成功页面
-        }
-      })
+      this.authWindow.webContents.on(
+        'did-navigate',
+        (_event, navigationUrl) => {
+          console.log('OAuth window navigated to:', navigationUrl)
+          // 如果导航到了我们的回调页面，说明授权流程已经完成
+          if (navigationUrl.includes('deepchatai.cn/auth/github/callback')) {
+            // 关闭授权窗口，因为回调服务器会处理剩余的逻辑
+            setTimeout(() => {
+              this.closeAuthWindow()
+            }, 2000) // 2秒后关闭，让用户看到成功页面
+          }
+        },
+      )
     })
   }
 
@@ -456,7 +493,7 @@ export class OAuthPresenter {
       client_id: config.clientId,
       redirect_uri: config.redirectUri,
       response_type: config.responseType,
-      scope: config.scope
+      scope: config.scope,
     })
 
     return `${config.authUrl}?${params.toString()}`
@@ -465,24 +502,33 @@ export class OAuthPresenter {
   /**
    * 用授权码交换访问令牌
    */
-  private async exchangeCodeForToken(code: string, config: OAuthConfig): Promise<string> {
-    const response = await fetch('https://github.com/login/oauth/access_token', {
-      method: 'POST',
-      headers: {
-        Accept: 'application/json',
-        'Content-Type': 'application/json',
-        'User-Agent': 'DeepChat/1.0.0'
+  private async exchangeCodeForToken(
+    code: string,
+    config: OAuthConfig,
+  ): Promise<string> {
+    const response = await fetch(
+      'https://github.com/login/oauth/access_token',
+      {
+        method: 'POST',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+          'User-Agent': 'DeepChat/1.0.0',
+        },
+        body: JSON.stringify({
+          client_id: config.clientId,
+          client_secret:
+            config.clientSecret || process.env.GITHUB_CLIENT_SECRET,
+          code: code,
+          redirect_uri: config.redirectUri,
+        }),
       },
-      body: JSON.stringify({
-        client_id: config.clientId,
-        client_secret: config.clientSecret || process.env.GITHUB_CLIENT_SECRET,
-        code: code,
-        redirect_uri: config.redirectUri
-      })
-    })
+    )
 
     if (!response.ok) {
-      throw new Error(`Token exchange failed: ${response.status} ${response.statusText}`)
+      throw new Error(
+        `Token exchange failed: ${response.status} ${response.statusText}`,
+      )
     }
 
     const data = (await response.json()) as {
@@ -492,7 +538,9 @@ export class OAuthPresenter {
     }
 
     if (data.error) {
-      throw new Error(`Token exchange error: ${data.error_description || data.error}`)
+      throw new Error(
+        `Token exchange error: ${data.error_description || data.error}`,
+      )
     }
 
     return data.access_token
@@ -513,9 +561,10 @@ export class OAuthPresenter {
 export const GITHUB_COPILOT_OAUTH_CONFIG: OAuthConfig = {
   authUrl: 'https://github.com/login/oauth/authorize',
   redirectUri:
-    import.meta.env.VITE_GITHUB_REDIRECT_URI || 'https://deepchatai.cn/auth/github/callback',
+    import.meta.env.VITE_GITHUB_REDIRECT_URI ||
+    'https://deepchatai.cn/auth/github/callback',
   clientId: import.meta.env.VITE_GITHUB_CLIENT_ID,
   clientSecret: import.meta.env.VITE_GITHUB_CLIENT_SECRET,
   scope: 'read:user read:org',
-  responseType: 'code'
+  responseType: 'code',
 }

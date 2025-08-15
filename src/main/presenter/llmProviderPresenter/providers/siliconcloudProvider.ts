@@ -1,4 +1,10 @@
-import { LLM_PROVIDER, LLMResponse, MODEL_META, ChatMessage, KeyStatus } from '@shared/presenter'
+import {
+  LLM_PROVIDER,
+  LLMResponse,
+  MODEL_META,
+  ChatMessage,
+  KeyStatus,
+} from '@shared/presenter'
 import { OpenAICompatibleProvider } from './openAICompatibleProvider'
 import { ConfigPresenter } from '../../configPresenter'
 
@@ -27,10 +33,12 @@ export class SiliconcloudProvider extends OpenAICompatibleProvider {
     super(provider, configPresenter)
   }
 
-  protected async fetchOpenAIModels(options?: { timeout: number }): Promise<MODEL_META[]> {
+  protected async fetchOpenAIModels(options?: {
+    timeout: number
+  }): Promise<MODEL_META[]> {
     const response = await this.openai.models.list({
       ...options,
-      query: { type: 'text', sub_type: 'chat' }
+      query: { type: 'text', sub_type: 'chat' },
     })
     return response.data.map((model) => ({
       id: model.id,
@@ -39,7 +47,7 @@ export class SiliconcloudProvider extends OpenAICompatibleProvider {
       providerId: this.provider.id,
       isCustom: false,
       contextLength: 4096,
-      maxTokens: 2048
+      maxTokens: 2048,
     }))
   }
 
@@ -47,7 +55,7 @@ export class SiliconcloudProvider extends OpenAICompatibleProvider {
     messages: ChatMessage[],
     modelId: string,
     temperature?: number,
-    maxTokens?: number
+    maxTokens?: number,
   ): Promise<LLMResponse> {
     return this.openAICompletion(messages, modelId, temperature, maxTokens)
   }
@@ -56,18 +64,18 @@ export class SiliconcloudProvider extends OpenAICompatibleProvider {
     text: string,
     modelId: string,
     temperature?: number,
-    maxTokens?: number
+    maxTokens?: number,
   ): Promise<LLMResponse> {
     return this.openAICompletion(
       [
         {
           role: 'user',
-          content: `请总结以下内容，使用简洁的语言，突出重点：\n${text}`
-        }
+          content: `请总结以下内容，使用简洁的语言，突出重点：\n${text}`,
+        },
       ],
       modelId,
       temperature,
-      maxTokens
+      maxTokens,
     )
   }
 
@@ -75,18 +83,18 @@ export class SiliconcloudProvider extends OpenAICompatibleProvider {
     prompt: string,
     modelId: string,
     temperature?: number,
-    maxTokens?: number
+    maxTokens?: number,
   ): Promise<LLMResponse> {
     return this.openAICompletion(
       [
         {
           role: 'user',
-          content: prompt
-        }
+          content: prompt,
+        },
       ],
       modelId,
       temperature,
-      maxTokens
+      maxTokens,
     )
   }
 
@@ -103,14 +111,14 @@ export class SiliconcloudProvider extends OpenAICompatibleProvider {
       method: 'GET',
       headers: {
         Authorization: `Bearer ${this.provider.apiKey}`,
-        'Content-Type': 'application/json'
-      }
+        'Content-Type': 'application/json',
+      },
     })
 
     if (!response.ok) {
       const errorText = await response.text()
       throw new Error(
-        `SiliconCloud API key check failed: ${response.status} ${response.statusText} - ${errorText}`
+        `SiliconCloud API key check failed: ${response.status} ${response.statusText} - ${errorText}`,
       )
     }
 
@@ -125,7 +133,7 @@ export class SiliconcloudProvider extends OpenAICompatibleProvider {
     // Map to unified KeyStatus format
     return {
       limit_remaining: `¥${totalBalance}`,
-      remainNum: totalBalance
+      remainNum: totalBalance,
     }
   }
 
@@ -141,20 +149,21 @@ export class SiliconcloudProvider extends OpenAICompatibleProvider {
       if (keyStatus.remainNum !== undefined && keyStatus.remainNum <= 0) {
         return {
           isOk: false,
-          errorMsg: `API key quota exhausted. Remaining: ${keyStatus.limit_remaining}`
+          errorMsg: `API key quota exhausted. Remaining: ${keyStatus.limit_remaining}`,
         }
       }
 
       return { isOk: true, errorMsg: null }
     } catch (error: unknown) {
-      let errorMessage = 'An unknown error occurred during SiliconCloud API key check.'
+      let errorMessage =
+        'An unknown error occurred during SiliconCloud API key check.'
       if (error instanceof Error) {
         errorMessage = error.message
       } else if (typeof error === 'string') {
         errorMessage = error
       }
 
-      console.error('SiliconCloud API key check failed:', error)
+      console.error('❌SiliconCloud API key check failed:', error)
       return { isOk: false, errorMsg: errorMessage }
     }
   }

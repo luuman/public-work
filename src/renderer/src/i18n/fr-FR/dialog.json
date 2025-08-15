@@ -1,0 +1,29 @@
+{
+  "cancel": "Annuler",
+  "confirm": "Confirmer",
+  "close": "Fermer",
+  "ok": "OK",
+  "delete": {
+    "title": "Supprimer cette conversation ?",
+    "description": "Cette action est irréversible.",
+    "confirm": "Supprimer"
+  },
+  "rename": {
+    "title": "Renommer la conversation",
+    "description": "Veuillez entrer un nouveau nom pour la conversation."
+  },
+  "error": {
+    "title": "Erreur"
+  },
+  "cleanMessages": {
+    "title": "Effacer les messages",
+    "description": "Cela supprimera tous les messages et fichiers de cette conversation. Continuer ?",
+    "confirm": "Effacer"
+  },
+  "fork": {
+    "tag": "Branche",
+    "confirm": "Créer une branche",
+    "description": "Copier les messages du début jusqu’au message actuel dans une nouvelle conversation.",
+    "title": "Créer une branche"
+  }
+}

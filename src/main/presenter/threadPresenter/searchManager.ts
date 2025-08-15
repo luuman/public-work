@@ -1,16 +1,16 @@
-import { app, BrowserWindow, screen } from 'electron';
-import path from 'path';
-import { SearchEngineTemplate } from '@shared/chat';
-import { ContentEnricher } from './contentEnricher';
-import { SearchResult } from '@shared/presenter';
-import { is } from '@electron-toolkit/utils';
-import { presenter } from '@/presenter';
-import { eventBus } from '@/events/eventbus';
-import { CONFIG_EVENTS } from '@/events/events';
-import { jsonrepair } from 'jsonrepair';
-import { SEARCH_PROMPT_TEMPLATE } from './const';
+import { app, BrowserWindow, screen } from 'electron'
+import path from 'path'
+import { SearchEngineTemplate } from '@shared/chat'
+import { ContentEnricher } from './contentEnricher'
+import { SearchResult } from '@shared/presenter'
+import { is } from '@electron-toolkit/utils'
+import { presenter } from '@/presenter'
+import { eventBus } from '@/events/eventbus'
+import { CONFIG_EVENTS } from '@/events/events'
+import { jsonrepair } from 'jsonrepair'
+import { SEARCH_PROMPT_TEMPLATE } from './const'
 
-const helperPage = path.join(app.getAppPath(), 'resources', 'blankSearch.html');
+const helperPage = path.join(app.getAppPath(), 'resources', 'blankSearch.html')
 
 // 抽取的脚本模板，使用占位符替代选择器
 const EXTRACTOR_SCRIPT_TEMPLATE = `
@@ -41,23 +41,23 @@ const EXTRACTOR_SCRIPT_TEMPLATE = `
           }
       } catch (e) {
           // 如果修改后仍然出现错误，那么可能是其他未预料到的问题
-          console.error('Error processing item (unexpected with conditional selectors):', e);
+          console.error('❌Error processing item (unexpected with conditional selectors):', e);
       }
   });
   return results;
-`;
+`
 
 // 定义选择器配置的接口
 interface SelectorConfig {
-  itemsSelector: string;
-  titleSelector: string;
-  linkSelector: string;
-  descSelector: string;
-  faviconSelector: string;
-  titleExtract: string;
-  urlExtract: string;
-  descExtract: string;
-  iconExtract: string;
+  itemsSelector: string
+  titleSelector: string
+  linkSelector: string
+  descSelector: string
+  faviconSelector: string
+  titleExtract: string
+  urlExtract: string
+  descExtract: string
+  iconExtract: string
 }
 
 const searchEngineSelectors: Record<string, SelectorConfig> = {
@@ -138,7 +138,7 @@ const searchEngineSelectors: Record<string, SelectorConfig> = {
     descExtract: 'descEl.textContent',
     iconExtract: "faviconEl ? faviconEl.src : ''",
   },
-};
+}
 
 // 根据选择器配置生成提取脚本
 function generateExtractorScript(selectorConfig: SelectorConfig): string {
@@ -153,7 +153,7 @@ function generateExtractorScript(selectorConfig: SelectorConfig): string {
     .replace('{{TITLE_EXTRACT}}', selectorConfig.titleExtract)
     .replace('{{URL_EXTRACT}}', selectorConfig.urlExtract)
     .replace('{{DESC_EXTRACT}}', selectorConfig.descExtract)
-    .replace('{{ICON_EXTRACT}}', selectorConfig.iconExtract);
+    .replace('{{ICON_EXTRACT}}', selectorConfig.iconExtract)
 }
 
 // 生成完整的搜索引擎配置
@@ -215,11 +215,11 @@ function generateDefaultEngines() {
         searchEngineSelectors['duckduckgo'],
       ),
     },
-  ];
+  ]
 }
 
 // 初始化默认搜索引擎
-const defaultEngines = generateDefaultEngines();
+const defaultEngines = generateDefaultEngines()
 
 // 格式化搜索结果的函数
 export function formatSearchResults(results: SearchResult[]): string {
@@ -231,10 +231,10 @@ URL: ${result.url}
 content：${result.content || ''}
 [webpage ${index + 1} end]`,
     )
-    .join('\n\n');
+    .join('\n\n')
   // 记录格式化后的搜索结果
   // console.log('formattedResults:', formattedResults)
-  return formattedResults;
+  return formattedResults
 }
 // 生成带搜索结果的提示词
 export function generateSearchPrompt(
@@ -247,36 +247,36 @@ export function generateSearchPrompt(
       formatSearchResults(results),
     )
       .replace('{{USER_QUERY}}', query)
-      .replace('{{CUR_DATE}}', new Date().toLocaleDateString());
+      .replace('{{CUR_DATE}}', new Date().toLocaleDateString())
 
     // 记录最终生成的提示词
-    console.log('generateSearchPrompt', searchPrompt);
+    console.log('generateSearchPrompt', searchPrompt)
 
-    return searchPrompt;
+    return searchPrompt
   } else {
-    return query;
+    return query
   }
 }
 
 export class SearchManager {
-  private searchWindows: Map<string, BrowserWindow> = new Map();
-  private maxConcurrentSearches = 3;
-  private engines: SearchEngineTemplate[] = defaultEngines;
-  private activeEngine: SearchEngineTemplate = this.engines[0];
+  private searchWindows: Map<string, BrowserWindow> = new Map()
+  private maxConcurrentSearches = 3
+  private engines: SearchEngineTemplate[] = defaultEngines
+  private activeEngine: SearchEngineTemplate = this.engines[0]
   private originalWindowSizes: Map<string, { width: number; height: number }> =
-    new Map();
+    new Map()
   private originalWindowPositions: Map<string, { x: number; y: number }> =
-    new Map();
-  private wasFullScreen: Map<string, boolean> = new Map();
-  private searchWindowWidth = 800;
-  private abortControllers: Map<string, AbortController> = new Map();
-  private lastEnginesUpdateTime = 0;
+    new Map()
+  private wasFullScreen: Map<string, boolean> = new Map()
+  private searchWindowWidth = 800
+  private abortControllers: Map<string, AbortController> = new Map()
+  private lastEnginesUpdateTime = 0
   // 保存当前正在使用的选择器配置
-  private currentSelectors = { ...searchEngineSelectors };
+  private currentSelectors = { ...searchEngineSelectors }
 
   constructor() {
     // 初始化搜索管理器
-    this.setupEventListeners();
+    this.setupEventListeners()
   }
 
   /**
@@ -286,23 +286,23 @@ export class SearchManager {
     // 监听搜索引擎更新事件
     eventBus.on(CONFIG_EVENTS.SEARCH_ENGINES_UPDATED, () => {
       // 标记需要刷新引擎列表
-      this.lastEnginesUpdateTime = 0;
-    });
+      this.lastEnginesUpdateTime = 0
+    })
   }
 
   /**
    * 获取搜索引擎列表，包括默认引擎和自定义引擎
    */
   async getEngines(): Promise<SearchEngineTemplate[]> {
-    await this.ensureEnginesUpdated();
-    return this.engines;
+    await this.ensureEnginesUpdated()
+    return this.engines
   }
 
   /**
    * 获取当前活跃的搜索引擎
    */
   getActiveEngine(): SearchEngineTemplate {
-    return this.activeEngine;
+    return this.activeEngine
   }
 
   /**
@@ -310,15 +310,15 @@ export class SearchManager {
    * @param engineId 搜索引擎ID
    */
   async setActiveEngine(engineId: string): Promise<boolean> {
-    console.log('setActiveEngine', engineId);
-    const engine = this.engines.find((e) => e.id === engineId);
+    console.log('setActiveEngine', engineId)
+    const engine = this.engines.find((e) => e.id === engineId)
     if (engine) {
-      this.activeEngine = engine;
+      this.activeEngine = engine
       // 保存搜索引擎选择到配置中
-      await presenter.configPresenter.setSetting('searchEngine', engineId);
-      return true;
+      await presenter.configPresenter.setSetting('searchEngine', engineId)
+      return true
     }
-    return false;
+    return false
   }
 
   /**
@@ -327,39 +327,39 @@ export class SearchManager {
    */
   async updateEngines(newEngines: SearchEngineTemplate[]): Promise<void> {
     // 保存当前活跃引擎ID
-    const activeEngineId = this.activeEngine.id;
+    const activeEngineId = this.activeEngine.id
 
     // 更新引擎列表
-    this.engines = newEngines;
+    this.engines = newEngines
 
     // 尝试保持当前活跃引擎
-    const engine = this.engines.find((e) => e.id === activeEngineId);
+    const engine = this.engines.find((e) => e.id === activeEngineId)
     if (engine) {
-      this.activeEngine = engine;
+      this.activeEngine = engine
     } else {
       // 如果当前活跃引擎不在新列表中，选择第一个引擎
-      this.activeEngine = this.engines[0];
+      this.activeEngine = this.engines[0]
     }
 
     // 更新自定义引擎到配置
-    await this.updateCustomEnginesToConfig();
+    await this.updateCustomEnginesToConfig()
 
     // 更新时间戳
-    this.lastEnginesUpdateTime = Date.now();
+    this.lastEnginesUpdateTime = Date.now()
   }
 
   /**
    * 确保引擎列表是最新的，如果需要就更新
    */
   private async ensureEnginesUpdated(): Promise<void> {
-    console.log('ensureEnginesUpdated', this.lastEnginesUpdateTime);
+    console.log('ensureEnginesUpdated', this.lastEnginesUpdateTime)
     // 如果上次更新时间是0或者距离现在超过24小时，则更新引擎列表
-    const currentTime = Date.now();
+    const currentTime = Date.now()
     if (
       this.lastEnginesUpdateTime === 0 ||
       currentTime - this.lastEnginesUpdateTime > 24 * 60 * 60 * 1000
     ) {
-      await this.refreshEngines();
+      await this.refreshEngines()
     }
   }
 
@@ -368,38 +368,38 @@ export class SearchManager {
    */
   private async refreshEngines(): Promise<void> {
     try {
-      const configPresenter = presenter.configPresenter;
+      const configPresenter = presenter.configPresenter
 
       // 获取自定义搜索引擎
-      const customEngines = await configPresenter.getCustomSearchEngines();
+      const customEngines = await configPresenter.getCustomSearchEngines()
 
       // 尝试获取云端选择器配置，预留接口，方便二次开发的时候下发配置
-      this.refreshSelectorsFromCloud();
+      this.refreshSelectorsFromCloud()
 
       // 重新生成默认引擎
-      const updatedDefaultEngines = this.regenerateDefaultEngines();
+      const updatedDefaultEngines = this.regenerateDefaultEngines()
 
       if (customEngines && customEngines.length > 0) {
         // 记住当前活跃引擎ID
-        const activeEngineId = this.activeEngine.id;
+        const activeEngineId = this.activeEngine.id
 
         // 合并更新后的默认引擎和自定义引擎
-        this.engines = [...updatedDefaultEngines, ...customEngines];
+        this.engines = [...updatedDefaultEngines, ...customEngines]
 
         // 尝试保持当前活跃引擎
-        const engine = this.engines.find((e) => e.id === activeEngineId);
+        const engine = this.engines.find((e) => e.id === activeEngineId)
         if (engine) {
-          this.activeEngine = engine;
+          this.activeEngine = engine
         }
       } else {
         // 没有自定义引擎，使用更新后的默认引擎
-        this.engines = updatedDefaultEngines;
+        this.engines = updatedDefaultEngines
       }
 
       // 更新时间戳
-      this.lastEnginesUpdateTime = Date.now();
+      this.lastEnginesUpdateTime = Date.now()
     } catch (error) {
-      console.error('刷新搜索引擎列表失败:', error);
+      console.error('❌刷新搜索引擎列表失败:', error)
     }
   }
 
@@ -410,14 +410,14 @@ export class SearchManager {
     try {
       // 这里添加从云端获取选择器配置的逻辑
       // 例如通过API调用或配置服务获取
-      const cloudSelectors = await this.fetchSelectorsFromCloud();
+      const cloudSelectors = await this.fetchSelectorsFromCloud()
 
       if (cloudSelectors) {
         // 安全地合并云端选择器和本地默认选择器
-        this.updateSelectorsConfig(cloudSelectors);
+        this.updateSelectorsConfig(cloudSelectors)
       }
     } catch (error) {
-      console.error('从云端获取选择器配置失败:', error);
+      console.error('❌从云端获取选择器配置失败:', error)
       // 出错时继续使用当前选择器配置
     }
   }
@@ -439,10 +439,10 @@ export class SearchManager {
       // }
 
       // 目前返回null，表示没有云端配置
-      return null;
+      return null
     } catch (error) {
-      console.error('获取云端选择器配置失败:', error);
-      return null;
+      console.error('❌获取云端选择器配置失败:', error)
+      return null
     }
   }
 
@@ -454,7 +454,7 @@ export class SearchManager {
     cloudSelectors: Record<string, Partial<SelectorConfig>>,
   ): void {
     // 创建一个新的选择器配置对象
-    const updatedSelectors = { ...this.currentSelectors };
+    const updatedSelectors = { ...this.currentSelectors }
 
     // 遍历云端选择器
     for (const [engineId, cloudSelector] of Object.entries(cloudSelectors)) {
@@ -467,7 +467,7 @@ export class SearchManager {
           'linkSelector',
           'descSelector',
           'faviconSelector',
-        ] as const;
+        ] as const
 
         // 只更新安全字段，忽略其他字段
         for (const field of safeFields) {
@@ -475,8 +475,8 @@ export class SearchManager {
             // 进行必要的安全检查，例如检查是否包含脚本标签或危险属性
             const sanitizedValue = this.sanitizeSelector(
               cloudSelector[field] as string,
-            );
-            updatedSelectors[engineId][field] = sanitizedValue;
+            )
+            updatedSelectors[engineId][field] = sanitizedValue
           }
         }
 
@@ -486,27 +486,27 @@ export class SearchManager {
           'urlExtract',
           'descExtract',
           'iconExtract',
-        ] as const;
+        ] as const
 
         for (const field of extractFields) {
           if (typeof cloudSelector[field] === 'string') {
             // 验证提取表达式是否安全
             const safeExtract = this.validateExtractExpression(
               cloudSelector[field] as string,
-            );
+            )
             if (safeExtract) {
-              updatedSelectors[engineId][field] = safeExtract;
+              updatedSelectors[engineId][field] = safeExtract
             }
           }
         }
       } else if (this.isValidSelectorConfig(cloudSelector)) {
         // 如果是新的引擎配置，验证完整性和安全性后添加
-        updatedSelectors[engineId] = this.sanitizeSelectorConfig(cloudSelector);
+        updatedSelectors[engineId] = this.sanitizeSelectorConfig(cloudSelector)
       }
     }
 
     // 更新当前选择器配置
-    this.currentSelectors = updatedSelectors;
+    this.currentSelectors = updatedSelectors
   }
 
   /**
@@ -520,11 +520,11 @@ export class SearchManager {
       'linkSelector',
       'titleExtract',
       'urlExtract',
-    ] as const;
+    ] as const
 
     for (const field of requiredFields) {
       if (typeof config[field] !== 'string' || !config[field]) {
-        return false;
+        return false
       }
     }
 
@@ -532,7 +532,7 @@ export class SearchManager {
     return (
       this.validateExtractExpression(config.titleExtract as string) !== null &&
       this.validateExtractExpression(config.urlExtract as string) !== null
-    );
+    )
   }
 
   /**
@@ -551,7 +551,7 @@ export class SearchManager {
       urlExtract: 'null',
       descExtract: 'null',
       iconExtract: 'null',
-    };
+    }
 
     // 安全处理选择器字段
     const selectorFields = [
@@ -560,13 +560,13 @@ export class SearchManager {
       'linkSelector',
       'descSelector',
       'faviconSelector',
-    ] as const;
+    ] as const
 
     for (const field of selectorFields) {
       safeConfig[field] =
         typeof config[field] === 'string'
           ? this.sanitizeSelector(config[field] as string)
-          : '';
+          : ''
     }
 
     // 安全处理提取表达式字段
@@ -575,18 +575,18 @@ export class SearchManager {
       'urlExtract',
       'descExtract',
       'iconExtract',
-    ] as const;
+    ] as const
 
     for (const field of extractFields) {
       const safeExtract =
         typeof config[field] === 'string'
           ? this.validateExtractExpression(config[field] as string)
-          : null;
+          : null
 
-      safeConfig[field] = safeExtract || 'null';
+      safeConfig[field] = safeExtract || 'null'
     }
 
-    return safeConfig;
+    return safeConfig
   }
 
   /**
@@ -597,9 +597,9 @@ export class SearchManager {
     const sanitized = selector
       .replace(/javascript:|data:|<script|onerror=|onload=/gi, '')
       // 只允许合法的CSS选择器字符
-      .replace(/[^\w\s#.[\]()='":_,>+~-]/g, '');
+      .replace(/[^\w\s#.[\]()='":_,>+~-]/g, '')
 
-    return sanitized;
+    return sanitized
   }
 
   /**
@@ -612,26 +612,26 @@ export class SearchManager {
   private validateExtractExpression(expression: string): string | null {
     // 极其严格的验证，只允许访问以下安全属性
     const safePattern =
-      /^(titleEl|linkEl|descEl|faviconEl)(\?|\.)?((textContent|innerText|href|src)|getAttribute\(['"]src['"]\))( \? (titleEl|linkEl|descEl|faviconEl)(\?|\.)?(textContent|innerText|href|src) : ['"].*['"])?$/;
+      /^(titleEl|linkEl|descEl|faviconEl)(\?|\.)?((textContent|innerText|href|src)|getAttribute\(['"]src['"]\))( \? (titleEl|linkEl|descEl|faviconEl)(\?|\.)?(textContent|innerText|href|src) : ['"].*['"])?$/
 
     if (safePattern.test(expression)) {
-      return expression;
+      return expression
     }
 
     // 简单的三元表达式
     const ternaryPattern =
-      /^[a-zA-Z]+\s*\?\s*[a-zA-Z]+\.[a-zA-Z]+\s*:\s*['"][^'"]*['"]$/;
+      /^[a-zA-Z]+\s*\?\s*[a-zA-Z]+\.[a-zA-Z]+\s*:\s*['"][^'"]*['"]$/
     if (ternaryPattern.test(expression)) {
-      return expression;
+      return expression
     }
 
     // 字符串字面量也是安全的
     if (/^['"][^'"]*['"]$/.test(expression)) {
-      return expression;
+      return expression
     }
 
     // 以上模式都不匹配，返回null表示表达式不安全
-    return null;
+    return null
   }
 
   /**
@@ -701,7 +701,7 @@ export class SearchManager {
           this.currentSelectors['duckduckgo'],
         ),
       },
-    ];
+    ]
   }
 
   /**
@@ -710,15 +710,15 @@ export class SearchManager {
   private async updateCustomEnginesToConfig(): Promise<void> {
     try {
       // 提取所有标记为自定义的引擎
-      const customEngines = this.engines.filter((engine) => engine.isCustom);
+      const customEngines = this.engines.filter((engine) => engine.isCustom)
 
       // 更新到配置
       if (customEngines.length > 0) {
-        const configPresenter = presenter.configPresenter;
-        await configPresenter.setCustomSearchEngines(customEngines);
+        const configPresenter = presenter.configPresenter
+        await configPresenter.setCustomSearchEngines(customEngines)
       }
     } catch (error) {
-      console.error('更新自定义搜索引擎到配置失败:', error);
+      console.error('❌更新自定义搜索引擎到配置失败:', error)
     }
   }
 
@@ -727,7 +727,7 @@ export class SearchManager {
   ): Promise<BrowserWindow> {
     // 直接从 ConfigPresenter 获取搜索预览设置状态
     const searchPreviewEnabled =
-      await presenter.configPresenter.getSearchPreviewEnabled();
+      await presenter.configPresenter.getSearchPreviewEnabled()
 
     // 如果搜索预览关闭，创建一个隐藏的窗口
     if (!searchPreviewEnabled) {
@@ -740,7 +740,7 @@ export class SearchManager {
           contextIsolation: true,
           devTools: is.dev,
         },
-      });
+      })
 
       searchWindow.webContents.session.webRequest.onBeforeSendHeaders(
         { urls: ['*://*/*'] },
@@ -749,32 +749,32 @@ export class SearchManager {
             ...details.requestHeaders,
             'User-Agent':
               'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-          };
-          callback({ requestHeaders: headers });
+          }
+          callback({ requestHeaders: headers })
         },
-      );
+      )
 
-      this.searchWindows.set(conversationId, searchWindow);
-      return searchWindow;
+      this.searchWindows.set(conversationId, searchWindow)
+      return searchWindow
     }
 
     // 下面是原始代码，当预览启用时执行
     if (this.searchWindows.size >= this.maxConcurrentSearches) {
       // 找到最早创建的窗口并销毁
-      const [oldestConversationId] = this.searchWindows.keys();
-      this.destroySearchWindow(oldestConversationId);
+      const [oldestConversationId] = this.searchWindows.keys()
+      this.destroySearchWindow(oldestConversationId)
     }
-    const mainWindow = presenter.windowPresenter.mainWindow;
+    const mainWindow = presenter.windowPresenter.mainWindow
 
     // 确保mainWindow存在
     if (!mainWindow) {
-      console.error('主窗口不存在，无法创建搜索窗口');
-      throw new Error('主窗口不存在');
+      console.error('❌主窗口不存在，无法创建搜索窗口')
+      throw new Error('主窗口不存在')
     }
 
     // 检查是否处于全屏状态
-    const isFullScreen = mainWindow.isFullScreen();
-    this.wasFullScreen.set(conversationId, isFullScreen);
+    const isFullScreen = mainWindow.isFullScreen()
+    this.wasFullScreen.set(conversationId, isFullScreen)
 
     // 如果是全屏，先退出全屏
     if (isFullScreen) {
@@ -782,60 +782,60 @@ export class SearchManager {
       this.originalWindowSizes.set(conversationId, {
         width: mainWindow.getBounds().width,
         height: mainWindow.getBounds().height,
-      });
+      })
       this.originalWindowPositions.set(conversationId, {
         x: mainWindow.getBounds().x,
         y: mainWindow.getBounds().y,
-      });
+      })
 
       // 退出全屏并等待完成
-      mainWindow.setFullScreen(false);
+      mainWindow.setFullScreen(false)
 
       // 等待退出全屏完成
       await new Promise<void>((resolve) => {
         const checkFullScreenState = () => {
           if (!mainWindow.isFullScreen()) {
-            resolve();
+            resolve()
           } else {
-            setTimeout(checkFullScreenState, 100);
+            setTimeout(checkFullScreenState, 100)
           }
-        };
-        checkFullScreenState();
-      });
+        }
+        checkFullScreenState()
+      })
 
       // 给界面一些时间来重新布局
-      await new Promise((resolve) => setTimeout(resolve, 200));
+      await new Promise((resolve) => setTimeout(resolve, 200))
     } else {
       // 不是全屏模式，正常保存当前主窗口位置和大小信息
       this.originalWindowPositions.set(conversationId, {
         x: mainWindow.getBounds().x,
         y: mainWindow.getBounds().y,
-      });
+      })
       this.originalWindowSizes.set(conversationId, {
         width: mainWindow.getBounds().width,
         height: mainWindow.getBounds().height,
-      });
+      })
     }
 
     // 获取当前屏幕可用空间
-    const mainWindowBounds = mainWindow.getBounds();
-    const displayBounds = screen.getDisplayMatching(mainWindowBounds).workArea;
+    const mainWindowBounds = mainWindow.getBounds()
+    const displayBounds = screen.getDisplayMatching(mainWindowBounds).workArea
 
     // 检查是否右侧有足够空间
     const rightSpace =
       displayBounds.x +
       displayBounds.width -
-      (mainWindowBounds.x + mainWindowBounds.width);
-    const needsAdjustment = rightSpace < this.searchWindowWidth + 20; // 加20px作为间隔
+      (mainWindowBounds.x + mainWindowBounds.width)
+    const needsAdjustment = rightSpace < this.searchWindowWidth + 20 // 加20px作为间隔
 
     // 如果需要调整窗口
     if (needsAdjustment) {
       // 在全屏模式下退出全屏后，优先采用两个窗口铺满屏幕的方式
       if (isFullScreen) {
-        const totalWidth = displayBounds.width;
-        const mainWindowWidth = Math.floor(totalWidth * 0.6); // 主窗口占60%
-        const searchWindowWidth = Math.floor(totalWidth * 0.4); // 搜索窗口占40%
-        this.searchWindowWidth = searchWindowWidth;
+        const totalWidth = displayBounds.width
+        const mainWindowWidth = Math.floor(totalWidth * 0.6) // 主窗口占60%
+        const searchWindowWidth = Math.floor(totalWidth * 0.4) // 搜索窗口占40%
+        this.searchWindowWidth = searchWindowWidth
 
         // 设置主窗口尺寸和位置（使用Electron内置动画）
         mainWindow.setBounds(
@@ -846,14 +846,14 @@ export class SearchManager {
             height: displayBounds.height,
           },
           true,
-        ); // 添加true启用动画
+        ) // 添加true启用动画
       } else {
         // 非全屏模式下的调整逻辑
         // 计算左移窗口所需的空间
-        const neededSpace = this.searchWindowWidth + 20 - rightSpace;
+        const neededSpace = this.searchWindowWidth + 20 - rightSpace
 
         // 检查左侧是否有足够空间移动窗口
-        const availableLeftSpace = mainWindowBounds.x - displayBounds.x;
+        const availableLeftSpace = mainWindowBounds.x - displayBounds.x
 
         // 优先移动窗口位置
         if (availableLeftSpace >= neededSpace) {
@@ -861,35 +861,35 @@ export class SearchManager {
           const newX = Math.max(
             displayBounds.x,
             mainWindowBounds.x - neededSpace,
-          );
+          )
           // 使用Electron内置动画
-          mainWindow.setPosition(newX, mainWindowBounds.y, true); // 添加true启用动画
+          mainWindow.setPosition(newX, mainWindowBounds.y, true) // 添加true启用动画
         } else {
           // 左侧空间不足，结合移动和缩放
           // 先尽可能地移动窗口
           if (availableLeftSpace > 0) {
-            mainWindow.setPosition(displayBounds.x, mainWindowBounds.y, true); // 添加true启用动画
+            mainWindow.setPosition(displayBounds.x, mainWindowBounds.y, true) // 添加true启用动画
           }
 
           // 计算需要缩放的大小
-          const remainingNeededSpace = neededSpace - availableLeftSpace;
+          const remainingNeededSpace = neededSpace - availableLeftSpace
           if (remainingNeededSpace > 0) {
             // 还需要缩放窗口
             const newWidth = Math.max(
               400, // 最小主窗口宽度
               mainWindowBounds.width - remainingNeededSpace,
-            );
+            )
             // 使用Electron内置动画
-            mainWindow.setSize(newWidth, mainWindowBounds.height, true); // 添加true启用动画
+            mainWindow.setSize(newWidth, mainWindowBounds.height, true) // 添加true启用动画
           }
         }
       }
 
       // 给窗口一些时间来完成动画
-      await new Promise((resolve) => setTimeout(resolve, 300));
+      await new Promise((resolve) => setTimeout(resolve, 300))
     }
 
-    console.log('creating search window');
+    console.log('creating search window')
     // 创建搜索窗口
     const searchWindow = new BrowserWindow({
       width: this.searchWindowWidth,
@@ -900,16 +900,16 @@ export class SearchManager {
         contextIsolation: true,
         devTools: is.dev,
       },
-    });
+    })
 
     // 获取调整后的主窗口位置
-    const updatedMainBounds = mainWindow.getBounds();
+    const updatedMainBounds = mainWindow.getBounds()
 
     // 设置搜索窗口位置在主窗口右侧
     searchWindow.setPosition(
       updatedMainBounds.x + updatedMainBounds.width,
       updatedMainBounds.y,
-    );
+    )
 
     searchWindow.webContents.session.webRequest.onBeforeSendHeaders(
       { urls: ['*://*/*'] },
@@ -918,39 +918,39 @@ export class SearchManager {
           ...details.requestHeaders,
           'User-Agent':
             'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        };
-        callback({ requestHeaders: headers });
+        }
+        callback({ requestHeaders: headers })
       },
-    );
+    )
     if (is.dev) {
-      searchWindow.webContents.openDevTools({ mode: 'detach' });
+      searchWindow.webContents.openDevTools({ mode: 'detach' })
     }
-    this.searchWindows.set(conversationId, searchWindow);
-    return searchWindow;
+    this.searchWindows.set(conversationId, searchWindow)
+    return searchWindow
   }
 
   private async destroySearchWindow(conversationId: string) {
-    const window = this.searchWindows.get(conversationId);
+    const window = this.searchWindows.get(conversationId)
     if (window) {
-      window.destroy();
-      this.searchWindows.delete(conversationId);
+      window.destroy()
+      this.searchWindows.delete(conversationId)
 
       // 直接从 ConfigPresenter 获取搜索预览设置状态
       const searchPreviewEnabled =
-        await presenter.configPresenter.getSearchPreviewEnabled();
+        await presenter.configPresenter.getSearchPreviewEnabled()
 
       // 如果搜索预览未启用，不需要恢复主窗口状态
       if (!searchPreviewEnabled) {
-        return;
+        return
       }
 
       // 恢复主窗口原始位置和大小
-      const originalSize = this.originalWindowSizes.get(conversationId);
-      const originalPosition = this.originalWindowPositions.get(conversationId);
-      const wasFullScreen = this.wasFullScreen.get(conversationId);
+      const originalSize = this.originalWindowSizes.get(conversationId)
+      const originalPosition = this.originalWindowPositions.get(conversationId)
+      const wasFullScreen = this.wasFullScreen.get(conversationId)
 
       if (originalSize && originalPosition) {
-        const mainWindow = presenter.windowPresenter.mainWindow;
+        const mainWindow = presenter.windowPresenter.mainWindow
         if (mainWindow) {
           if (wasFullScreen) {
             // 如果原来是全屏，先恢复原始尺寸和位置，再进入全屏
@@ -962,13 +962,13 @@ export class SearchManager {
                 height: originalSize.height,
               },
               true,
-            ); // 添加true启用动画
+            ) // 添加true启用动画
 
             // 给UI一些时间来适应新尺寸
-            await new Promise((resolve) => setTimeout(resolve, 300));
+            await new Promise((resolve) => setTimeout(resolve, 300))
 
             // 重新进入全屏
-            mainWindow.setFullScreen(true);
+            mainWindow.setFullScreen(true)
           } else {
             // 非全屏模式下平滑恢复
             mainWindow.setBounds(
@@ -979,13 +979,13 @@ export class SearchManager {
                 height: originalSize.height,
               },
               true,
-            ); // 添加true启用动画
+            ) // 添加true启用动画
           }
         }
 
-        this.originalWindowSizes.delete(conversationId);
-        this.originalWindowPositions.delete(conversationId);
-        this.wasFullScreen.delete(conversationId);
+        this.originalWindowSizes.delete(conversationId)
+        this.originalWindowPositions.delete(conversationId)
+        this.wasFullScreen.delete(conversationId)
       }
     }
   }
@@ -995,92 +995,92 @@ export class SearchManager {
     // await this.ensureEnginesUpdated()
 
     // 创建用于可能中断搜索的 AbortController
-    const abortController = new AbortController();
-    this.abortControllers.set(conversationId, abortController);
+    const abortController = new AbortController()
+    this.abortControllers.set(conversationId, abortController)
 
-    let searchWindow = this.searchWindows.get(conversationId);
+    let searchWindow = this.searchWindows.get(conversationId)
     if (!searchWindow) {
-      searchWindow = await this.initSearchWindow(conversationId);
+      searchWindow = await this.initSearchWindow(conversationId)
     }
 
     const searchUrl = this.activeEngine.searchUrl.replace(
       '{query}',
       encodeURIComponent(query),
-    );
-    console.log('开始加载搜索URL:', searchUrl);
+    )
+    console.log('开始加载搜索URL:', searchUrl)
 
     const loadTimeout = setTimeout(() => {
-      searchWindow?.webContents.stop();
-    }, 8000);
+      searchWindow?.webContents.stop()
+    }, 8000)
 
     try {
       // 检查是否已经被中止
       if (abortController.signal.aborted) {
-        throw new Error('搜索已被用户取消');
+        throw new Error('搜索已被用户取消')
       }
 
-      await searchWindow.loadURL(searchUrl);
-      console.log('搜索URL加载成功');
+      await searchWindow.loadURL(searchUrl)
+      console.log('搜索URL加载成功')
     } catch (error) {
-      console.error('加载URL失败:', error);
+      console.error('❌加载URL失败:', error)
       if (abortController.signal.aborted) {
         // 如果是用户取消导致的错误，直接返回空结果
-        this.destroySearchWindow(conversationId);
-        this.abortControllers.delete(conversationId);
-        return [];
+        this.destroySearchWindow(conversationId)
+        this.abortControllers.delete(conversationId)
+        return []
       }
     } finally {
-      clearTimeout(loadTimeout);
+      clearTimeout(loadTimeout)
     }
 
     // 检查是否已经被中止
     if (abortController.signal.aborted) {
-      this.destroySearchWindow(conversationId);
-      this.abortControllers.delete(conversationId);
-      return [];
+      this.destroySearchWindow(conversationId)
+      this.abortControllers.delete(conversationId)
+      return []
     }
     if (this.activeEngine.selector) {
-      await this.waitForSelector(searchWindow, this.activeEngine.selector);
+      await this.waitForSelector(searchWindow, this.activeEngine.selector)
     } else {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      await new Promise((resolve) => setTimeout(resolve, 1000))
     }
-    console.log('搜索结果加载完成');
+    console.log('搜索结果加载完成')
 
     // 检查是否已经被中止
     if (abortController.signal.aborted) {
-      this.destroySearchWindow(conversationId);
-      this.abortControllers.delete(conversationId);
-      return [];
+      this.destroySearchWindow(conversationId)
+      this.abortControllers.delete(conversationId)
+      return []
     }
 
-    const results = await this.extractSearchResults(searchWindow);
-    console.log('搜索结果提取完成:', results?.length);
+    const results = await this.extractSearchResults(searchWindow)
+    console.log('搜索结果提取完成:', results?.length)
 
     // 检查是否已经被中止
     if (abortController.signal.aborted) {
-      this.destroySearchWindow(conversationId);
-      this.abortControllers.delete(conversationId);
-      return [];
+      this.destroySearchWindow(conversationId)
+      this.abortControllers.delete(conversationId)
+      return []
     }
 
-    const enrichedResults = await this.enrichResults(results.slice(0, 5));
-    console.log('详细内容获取完成');
+    const enrichedResults = await this.enrichResults(results.slice(0, 5))
+    console.log('详细内容获取完成')
 
     // 清理资源
-    this.abortControllers.delete(conversationId);
+    this.abortControllers.delete(conversationId)
 
     searchWindow
       .loadFile(helperPage)
       .then(() => {
-        this.destroySearchWindow(conversationId);
+        this.destroySearchWindow(conversationId)
       })
       .catch((error) => {
-        console.error('加载空白页失败:', error);
-        this.destroySearchWindow(conversationId);
-      });
-    const remainingResults = results.slice(5); // 获取剩余的结果
-    const combinedResults = [...enrichedResults, ...remainingResults]; // 合并enrichedResults和剩余的results
-    return combinedResults;
+        console.error('❌加载空白页失败:', error)
+        this.destroySearchWindow(conversationId)
+      })
+    const remainingResults = results.slice(5) // 获取剩余的结果
+    const combinedResults = [...enrichedResults, ...remainingResults] // 合并enrichedResults和剩余的results
+    return combinedResults
   }
 
   private async waitForSelector(
@@ -1089,8 +1089,8 @@ export class SearchManager {
   ): Promise<void> {
     return new Promise((resolve) => {
       const timeout = setTimeout(() => {
-        resolve(); // 12秒后自动返回
-      }, 12000);
+        resolve() // 12秒后自动返回
+      }, 12000)
       // 如果selector不为空，就等待selector出现
       if (selector) {
         window.webContents
@@ -1112,16 +1112,16 @@ export class SearchManager {
       `,
           )
           .then(() => {
-            resolve();
+            resolve()
           })
           .catch(() => {
-            resolve();
-          });
+            resolve()
+          })
 
-        clearTimeout(timeout);
-        resolve();
+        clearTimeout(timeout)
+        resolve()
       }
-    });
+    })
   }
 
   private async extractSearchResults(
@@ -1129,24 +1129,24 @@ export class SearchManager {
   ): Promise<SearchResult[]> {
     try {
       // 0. 模拟页面滚动，模拟真实阅读体验
-      this.simulatePageScrolling(window);
-      console.log('extraing', this.activeEngine.id);
+      this.simulatePageScrolling(window)
+      console.log('extraing', this.activeEngine.id)
       const results = await window.webContents.executeJavaScript(`
         (function() {
           ${this.activeEngine.extractorScript}
         })()
-      `);
+      `)
       // 如果结果为空或长度为0，尝试使用备用方法
       if (!results || results.length === 0) {
-        console.log('常规提取方法未返回结果，尝试使用备用方法');
-        return await this.fallbackExtractSearchResults(window);
+        console.log('常规提取方法未返回结果，尝试使用备用方法')
+        return await this.fallbackExtractSearchResults(window)
       }
 
-      return results;
+      return results
     } catch (error) {
-      console.error('提取搜索结果失败:', error);
+      console.error('❌提取搜索结果失败:', error)
       // 出错时也使用备用方法
-      return [];
+      return []
     }
   }
 
@@ -1191,25 +1191,25 @@ export class SearchManager {
           // 返回清理后的HTML
           return tempDiv.innerHTML
         })()
-      `);
+      `)
 
       // 获取页面URL（用于转换相对链接为绝对链接）
-      const pageUrl = await window.webContents.getURL();
+      const pageUrl = await window.webContents.getURL()
       const pageTitle =
-        await window.webContents.executeJavaScript(`document.title`);
+        await window.webContents.executeJavaScript(`document.title`)
 
-      console.log('转换前的HTML长度:', cleanedHtml.length);
+      console.log('转换前的HTML长度:', cleanedHtml.length)
       // 2. 使用ContentEnricher将HTML转换为Markdown
       let markdownContent = ContentEnricher.convertHtmlToMarkdown(
         cleanedHtml,
         pageUrl,
-      );
-      console.log('转换后的Markdown长度:', markdownContent.length);
+      )
+      console.log('转换后的Markdown长度:', markdownContent.length)
 
       // 限制markdown长度，避免过大
-      const maxMarkdownLength = 10000;
+      const maxMarkdownLength = 10000
       if (markdownContent.length > maxMarkdownLength) {
-        markdownContent = markdownContent.substring(0, maxMarkdownLength);
+        markdownContent = markdownContent.substring(0, maxMarkdownLength)
       }
 
       // 3. 构建提示词，使用AI模型提取搜索结果
@@ -1254,17 +1254,17 @@ export class SearchManager {
         <search_result>
         ${markdownContent}
         </search_result>
-      `;
+      `
 
       // 4. 使用AI模型进行分析
       const searchAssistantModel =
-        presenter.threadPresenter.searchAssistantModel;
+        presenter.threadPresenter.searchAssistantModel
       const searchAssistantProviderId =
-        presenter.threadPresenter.searchAssistantProviderId;
+        presenter.threadPresenter.searchAssistantProviderId
       if (!searchAssistantModel || !searchAssistantProviderId) {
-        throw new Error('搜索助手模型或提供商ID未设置');
+        throw new Error('搜索助手模型或提供商ID未设置')
       }
-      const modelResponse = [];
+      const modelResponse = []
       // await presenter.llmproviderPresenter.generateCompletion(
       //   searchAssistantProviderId,
       //   [
@@ -1276,56 +1276,56 @@ export class SearchManager {
       //   searchAssistantModel.id || '',
       //   0.4,
       // );
-      console.log('模型返回的内容:', modelResponse?.length);
+      console.log('模型返回的内容:', modelResponse?.length)
 
       // 5. 解析模型返回的内容
       try {
         // 尝试解析JSON
-        const jsonStart = modelResponse.indexOf('[');
-        const jsonEnd = modelResponse.lastIndexOf(']') + 1;
+        const jsonStart = modelResponse.indexOf('[')
+        const jsonEnd = modelResponse.lastIndexOf(']') + 1
 
         if (jsonStart >= 0 && jsonEnd > jsonStart) {
-          const jsonStr = modelResponse.substring(jsonStart, jsonEnd);
-          const results = JSON.parse(jsonStr);
+          const jsonStr = modelResponse.substring(jsonStart, jsonEnd)
+          const results = JSON.parse(jsonStr)
 
           // 验证结果格式
           if (Array.isArray(results) && results.length > 0) {
-            console.log('AI模型成功提取到搜索结果:', results.length);
-            return results;
+            console.log('AI模型成功提取到搜索结果:', results.length)
+            return results
           }
         } else if (jsonStart >= 0) {
           // 找到了开始的 '[' 但没有找到匹配的结束 ']'
           // 这种情况下尝试逐个解析JSON对象
 
           // 从jsonStart开始的子字符串
-          const incompleteJsonStr = modelResponse.substring(jsonStart);
+          const incompleteJsonStr = modelResponse.substring(jsonStart)
 
           // 结果数组
-          let results: SearchResult[] = [];
+          let results: SearchResult[] = []
           try {
-            console.log('try to repair json');
-            results = JSON.parse(jsonrepair(incompleteJsonStr));
+            console.log('try to repair json')
+            results = JSON.parse(jsonrepair(incompleteJsonStr))
           } catch (e: unknown) {
-            console.error('Error parsing AI model response:', e);
-            results = [];
+            console.error('❌Error parsing AI model response:', e)
+            results = []
           }
 
           if (results.length > 0) {
-            console.log('成功从不完整JSON中提取到搜索结果:', results.length);
-            return results;
+            console.log('成功从不完整JSON中提取到搜索结果:', results.length)
+            return results
           }
         }
 
         // 如果无法解析为JSON或格式不正确
-        console.warn('AI模型返回的内容无法解析为有效的搜索结果');
-        return [];
+        console.warn('AI模型返回的内容无法解析为有效的搜索结果')
+        return []
       } catch (error) {
-        console.error('解析AI模型返回内容失败:', error);
-        return [];
+        console.error('❌解析AI模型返回内容失败:', error)
+        return []
       }
     } catch (error) {
-      console.error('备用提取方法失败:', error);
-      return [];
+      console.error('❌备用提取方法失败:', error)
+      return []
     }
   }
 
@@ -1338,22 +1338,22 @@ export class SearchManager {
       // 获取页面高度
       const pageHeight = await window.webContents.executeJavaScript(`
         document.body.scrollHeight
-      `);
+      `)
 
       // 获取视窗高度
       const viewportHeight = await window.webContents.executeJavaScript(`
         window.innerHeight
-      `);
+      `)
 
       // 页面总高度
-      const totalHeight = Math.max(pageHeight, 1000);
+      const totalHeight = Math.max(pageHeight, 1000)
 
       // 计算滚动次数和每次滚动的距离
-      const scrollIterations = 3; // 滚动3次
+      const scrollIterations = 3 // 滚动3次
       const scrollDistance = Math.min(
         totalHeight / scrollIterations,
         viewportHeight * 0.8,
-      );
+      )
 
       // 平滑滚动
       for (let i = 0; i < scrollIterations; i++) {
@@ -1373,18 +1373,18 @@ export class SearchManager {
             // 等待滚动完成
             setTimeout(resolve, 300);
           })
-        `);
+        `)
 
         // 给浏览器一点时间来加载潜在的懒加载内容
-        await new Promise((resolve) => setTimeout(resolve, 500));
+        await new Promise((resolve) => setTimeout(resolve, 500))
       }
 
       // 等待一下，让页面完全加载
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      await new Promise((resolve) => setTimeout(resolve, 500))
 
-      console.log('页面滚动完成');
+      console.log('页面滚动完成')
     } catch (error) {
-      console.error('模拟页面滚动失败:', error);
+      console.error('❌模拟页面滚动失败:', error)
       // 失败也继续处理
     }
   }
@@ -1392,7 +1392,7 @@ export class SearchManager {
   private async enrichResults(
     results: SearchResult[],
   ): Promise<SearchResult[]> {
-    return await ContentEnricher.enrichResults(results);
+    return await ContentEnricher.enrichResults(results)
   }
 
   /**
@@ -1416,7 +1416,7 @@ export class SearchManager {
           contextIsolation: true,
           devTools: is.dev,
         },
-      });
+      })
 
       // 配置User-Agent
       testWindow.webContents.session.webRequest.onBeforeSendHeaders(
@@ -1426,33 +1426,33 @@ export class SearchManager {
             ...details.requestHeaders,
             'User-Agent':
               'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-          };
-          callback({ requestHeaders: headers });
+          }
+          callback({ requestHeaders: headers })
         },
-      );
+      )
 
       // 生成搜索URL
       const searchUrl = this.activeEngine.searchUrl.replace(
         '{query}',
         encodeURIComponent(query),
-      );
-      console.log('测试搜索URL:', searchUrl);
+      )
+      console.log('测试搜索URL:', searchUrl)
 
       // 加载URL
-      await testWindow.loadURL(searchUrl);
+      await testWindow.loadURL(searchUrl)
 
       // 保持窗口在前台
-      testWindow.focus();
+      testWindow.focus()
 
       // 在窗口关闭时清理资源
       testWindow.on('closed', () => {
-        console.log('测试搜索窗口已关闭');
-      });
+        console.log('测试搜索窗口已关闭')
+      })
 
-      return true;
+      return true
     } catch (error) {
-      console.error('测试搜索失败:', error);
-      return false;
+      console.error('❌测试搜索失败:', error)
+      return false
     }
   }
 
@@ -1461,31 +1461,31 @@ export class SearchManager {
    * @param conversationId 会话ID
    */
   async stopSearch(conversationId: string): Promise<void> {
-    console.log('停止搜索, conversationId:', conversationId);
+    console.log('停止搜索, conversationId:', conversationId)
 
     // 中止搜索操作
-    const abortController = this.abortControllers.get(conversationId);
+    const abortController = this.abortControllers.get(conversationId)
     if (abortController) {
-      abortController.abort();
-      this.abortControllers.delete(conversationId);
+      abortController.abort()
+      this.abortControllers.delete(conversationId)
     }
 
     // 关闭搜索窗口
-    await this.destroySearchWindow(conversationId);
+    await this.destroySearchWindow(conversationId)
   }
 
   destroy() {
     // 中止所有搜索操作
     for (const controller of this.abortControllers.values()) {
-      controller.abort();
+      controller.abort()
     }
-    this.abortControllers.clear();
+    this.abortControllers.clear()
 
     for (const [conversationId] of this.searchWindows) {
-      this.destroySearchWindow(conversationId);
+      this.destroySearchWindow(conversationId)
     }
-    this.originalWindowSizes.clear();
-    this.originalWindowPositions.clear();
-    this.wasFullScreen.clear();
+    this.originalWindowSizes.clear()
+    this.originalWindowPositions.clear()
+    this.wasFullScreen.clear()
   }
 }

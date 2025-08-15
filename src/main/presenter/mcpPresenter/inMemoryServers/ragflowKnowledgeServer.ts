@@ -1,5 +1,8 @@
 import { Server } from '@modelcontextprotocol/sdk/server/index.js'
-import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js'
+import {
+  CallToolRequestSchema,
+  ListToolsRequestSchema,
+} from '@modelcontextprotocol/sdk/types.js'
 import { z } from 'zod'
 import { zodToJsonSchema } from 'zod-to-json-schema'
 import { Transport } from '@modelcontextprotocol/sdk/shared/transport.js'
@@ -9,9 +12,21 @@ import axios from 'axios'
 const RagflowKnowledgeSearchArgsSchema = z.object({
   query: z.string().describe('搜索查询内容 (必填)'),
   topK: z.number().optional().default(5).describe('返回结果数量 (默认5条)'),
-  scoreThreshold: z.number().optional().default(0.2).describe('相似度阈值 (0-1之间，默认0.2)'),
-  keyword: z.boolean().optional().default(false).describe('是否启用关键词匹配 (默认false)'),
-  highlight: z.boolean().optional().default(false).describe('是否高亮匹配的文本 (默认false)')
+  scoreThreshold: z
+    .number()
+    .optional()
+    .default(0.2)
+    .describe('相似度阈值 (0-1之间，默认0.2)'),
+  keyword: z
+    .boolean()
+    .optional()
+    .default(false)
+    .describe('是否启用关键词匹配 (默认false)'),
+  highlight: z
+    .boolean()
+    .optional()
+    .default(false)
+    .describe('是否高亮匹配的文本 (默认false)'),
 })
 
 // 定义RAGFlow API返回的数据结构
@@ -79,11 +94,17 @@ export class RagflowKnowledgeServer {
       if (!env.apiKey) {
         throw new Error('需要提供RAGFlow API Key')
       }
-      if (!env.datasetIds || !Array.isArray(env.datasetIds) || env.datasetIds.length === 0) {
+      if (
+        !env.datasetIds ||
+        !Array.isArray(env.datasetIds) ||
+        env.datasetIds.length === 0
+      ) {
         throw new Error('需要提供至少一个RAGFlow Dataset ID')
       }
       if (!env.description) {
-        throw new Error('需要提供对这个知识库的描述，以方便ai决定是否检索此知识库')
+        throw new Error(
+          '需要提供对这个知识库的描述，以方便ai决定是否检索此知识库',
+        )
       }
 
       this.configs.push({
@@ -91,7 +112,7 @@ export class RagflowKnowledgeServer {
         datasetIds: env.datasetIds,
         endpoint: env.endpoint || 'http://localhost:8000',
         description: env.description,
-        enabled: env.enabled
+        enabled: env.enabled,
       })
     }
 
@@ -99,13 +120,13 @@ export class RagflowKnowledgeServer {
     this.server = new Server(
       {
         name: 'deepchat-inmemory/ragflow-knowledge-server',
-        version: '0.1.0'
+        version: '0.1.0',
       },
       {
         capabilities: {
-          tools: {}
-        }
-      }
+          tools: {},
+        },
+      },
     )
 
     // 设置请求处理器
@@ -128,7 +149,7 @@ export class RagflowKnowledgeServer {
           return {
             name: `ragflow_knowledge_search${suffix}`,
             description: config.description,
-            inputSchema: zodToJsonSchema(RagflowKnowledgeSearchArgsSchema)
+            inputSchema: zodToJsonSchema(RagflowKnowledgeSearchArgsSchema),
           }
         })
       return { tools }
@@ -158,19 +179,22 @@ export class RagflowKnowledgeServer {
 
           // 获取实际配置的索引
           const actualConfigIndex = this.configs.findIndex(
-            (config) => config === enabledConfigs[configIndex]
+            (config) => config === enabledConfigs[configIndex],
           )
 
-          return await this.performRagflowKnowledgeSearch(parameters, actualConfigIndex)
+          return await this.performRagflowKnowledgeSearch(
+            parameters,
+            actualConfigIndex,
+          )
         } catch (error) {
-          console.error('RAGFlow知识库搜索失败:', error)
+          console.error('❌RAGFlow知识库搜索失败:', error)
           return {
             content: [
               {
                 type: 'text',
-                text: `搜索失败: ${error instanceof Error ? error.message : String(error)}`
-              }
-            ]
+                text: `搜索失败: ${error instanceof Error ? error.message : String(error)}`,
+              },
+            ],
           }
         }
       }
@@ -179,9 +203,9 @@ export class RagflowKnowledgeServer {
         content: [
           {
             type: 'text',
-            text: `未知工具: ${name}`
-          }
-        ]
+            text: `未知工具: ${name}`,
+          },
+        ],
       }
     })
   }
@@ -189,14 +213,14 @@ export class RagflowKnowledgeServer {
   // 执行RAGFlow知识库搜索
   private async performRagflowKnowledgeSearch(
     parameters: Record<string, unknown> | undefined,
-    configIndex: number = 0
+    configIndex: number = 0,
   ): Promise<{ content: MCPTextContent[] }> {
     const {
       query,
       topK = 5,
       scoreThreshold = 0.2,
       keyword = false,
-      highlight = false
+      highlight = false,
     } = parameters as {
       query: string
       topK?: number
@@ -220,7 +244,7 @@ export class RagflowKnowledgeServer {
         top_k: topK,
         similarity_threshold: scoreThreshold,
         keyword,
-        highlight
+        highlight,
       })
 
       const response = await axios.post<RagflowSearchResponse>(
@@ -231,14 +255,14 @@ export class RagflowKnowledgeServer {
           page_size: topK,
           similarity_threshold: scoreThreshold,
           keyword,
-          highlight
+          highlight,
         },
         {
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${config.apiKey}`
-          }
-        }
+            Authorization: `Bearer ${config.apiKey}`,
+          },
+        },
       )
 
       if (response.data.code !== 0) {
@@ -249,7 +273,8 @@ export class RagflowKnowledgeServer {
       const results = response.data.data.chunks.map((chunk) => {
         const docName = chunk.document_keyword || '未知文档'
         const docId = chunk.document_id
-        const content = highlight && chunk.highlight ? chunk.highlight : chunk.content
+        const content =
+          highlight && chunk.highlight ? chunk.highlight : chunk.content
         const score = chunk.similarity
 
         return {
@@ -257,7 +282,7 @@ export class RagflowKnowledgeServer {
           documentId: docId,
           content: content,
           score: score,
-          keywords: chunk.important_keywords || []
+          keywords: chunk.important_keywords || [],
         }
       })
 
@@ -283,15 +308,15 @@ export class RagflowKnowledgeServer {
         content: [
           {
             type: 'text',
-            text: resultText
-          }
-        ]
+            text: resultText,
+          },
+        ],
       }
     } catch (error) {
-      console.error('RAGFlow API请求失败:', error)
+      console.error('❌RAGFlow API请求失败:', error)
       if (axios.isAxiosError(error) && error.response) {
         throw new Error(
-          `RAGFlow API错误 (${error.response.status}): ${JSON.stringify(error.response.data)}`
+          `RAGFlow API错误 (${error.response.status}): ${JSON.stringify(error.response.data)}`,
         )
       }
       throw error

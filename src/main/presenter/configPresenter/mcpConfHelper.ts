@@ -1,42 +1,42 @@
-import { eventBus, SendTarget } from '@/events/eventbus';
-import { MCPServerConfig } from '@shared/presenter';
-import { MCP_EVENTS } from '@/events/events';
-import ElectronStore from 'electron-store';
-import { app } from 'electron';
-import { compare } from 'compare-versions';
-import { presenter } from '..';
+import { eventBus, SendTarget } from '@/events/eventbus'
+import { MCPServerConfig } from '@shared/presenter'
+import { MCP_EVENTS } from '@/events/events'
+import ElectronStore from 'electron-store'
+import { app } from 'electron'
+import { compare } from 'compare-versions'
+import { presenter } from '..'
 
 // NPM Registry缓存接口
 export interface INpmRegistryCache {
-  registry: string;
-  lastChecked: number;
-  isAutoDetect: boolean;
+  registry: string
+  lastChecked: number
+  isAutoDetect: boolean
 }
 
 // MCP设置的接口
 interface IMcpSettings {
-  mcpServers: Record<string, MCPServerConfig>;
-  defaultServer?: string; // 保留旧字段以支持版本兼容
-  defaultServers: string[]; // 新增：多个默认服务器数组
-  mcpEnabled: boolean; // 添加MCP启用状态字段
-  npmRegistryCache?: INpmRegistryCache; // NPM源缓存
-  customNpmRegistry?: string; // 用户自定义NPM源
-  autoDetectNpmRegistry?: boolean; // 是否启用自动检测
-  [key: string]: unknown; // 允许任意键
+  mcpServers: Record<string, MCPServerConfig>
+  defaultServer?: string // 保留旧字段以支持版本兼容
+  defaultServers: string[] // 新增：多个默认服务器数组
+  mcpEnabled: boolean // 添加MCP启用状态字段
+  npmRegistryCache?: INpmRegistryCache // NPM源缓存
+  customNpmRegistry?: string // 用户自定义NPM源
+  autoDetectNpmRegistry?: boolean // 是否启用自动检测
+  [key: string]: unknown // 允许任意键
 }
-export type MCPServerType = 'stdio' | 'sse' | 'inmemory' | 'http';
+export type MCPServerType = 'stdio' | 'sse' | 'inmemory' | 'http'
 
 // 检查当前系统平台
 function isMacOS(): boolean {
-  return process.platform === 'darwin';
+  return process.platform === 'darwin'
 }
 
 function isWindows(): boolean {
-  return process.platform === 'win32';
+  return process.platform === 'win32'
 }
 
 function isLinux(): boolean {
-  return process.platform === 'linux';
+  return process.platform === 'linux'
 }
 
 // 平台特有的 MCP 服务器配置
@@ -88,7 +88,7 @@ const PLATFORM_SPECIFIC_SERVERS: Record<string, MCPServerConfig> = {
         // }
       }
     : {}),
-};
+}
 
 // 抽取inmemory类型的服务为常量
 const DEFAULT_INMEMORY_SERVERS: Record<string, MCPServerConfig> = {
@@ -270,7 +270,7 @@ const DEFAULT_INMEMORY_SERVERS: Record<string, MCPServerConfig> = {
   },
   // 合并平台特有服务
   ...PLATFORM_SPECIFIC_SERVERS,
-};
+}
 
 const DEFAULT_MCP_SERVERS = {
   mcpServers: {
@@ -294,7 +294,7 @@ const DEFAULT_MCP_SERVERS = {
     ...(isMacOS() ? ['deepchat/apple-server'] : []),
   ],
   mcpEnabled: false, // 默认关闭MCP功能
-};
+}
 // 这部分mcp有系统逻辑判断是否启用，不受用户配置控制，受软件环境控制
 export const SYSTEM_INMEM_MCP_SERVERS: Record<string, MCPServerConfig> = {
   'deepchat-inmemory/custom-prompts-server': {
@@ -307,10 +307,10 @@ export const SYSTEM_INMEM_MCP_SERVERS: Record<string, MCPServerConfig> = {
     type: 'inmemory' as MCPServerType,
     disable: false,
   },
-};
+}
 
 export class McpConfHelper {
-  private mcpStore: ElectronStore<IMcpSettings>;
+  private mcpStore: ElectronStore<IMcpSettings>
 
   constructor() {
     // 初始化MCP设置存储
@@ -324,34 +324,34 @@ export class McpConfHelper {
         npmRegistryCache: undefined,
         customNpmRegistry: undefined,
       },
-    });
+    })
   }
 
   // 获取MCP服务器配置
   async getMcpServers(): Promise<Record<string, MCPServerConfig>> {
     const storedServers =
-      this.mcpStore.get('mcpServers') || DEFAULT_MCP_SERVERS.mcpServers;
+      this.mcpStore.get('mcpServers') || DEFAULT_MCP_SERVERS.mcpServers
 
     // 检查并补充缺少的inmemory服务
-    const updatedServers = { ...storedServers };
+    const updatedServers = { ...storedServers }
 
     // 遍历所有默认的inmemory服务，确保它们都存在
     for (const [serverName, serverConfig] of Object.entries(
       DEFAULT_INMEMORY_SERVERS,
     )) {
       if (!updatedServers[serverName]) {
-        console.log(`添加缺少的inmemory服务: ${serverName}`);
-        updatedServers[serverName] = serverConfig;
+        console.log(`添加缺少的inmemory服务: ${serverName}`)
+        updatedServers[serverName] = serverConfig
       }
     }
 
     // 移除不支持当前平台的服务
-    const serversToRemove: string[] = [];
+    const serversToRemove: string[] = []
     for (const [serverName, serverConfig] of Object.entries(updatedServers)) {
       if (serverConfig.type === 'inmemory') {
         // 检查是否为平台特有服务
         if (serverName === 'deepchat/apple-server' && !isMacOS()) {
-          serversToRemove.push(serverName);
+          serversToRemove.push(serverName)
         }
         // 可以在这里添加其他平台特有服务的检查
         // if (serverName === 'deepchat-inmemory/windows-server' && !isWindows()) {
@@ -365,16 +365,16 @@ export class McpConfHelper {
 
     // 移除不支持的平台特有服务
     for (const serverName of serversToRemove) {
-      console.log(`移除不支持当前平台的服务: ${serverName}`);
-      delete updatedServers[serverName];
+      console.log(`移除不支持当前平台的服务: ${serverName}`)
+      delete updatedServers[serverName]
     }
 
     // 移除不兼容的服务
     const builtinKnowledgeSupported =
-      await presenter.knowledgePresenter.isSupported();
+      await presenter.knowledgePresenter.isSupported()
     if (!builtinKnowledgeSupported) {
-      console.warn('内置知识库服务不支持当前环境，移除相关服务');
-      delete updatedServers.builtinKnowledge;
+      console.warn('内置知识库服务不支持当前环境，移除相关服务')
+      delete updatedServers.builtinKnowledge
     }
 
     // 如果有变化，更新存储
@@ -383,50 +383,50 @@ export class McpConfHelper {
         Object.keys(storedServers).length ||
       serversToRemove.length > 0
     ) {
-      this.mcpStore.set('mcpServers', updatedServers);
+      this.mcpStore.set('mcpServers', updatedServers)
     }
 
-    return Promise.resolve(updatedServers);
+    return Promise.resolve(updatedServers)
   }
 
   // 设置MCP服务器配置
   async setMcpServers(servers: Record<string, MCPServerConfig>): Promise<void> {
-    this.mcpStore.set('mcpServers', servers);
+    this.mcpStore.set('mcpServers', servers)
     eventBus.send(MCP_EVENTS.CONFIG_CHANGED, SendTarget.ALL_WINDOWS, {
       mcpServers: servers,
       defaultServers: this.mcpStore.get('defaultServers') || [],
       mcpEnabled: this.mcpStore.get('mcpEnabled'),
-    });
+    })
   }
 
   // 获取默认服务器列表
   getMcpDefaultServers(): Promise<string[]> {
-    return Promise.resolve(this.mcpStore.get('defaultServers') || []);
+    return Promise.resolve(this.mcpStore.get('defaultServers') || [])
   }
 
   // 添加默认服务器
   async addMcpDefaultServer(serverName: string): Promise<void> {
-    const defaultServers = this.mcpStore.get('defaultServers') || [];
-    const mcpServers = await this.getMcpServers(); // 使用getMcpServers确保平台检查
+    const defaultServers = this.mcpStore.get('defaultServers') || []
+    const mcpServers = await this.getMcpServers() // 使用getMcpServers确保平台检查
 
     // 检测并清理失效的服务器
     const validDefaultServers = defaultServers.filter((server) => {
-      const exists = mcpServers[server] !== undefined;
+      const exists = mcpServers[server] !== undefined
       if (!exists) {
-        console.log(`检测到失效的MCP服务器: ${server}，已从默认列表中移除`);
+        console.log(`检测到失效的MCP服务器: ${server}，已从默认列表中移除`)
       }
-      return exists;
-    });
+      return exists
+    })
 
     // 检查要添加的服务器是否存在且支持当前平台
     if (mcpServers[serverName]) {
       // 添加新服务器（如果不在列表中）
       if (!validDefaultServers.includes(serverName)) {
-        validDefaultServers.push(serverName);
+        validDefaultServers.push(serverName)
       }
     } else {
-      console.log(`尝试添加不存在或不支持当前平台的MCP服务器: ${serverName}`);
-      return;
+      console.log(`尝试添加不存在或不支持当前平台的MCP服务器: ${serverName}`)
+      return
     }
 
     // 如果有变化则更新存储并发送事件
@@ -434,156 +434,156 @@ export class McpConfHelper {
       validDefaultServers.length !== defaultServers.length ||
       !defaultServers.includes(serverName)
     ) {
-      this.mcpStore.set('defaultServers', validDefaultServers);
+      this.mcpStore.set('defaultServers', validDefaultServers)
       eventBus.send(MCP_EVENTS.CONFIG_CHANGED, SendTarget.ALL_WINDOWS, {
         mcpServers: mcpServers,
         defaultServers: validDefaultServers,
         mcpEnabled: this.mcpStore.get('mcpEnabled'),
-      });
+      })
     }
   }
 
   // 移除默认服务器
   async removeMcpDefaultServer(serverName: string): Promise<void> {
-    const defaultServers = this.mcpStore.get('defaultServers') || [];
-    const updatedServers = defaultServers.filter((name) => name !== serverName);
-    this.mcpStore.set('defaultServers', updatedServers);
+    const defaultServers = this.mcpStore.get('defaultServers') || []
+    const updatedServers = defaultServers.filter((name) => name !== serverName)
+    this.mcpStore.set('defaultServers', updatedServers)
     eventBus.send(MCP_EVENTS.CONFIG_CHANGED, SendTarget.ALL_WINDOWS, {
       mcpServers: this.mcpStore.get('mcpServers'),
       defaultServers: updatedServers,
       mcpEnabled: this.mcpStore.get('mcpEnabled'),
-    });
+    })
   }
 
   // 切换服务器的默认状态
   async toggleMcpDefaultServer(serverName: string): Promise<void> {
-    const defaultServers = this.mcpStore.get('defaultServers') || [];
+    const defaultServers = this.mcpStore.get('defaultServers') || []
     if (defaultServers.includes(serverName)) {
-      await this.removeMcpDefaultServer(serverName);
+      await this.removeMcpDefaultServer(serverName)
     } else {
-      await this.addMcpDefaultServer(serverName);
+      await this.addMcpDefaultServer(serverName)
     }
   }
 
   // 设置MCP启用状态
   async setMcpEnabled(enabled: boolean): Promise<void> {
-    this.mcpStore.set('mcpEnabled', enabled);
+    this.mcpStore.set('mcpEnabled', enabled)
     eventBus.send(MCP_EVENTS.CONFIG_CHANGED, SendTarget.ALL_WINDOWS, {
       mcpServers: this.mcpStore.get('mcpServers'),
       defaultServers: this.mcpStore.get('defaultServers'),
       mcpEnabled: enabled,
-    });
+    })
   }
 
   // 获取MCP启用状态
   getMcpEnabled(): Promise<boolean> {
     return Promise.resolve(
       this.mcpStore.get('mcpEnabled') ?? DEFAULT_MCP_SERVERS.mcpEnabled,
-    );
+    )
   }
 
   // 添加MCP服务器
   async addMcpServer(name: string, config: MCPServerConfig): Promise<boolean> {
-    const mcpServers = await this.getMcpServers();
-    mcpServers[name] = config;
-    await this.setMcpServers(mcpServers);
-    return true;
+    const mcpServers = await this.getMcpServers()
+    mcpServers[name] = config
+    await this.setMcpServers(mcpServers)
+    return true
   }
 
   // 获取NPM Registry缓存
   getNpmRegistryCache(): INpmRegistryCache | undefined {
-    return this.mcpStore.get('npmRegistryCache');
+    return this.mcpStore.get('npmRegistryCache')
   }
 
   // 设置NPM Registry缓存
   setNpmRegistryCache(cache: INpmRegistryCache): void {
-    this.mcpStore.set('npmRegistryCache', cache);
+    this.mcpStore.set('npmRegistryCache', cache)
   }
 
   // 检查缓存是否有效（24小时内）
   isNpmRegistryCacheValid(): boolean {
-    const cache = this.getNpmRegistryCache();
-    if (!cache) return false;
-    const now = Date.now();
-    const cacheAge = now - cache.lastChecked;
-    const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24小时
-    return cacheAge < CACHE_DURATION;
+    const cache = this.getNpmRegistryCache()
+    if (!cache) return false
+    const now = Date.now()
+    const cacheAge = now - cache.lastChecked
+    const CACHE_DURATION = 24 * 60 * 60 * 1000 // 24小时
+    return cacheAge < CACHE_DURATION
   }
 
   // 获取有效的NPM Registry（按优先级：自定义源 > 缓存 > 默认）
   getEffectiveNpmRegistry(): string | null {
-    const customRegistry = this.getCustomNpmRegistry();
+    const customRegistry = this.getCustomNpmRegistry()
     if (customRegistry) {
-      console.log(`[NPM Registry] Using custom registry: ${customRegistry}`);
-      return customRegistry;
+      console.log(`[NPM Registry] Using custom registry: ${customRegistry}`)
+      return customRegistry
     }
 
     if (this.getAutoDetectNpmRegistry() && this.isNpmRegistryCacheValid()) {
-      const cache = this.getNpmRegistryCache();
+      const cache = this.getNpmRegistryCache()
       if (cache?.registry) {
-        console.log(`[NPM Registry] Using cached registry: ${cache.registry}`);
-        return cache.registry;
+        console.log(`[NPM Registry] Using cached registry: ${cache.registry}`)
+        return cache.registry
       }
     }
 
     console.log(
       '[NPM Registry] No effective registry found, will use default or detect',
-    );
-    return null;
+    )
+    return null
   }
 
   // 获取自定义NPM Registry
   getCustomNpmRegistry(): string | undefined {
-    return this.mcpStore.get('customNpmRegistry');
+    return this.mcpStore.get('customNpmRegistry')
   }
 
   // 标准化NPM Registry URL
   private normalizeNpmRegistryUrl(registry: string): string {
-    let normalized = registry.trim();
+    let normalized = registry.trim()
     if (!normalized.endsWith('/')) {
-      normalized += '/';
+      normalized += '/'
     }
-    return normalized;
+    return normalized
   }
 
   // 设置自定义NPM Registry
   setCustomNpmRegistry(registry: string | undefined): void {
     if (registry === undefined) {
-      this.mcpStore.delete('customNpmRegistry');
+      this.mcpStore.delete('customNpmRegistry')
     } else {
-      const normalizedRegistry = this.normalizeNpmRegistryUrl(registry);
-      this.mcpStore.set('customNpmRegistry', normalizedRegistry);
+      const normalizedRegistry = this.normalizeNpmRegistryUrl(registry)
+      this.mcpStore.set('customNpmRegistry', normalizedRegistry)
       console.log(
         `[NPM Registry] Normalized custom registry: ${registry} -> ${normalizedRegistry}`,
-      );
+      )
     }
   }
 
   // 获取自动检测NPM Registry设置
   getAutoDetectNpmRegistry(): boolean {
-    return this.mcpStore.get('autoDetectNpmRegistry') ?? true;
+    return this.mcpStore.get('autoDetectNpmRegistry') ?? true
   }
 
   // 设置自动检测NPM Registry
   setAutoDetectNpmRegistry(enabled: boolean): void {
-    this.mcpStore.set('autoDetectNpmRegistry', enabled);
+    this.mcpStore.set('autoDetectNpmRegistry', enabled)
   }
 
   // 清除NPM Registry缓存
   clearNpmRegistryCache(): void {
-    this.mcpStore.delete('npmRegistryCache');
+    this.mcpStore.delete('npmRegistryCache')
   }
 
   // 移除MCP服务器
   async removeMcpServer(name: string): Promise<void> {
-    const mcpServers = await this.getMcpServers();
-    delete mcpServers[name];
-    await this.setMcpServers(mcpServers);
+    const mcpServers = await this.getMcpServers()
+    delete mcpServers[name]
+    await this.setMcpServers(mcpServers)
 
     // 如果删除的服务器在默认服务器列表中，则从列表中移除
-    const defaultServers = await this.getMcpDefaultServers();
+    const defaultServers = await this.getMcpDefaultServers()
     if (defaultServers.includes(name)) {
-      await this.removeMcpDefaultServer(name);
+      await this.removeMcpDefaultServer(name)
     }
   }
 
@@ -592,26 +592,26 @@ export class McpConfHelper {
     name: string,
     config: Partial<MCPServerConfig>,
   ): Promise<void> {
-    const mcpServers = await this.getMcpServers();
+    const mcpServers = await this.getMcpServers()
     if (!mcpServers[name]) {
-      throw new Error(`MCP server ${name} not found`);
+      throw new Error(`MCP server ${name} not found`)
     }
     mcpServers[name] = {
       ...mcpServers[name],
       ...config,
-    };
-    await this.setMcpServers(mcpServers);
+    }
+    await this.setMcpServers(mcpServers)
   }
 
   // 恢复默认服务器配置
   async resetToDefaultServers(): Promise<void> {
-    const currentServers = await this.getMcpServers();
-    const updatedServers = { ...currentServers };
+    const currentServers = await this.getMcpServers()
+    const updatedServers = { ...currentServers }
 
     // 删除所有类型为inmemory的服务
     for (const [serverName, serverConfig] of Object.entries(updatedServers)) {
       if (serverConfig.type === 'inmemory') {
-        delete updatedServers[serverName];
+        delete updatedServers[serverName]
       }
     }
 
@@ -619,55 +619,55 @@ export class McpConfHelper {
     for (const [serverName, serverConfig] of Object.entries(
       DEFAULT_MCP_SERVERS.mcpServers,
     )) {
-      updatedServers[serverName] = serverConfig;
+      updatedServers[serverName] = serverConfig
     }
 
     // 更新服务器配置
-    await this.setMcpServers(updatedServers);
+    await this.setMcpServers(updatedServers)
 
     // 恢复默认服务器设置，确保平台特有服务的正确处理
     const platformAwareDefaultServers = [
       'Artifacts',
       // 根据平台添加默认启用的平台特有服务
       ...(isMacOS() ? ['deepchat/apple-server'] : []),
-    ];
+    ]
 
-    this.mcpStore.set('defaultServers', platformAwareDefaultServers);
+    this.mcpStore.set('defaultServers', platformAwareDefaultServers)
     eventBus.send(MCP_EVENTS.CONFIG_CHANGED, SendTarget.ALL_WINDOWS, {
       mcpServers: updatedServers,
       defaultServers: platformAwareDefaultServers,
       mcpEnabled: this.mcpStore.get('mcpEnabled'),
-    });
+    })
   }
 
   public onUpgrade(oldVersion: string | undefined): void {
-    console.log('onUpgrade', oldVersion);
+    console.log('onUpgrade', oldVersion)
     if (oldVersion && compare(oldVersion, '0.0.12', '<=')) {
       // 将旧版本的defaultServer迁移到新版本的defaultServers
       const oldDefaultServer = this.mcpStore.get('defaultServer') as
         | string
-        | undefined;
+        | undefined
       if (oldDefaultServer) {
         console.log(
           `迁移旧版本defaultServer: ${oldDefaultServer}到defaultServers`,
-        );
-        const defaultServers = this.mcpStore.get('defaultServers') || [];
+        )
+        const defaultServers = this.mcpStore.get('defaultServers') || []
         if (!defaultServers.includes(oldDefaultServer)) {
-          defaultServers.push(oldDefaultServer);
-          this.mcpStore.set('defaultServers', defaultServers);
+          defaultServers.push(oldDefaultServer)
+          this.mcpStore.set('defaultServers', defaultServers)
         }
         // 删除旧的defaultServer字段，防止重复迁移
-        this.mcpStore.delete('defaultServer');
+        this.mcpStore.delete('defaultServer')
       }
 
       // 迁移 filesystem 服务器到 buildInFileSystem
       try {
-        const mcpServers = this.mcpStore.get('mcpServers') || {};
+        const mcpServers = this.mcpStore.get('mcpServers') || {}
         // console.log('mcpServers', mcpServers)
         if (mcpServers.filesystem) {
           console.log(
             '检测到旧版本的 filesystem MCP 服务器，开始迁移到 buildInFileSystem',
-          );
+          )
 
           // 检查 buildInFileSystem 是否已存在
           if (!mcpServers.buildInFileSystem) {
@@ -681,7 +681,7 @@ export class McpConfHelper {
               command: 'filesystem',
               env: {},
               disable: false,
-            };
+            }
           }
 
           // 如果 filesystem 的 args 长度大于 2，将第三个参数及以后的参数迁移
@@ -690,85 +690,85 @@ export class McpConfHelper {
             mcpServers.filesystem.args.length > 2
           ) {
             mcpServers.buildInFileSystem.args =
-              mcpServers.filesystem.args.slice(2);
+              mcpServers.filesystem.args.slice(2)
           }
 
           // 迁移 autoApprove 设置
           if (mcpServers.filesystem.autoApprove) {
             mcpServers.buildInFileSystem.autoApprove = [
               ...mcpServers.filesystem.autoApprove,
-            ];
+            ]
           }
 
-          delete mcpServers.filesystem;
+          delete mcpServers.filesystem
           // 更新 mcpServers
-          this.mcpStore.set('mcpServers', mcpServers);
+          this.mcpStore.set('mcpServers', mcpServers)
 
           // 如果 filesystem 是默认服务器，将 buildInFileSystem 添加到默认服务器列表
-          const defaultServers = this.mcpStore.get('defaultServers') || [];
+          const defaultServers = this.mcpStore.get('defaultServers') || []
           if (
             defaultServers.includes('filesystem') &&
             !defaultServers.includes('buildInFileSystem')
           ) {
-            defaultServers.push('buildInFileSystem');
-            this.mcpStore.set('defaultServers', defaultServers);
+            defaultServers.push('buildInFileSystem')
+            this.mcpStore.set('defaultServers', defaultServers)
           }
 
-          console.log('迁移 filesystem 到 buildInFileSystem 完成');
+          console.log('迁移 filesystem 到 buildInFileSystem 完成')
         }
       } catch (error) {
-        console.error('迁移 filesystem 服务器时出错:', error);
+        console.error('❌迁移 filesystem 服务器时出错:', error)
       }
     }
 
     // 升级后检查并添加平台特有服务
     try {
-      const mcpServers = this.mcpStore.get('mcpServers') || {};
-      const defaultServers = this.mcpStore.get('defaultServers') || [];
-      let hasChanges = false;
+      const mcpServers = this.mcpStore.get('mcpServers') || {}
+      const defaultServers = this.mcpStore.get('defaultServers') || []
+      let hasChanges = false
 
       // 检查是否需要添加平台特有服务
       if (isMacOS() && !mcpServers['deepchat/apple-server']) {
-        console.log('检测到 macOS 平台，添加 Apple 系统集成服务');
+        console.log('检测到 macOS 平台，添加 Apple 系统集成服务')
         mcpServers['deepchat/apple-server'] =
-          PLATFORM_SPECIFIC_SERVERS['deepchat/apple-server'];
-        hasChanges = true;
+          PLATFORM_SPECIFIC_SERVERS['deepchat/apple-server']
+        hasChanges = true
 
         // 如果不在默认服务器列表中，添加到默认服务器列表
         if (!defaultServers.includes('deepchat/apple-server')) {
-          defaultServers.push('deepchat/apple-server');
-          this.mcpStore.set('defaultServers', defaultServers);
+          defaultServers.push('deepchat/apple-server')
+          this.mcpStore.set('defaultServers', defaultServers)
         }
       }
 
       // 移除不支持当前平台的服务
-      const serversToRemove: string[] = [];
+      const serversToRemove: string[] = []
       for (const [serverName] of Object.entries(mcpServers)) {
         if (serverName === 'deepchat/apple-server' && !isMacOS()) {
-          serversToRemove.push(serverName);
+          serversToRemove.push(serverName)
         }
         // 可以在这里添加其他平台特有服务的检查
       }
 
       for (const serverName of serversToRemove) {
-        console.log(`移除不支持当前平台的服务: ${serverName}`);
-        delete mcpServers[serverName];
-        hasChanges = true;
+        console.log(`移除不支持当前平台的服务: ${serverName}`)
+        delete mcpServers[serverName]
+        hasChanges = true
 
         // 从默认服务器列表中移除
-        const index = defaultServers.indexOf(serverName);
+        const index = defaultServers.indexOf(serverName)
         if (index > -1) {
-          defaultServers.splice(index, 1);
-          this.mcpStore.set('defaultServers', defaultServers);
+          defaultServers.splice(index, 1)
+          this.mcpStore.set('defaultServers', defaultServers)
         }
       }
 
       if (hasChanges) {
-        this.mcpStore.set('mcpServers', mcpServers);
-        console.log('平台特有服务升级完成');
+        this.mcpStore.set('mcpServers', mcpServers)
+        console.log('平台特有服务升级完成')
       }
     } catch (error) {
-      console.error('升级平台特有服务时出错:', error);
+      console.error('❌升级平台特有服务时出错:', error)
     }
   }
 }

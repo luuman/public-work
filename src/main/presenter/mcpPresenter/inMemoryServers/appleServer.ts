@@ -1,6 +1,9 @@
 // https://github.com/supermemoryai/apple-mcp
 import { Server } from '@modelcontextprotocol/sdk/server/index.js'
-import { ListToolsRequestSchema, CallToolRequestSchema } from '@modelcontextprotocol/sdk/types.js'
+import {
+  ListToolsRequestSchema,
+  CallToolRequestSchema,
+} from '@modelcontextprotocol/sdk/types.js'
 import { Transport } from '@modelcontextprotocol/sdk/shared/transport.js'
 import { zodToJsonSchema } from 'zod-to-json-schema'
 import { z } from 'zod'
@@ -43,7 +46,7 @@ class ContactsUtils {
       return true
     } catch {
       console.error(
-        'Cannot access Contacts app. Please grant access in System Preferences > Security & Privacy > Privacy > Contacts.'
+        'Cannot access Contacts app. Please grant access in System Preferences > Security & Privacy > Privacy > Contacts.',
       )
       return false
     }
@@ -88,7 +91,7 @@ class ContactsUtils {
       return phoneNumbers
     } catch (error) {
       console.error(
-        `Error accessing contacts: ${error instanceof Error ? error.message : String(error)}`
+        `Error accessing contacts: ${error instanceof Error ? error.message : String(error)}`,
       )
       return {}
     }
@@ -127,7 +130,7 @@ class ContactsUtils {
       return []
     } catch (error) {
       console.error(
-        `Error finding contact: ${error instanceof Error ? error.message : String(error)}`
+        `Error finding contact: ${error instanceof Error ? error.message : String(error)}`,
       )
       return []
     }
@@ -145,14 +148,16 @@ class ContactsUtils {
       const searchNumber = phoneNumber.replace(/[^0-9+]/g, '')
 
       for (const [name, numbers] of Object.entries(allContacts)) {
-        const normalizedNumbers = numbers.map((num) => num.replace(/[^0-9+]/g, ''))
+        const normalizedNumbers = numbers.map((num) =>
+          num.replace(/[^0-9+]/g, ''),
+        )
         if (
           normalizedNumbers.some(
             (num) =>
               num === searchNumber ||
               num === `+${searchNumber}` ||
               num === `+1${searchNumber}` ||
-              `+1${num}` === searchNumber
+              `+1${num}` === searchNumber,
           )
         ) {
           return name
@@ -162,7 +167,7 @@ class ContactsUtils {
       return null
     } catch (error) {
       console.error(
-        `Error finding contact by phone: ${error instanceof Error ? error.message : String(error)}`
+        `Error finding contact by phone: ${error instanceof Error ? error.message : String(error)}`,
       )
       return null
     }
@@ -208,14 +213,14 @@ class NotesUtils {
         // 返回一些示例笔记
         notes.push(
           { name: 'Sample Note 1', content: 'This is a sample note content.' },
-          { name: 'Sample Note 2', content: 'Another sample note content.' }
+          { name: 'Sample Note 2', content: 'Another sample note content.' },
         )
       }
 
       return notes
     } catch (error) {
       console.error(
-        `Error getting notes: ${error instanceof Error ? error.message : String(error)}`
+        `Error getting notes: ${error instanceof Error ? error.message : String(error)}`,
       )
       return []
     }
@@ -247,13 +252,15 @@ class NotesUtils {
         // 如果找到匹配的笔记，返回示例数据
         notes.push({
           name: `Note containing "${searchText}"`,
-          content: `This note contains the search term: ${searchText}`
+          content: `This note contains the search term: ${searchText}`,
         })
       }
 
       return notes
     } catch (error) {
-      console.error(`Error finding note: ${error instanceof Error ? error.message : String(error)}`)
+      console.error(
+        `Error finding note: ${error instanceof Error ? error.message : String(error)}`,
+      )
       return []
     }
   }
@@ -261,7 +268,7 @@ class NotesUtils {
   static async createNote(
     title: string,
     body: string,
-    folderName: string = 'Claude'
+    folderName: string = 'Claude',
   ): Promise<CreateNoteResult> {
     try {
       const script = `
@@ -287,21 +294,21 @@ class NotesUtils {
           success: true,
           note: {
             name: title,
-            content: body
+            content: body,
           },
           folderName: folderName,
-          usedDefaultFolder: folderName === 'Claude'
+          usedDefaultFolder: folderName === 'Claude',
         }
       } else {
         return {
           success: false,
-          message: 'Failed to create note'
+          message: 'Failed to create note',
         }
       }
     } catch (error) {
       return {
         success: false,
-        message: `Failed to create note: ${error instanceof Error ? error.message : String(error)}`
+        message: `Failed to create note: ${error instanceof Error ? error.message : String(error)}`,
       }
     }
   }
@@ -352,14 +359,14 @@ class RemindersUtils {
         // 返回一些示例列表
         lists.push(
           { name: 'Reminders', id: 'default-list' },
-          { name: 'Shopping', id: 'shopping-list' }
+          { name: 'Shopping', id: 'shopping-list' },
         )
       }
 
       return lists
     } catch (error) {
       console.error(
-        `Error getting reminder lists: ${error instanceof Error ? error.message : String(error)}`
+        `Error getting reminder lists: ${error instanceof Error ? error.message : String(error)}`,
       )
       return []
     }
@@ -416,7 +423,7 @@ class RemindersUtils {
             body: 'This is a sample reminder',
             completed: false,
             dueDate: new Date().toISOString(),
-            listName: listName || 'Reminders'
+            listName: listName || 'Reminders',
           },
           {
             name: 'Sample Reminder 2',
@@ -424,15 +431,15 @@ class RemindersUtils {
             body: 'Another sample reminder',
             completed: true,
             dueDate: null,
-            listName: listName || 'Reminders'
-          }
+            listName: listName || 'Reminders',
+          },
         )
       }
 
       return reminders
     } catch (error) {
       console.error(
-        `Error getting reminders: ${error instanceof Error ? error.message : String(error)}`
+        `Error getting reminders: ${error instanceof Error ? error.message : String(error)}`,
       )
       return []
     }
@@ -473,14 +480,14 @@ class RemindersUtils {
           body: `This reminder contains the search term: ${searchText}`,
           completed: false,
           dueDate: null,
-          listName: 'Reminders'
+          listName: 'Reminders',
         })
       }
 
       return reminders
     } catch (error) {
       console.error(
-        `Error searching reminders: ${error instanceof Error ? error.message : String(error)}`
+        `Error searching reminders: ${error instanceof Error ? error.message : String(error)}`,
       )
       return []
     }
@@ -490,7 +497,7 @@ class RemindersUtils {
     name: string,
     listName: string = 'Reminders',
     notes?: string,
-    dueDate?: string
+    dueDate?: string,
   ): Promise<Reminder> {
     try {
       const script = `
@@ -519,21 +526,21 @@ class RemindersUtils {
           body: notes || '',
           completed: false,
           dueDate: dueDate || null,
-          listName: listName
+          listName: listName,
         }
       } else {
         throw new Error('Failed to create reminder')
       }
     } catch (error) {
       console.error(
-        `Error creating reminder: ${error instanceof Error ? error.message : String(error)}`
+        `Error creating reminder: ${error instanceof Error ? error.message : String(error)}`,
       )
       throw error
     }
   }
 
   static async openReminder(
-    searchText: string
+    searchText: string,
   ): Promise<{ success: boolean; message: string; reminder?: Reminder }> {
     try {
       const script = `
@@ -555,12 +562,12 @@ class RemindersUtils {
       return {
         success: true,
         message: 'Reminders app opened',
-        reminder: matchingReminders[0]
+        reminder: matchingReminders[0],
       }
     } catch (error) {
       return {
         success: false,
-        message: `Error opening reminder: ${error instanceof Error ? error.message : String(error)}`
+        message: `Error opening reminder: ${error instanceof Error ? error.message : String(error)}`,
       }
     }
   }
@@ -571,7 +578,7 @@ class CalendarUtils {
   private static CONFIG = {
     TIMEOUT_MS: 8000,
     MAX_EVENTS_PER_CALENDAR: 50,
-    MAX_CALENDARS: 1
+    MAX_CALENDARS: 1,
   }
 
   static async checkCalendarAccess(): Promise<boolean> {
@@ -584,7 +591,7 @@ class CalendarUtils {
       return true
     } catch (error) {
       console.error(
-        `Cannot access Calendar app: ${error instanceof Error ? error.message : String(error)}`
+        `Cannot access Calendar app: ${error instanceof Error ? error.message : String(error)}`,
       )
       return false
     }
@@ -594,14 +601,16 @@ class CalendarUtils {
     searchText: string,
     limit = 10,
     fromDate?: string,
-    toDate?: string
+    toDate?: string,
   ): Promise<CalendarEvent[]> {
     try {
       if (!(await this.checkCalendarAccess())) {
         return []
       }
 
-      console.error(`searchEvents - Processing calendars for search: "${searchText}"`)
+      console.error(
+        `searchEvents - Processing calendars for search: "${searchText}"`,
+      )
 
       const events = (await run(
         (args: {
@@ -620,7 +629,9 @@ class CalendarUtils {
             const defaultEndDate = new Date()
             defaultEndDate.setDate(today.getDate() + 30)
 
-            const startDate = args.fromDate ? new Date(args.fromDate) : defaultStartDate
+            const startDate = args.fromDate
+              ? new Date(args.fromDate)
+              : defaultStartDate
             const endDate = args.toDate ? new Date(args.toDate) : defaultEndDate
 
             // Array to store matching events
@@ -630,7 +641,11 @@ class CalendarUtils {
             const allCalendars = Calendar.calendars()
 
             // Search in each calendar
-            for (let i = 0; i < allCalendars.length && matchingEvents.length < args.limit; i++) {
+            for (
+              let i = 0;
+              i < allCalendars.length && matchingEvents.length < args.limit;
+              i++
+            ) {
               try {
                 const calendar = allCalendars[i]
                 const calendarName = calendar.name()
@@ -640,17 +655,24 @@ class CalendarUtils {
                   _and: [
                     { startDate: { _greaterThan: startDate } },
                     { endDate: { _lessThan: endDate } },
-                    { summary: { _contains: args.searchText } }
-                  ]
+                    { summary: { _contains: args.searchText } },
+                  ],
                 })
 
                 const convertedEvents = events()
 
                 // Limit the number of events to process
-                const eventCount = Math.min(convertedEvents.length, args.maxEventsPerCalendar)
+                const eventCount = Math.min(
+                  convertedEvents.length,
+                  args.maxEventsPerCalendar,
+                )
 
                 // Filter events by date range and search text
-                for (let j = 0; j < eventCount && matchingEvents.length < args.limit; j++) {
+                for (
+                  let j = 0;
+                  j < eventCount && matchingEvents.length < args.limit;
+                  j++
+                ) {
                   const event = convertedEvents[j]
 
                   try {
@@ -685,9 +707,15 @@ class CalendarUtils {
 
                     // Check if event matches search text
                     if (
-                      title.toLowerCase().includes(args.searchText.toLowerCase()) ||
-                      location.toLowerCase().includes(args.searchText.toLowerCase()) ||
-                      notes.toLowerCase().includes(args.searchText.toLowerCase())
+                      title
+                        .toLowerCase()
+                        .includes(args.searchText.toLowerCase()) ||
+                      location
+                        .toLowerCase()
+                        .includes(args.searchText.toLowerCase()) ||
+                      notes
+                        .toLowerCase()
+                        .includes(args.searchText.toLowerCase())
                     ) {
                       // Create event object
                       const eventData: CalendarEvent = {
@@ -699,7 +727,7 @@ class CalendarUtils {
                         endDate: null,
                         calendarName: calendarName,
                         isAllDay: false,
-                        url: null
+                        url: null,
                       }
 
                       try {
@@ -738,7 +766,7 @@ class CalendarUtils {
                     // Skip events we can't process
                     console.log(
                       'searchEvents - Error processing events: ----0----',
-                      JSON.stringify(error)
+                      JSON.stringify(error),
                     )
                   }
                 }
@@ -746,7 +774,7 @@ class CalendarUtils {
                 // Skip calendars we can't access
                 console.log(
                   'searchEvents - Error processing calendars: ----1----',
-                  JSON.stringify(error)
+                  JSON.stringify(error),
                 )
               }
             }
@@ -761,34 +789,38 @@ class CalendarUtils {
           limit,
           fromDate,
           toDate,
-          maxEventsPerCalendar: this.CONFIG.MAX_EVENTS_PER_CALENDAR
-        }
+          maxEventsPerCalendar: this.CONFIG.MAX_EVENTS_PER_CALENDAR,
+        },
       )) as CalendarEvent[]
 
       // If no events found, return empty array
       if (events.length === 0) {
-        console.error('searchEvents - No events found')
+        console.error('❌searchEvents - No events found')
         return []
       }
 
       return events
     } catch (error) {
       console.error(
-        `Error searching events: ${error instanceof Error ? error.message : String(error)}`
+        `Error searching events: ${error instanceof Error ? error.message : String(error)}`,
       )
       return []
     }
   }
 
-  static async getEvents(limit = 10, fromDate?: string, toDate?: string): Promise<CalendarEvent[]> {
+  static async getEvents(
+    limit = 10,
+    fromDate?: string,
+    toDate?: string,
+  ): Promise<CalendarEvent[]> {
     try {
-      console.error('getEvents - Starting to fetch calendar events')
+      console.error('❌getEvents - Starting to fetch calendar events')
 
       if (!(await this.checkCalendarAccess())) {
-        console.error('getEvents - Failed to access Calendar app')
+        console.error('❌getEvents - Failed to access Calendar app')
         return []
       }
-      console.error('getEvents - Calendar access check passed')
+      console.error('❌getEvents - Calendar access check passed')
 
       const events = (await run(
         (args: {
@@ -807,7 +839,9 @@ class CalendarUtils {
             const defaultEndDate = new Date()
             defaultEndDate.setDate(today.getDate() + 7)
 
-            const startDate = args.fromDate ? new Date(args.fromDate) : defaultStartDate
+            const startDate = args.fromDate
+              ? new Date(args.fromDate)
+              : defaultStartDate
             const endDate = args.toDate ? new Date(args.toDate) : defaultEndDate
 
             const calendars = Calendar.calendars()
@@ -824,16 +858,23 @@ class CalendarUtils {
                 const calendarEvents = calendar.events.whose({
                   _and: [
                     { startDate: { _greaterThan: startDate } },
-                    { endDate: { _lessThan: endDate } }
-                  ]
+                    { endDate: { _lessThan: endDate } },
+                  ],
                 })
                 const convertedEvents = calendarEvents()
 
                 // Limit the number of events to process
-                const eventCount = Math.min(convertedEvents.length, args.maxEventsPerCalendar)
+                const eventCount = Math.min(
+                  convertedEvents.length,
+                  args.maxEventsPerCalendar,
+                )
 
                 // Process events
-                for (let i = 0; i < eventCount && events.length < args.limit; i++) {
+                for (
+                  let i = 0;
+                  i < eventCount && events.length < args.limit;
+                  i++
+                ) {
                   const event = convertedEvents[i]
 
                   try {
@@ -855,7 +896,7 @@ class CalendarUtils {
                       endDate: null,
                       calendarName: calendar.name(),
                       isAllDay: false,
-                      url: null
+                      url: null,
                     }
 
                     try {
@@ -913,12 +954,18 @@ class CalendarUtils {
                 }
               } catch (error) {
                 // Skip calendars we can't access
-                console.log('getEvents - Error processing events: ----0----', JSON.stringify(error))
+                console.log(
+                  'getEvents - Error processing events: ----0----',
+                  JSON.stringify(error),
+                )
               }
             }
             return events
           } catch (error) {
-            console.log('getEvents - Error processing events: ----1----', JSON.stringify(error))
+            console.log(
+              'getEvents - Error processing events: ----1----',
+              JSON.stringify(error),
+            )
             return [] // Return empty array on any error
           }
         },
@@ -926,20 +973,20 @@ class CalendarUtils {
           limit,
           fromDate,
           toDate,
-          maxEventsPerCalendar: this.CONFIG.MAX_EVENTS_PER_CALENDAR
-        }
+          maxEventsPerCalendar: this.CONFIG.MAX_EVENTS_PER_CALENDAR,
+        },
       )) as CalendarEvent[]
 
       // If no events found, return empty array
       if (events.length === 0) {
-        console.error('getEvents - No events found')
+        console.error('❌getEvents - No events found')
         return []
       }
 
       return events
     } catch (error) {
       console.error(
-        `Error getting events: ${error instanceof Error ? error.message : String(error)}`
+        `Error getting events: ${error instanceof Error ? error.message : String(error)}`,
       )
       return []
     }
@@ -952,14 +999,14 @@ class CalendarUtils {
     location?: string,
     notes?: string,
     isAllDay = false,
-    calendarName?: string
+    calendarName?: string,
   ): Promise<{ success: boolean; message: string; eventId?: string }> {
     try {
       if (!(await this.checkCalendarAccess())) {
         return {
           success: false,
           message:
-            'Cannot access Calendar app. Please grant access in System Settings > Privacy & Security > Automation.'
+            'Cannot access Calendar app. Please grant access in System Settings > Privacy & Security > Automation.',
         }
       }
 
@@ -987,7 +1034,7 @@ class CalendarUtils {
             if (args.calendarName) {
               // Find the specified calendar
               const calendars = Calendar.calendars.whose({
-                name: { _equals: args.calendarName }
+                name: { _equals: args.calendarName },
               })
 
               if (calendars.length > 0) {
@@ -995,7 +1042,7 @@ class CalendarUtils {
               } else {
                 return {
                   success: false,
-                  message: `Calendar "${args.calendarName}" not found.`
+                  message: `Calendar "${args.calendarName}" not found.`,
                 }
               }
             } else {
@@ -1004,7 +1051,7 @@ class CalendarUtils {
               if (allCalendars.length === 0) {
                 return {
                   success: false,
-                  message: 'No calendars found in Calendar app.'
+                  message: 'No calendars found in Calendar app.',
                 }
               }
               targetCalendar = allCalendars[0]
@@ -1017,7 +1064,7 @@ class CalendarUtils {
               endDate: endDateTime,
               location: args.location || '',
               description: args.notes || '',
-              alldayEvent: args.isAllDay
+              alldayEvent: args.isAllDay,
             })
 
             // Add the event to the calendar
@@ -1026,12 +1073,12 @@ class CalendarUtils {
             return {
               success: true,
               message: `Event "${args.title}" created successfully.`,
-              eventId: newEvent.uid()
+              eventId: newEvent.uid(),
             }
           } catch (error) {
             return {
               success: false,
-              message: `Error creating event: ${error instanceof Error ? error.message : String(error)}`
+              message: `Error creating event: ${error instanceof Error ? error.message : String(error)}`,
             }
           }
         },
@@ -1042,26 +1089,28 @@ class CalendarUtils {
           location,
           notes,
           isAllDay,
-          calendarName
-        }
+          calendarName,
+        },
       )) as { success: boolean; message: string; eventId?: string }
 
       return result
     } catch (error) {
       return {
         success: false,
-        message: `Error creating event: ${error instanceof Error ? error.message : String(error)}`
+        message: `Error creating event: ${error instanceof Error ? error.message : String(error)}`,
       }
     }
   }
 
-  static async openEvent(eventId: string): Promise<{ success: boolean; message: string }> {
+  static async openEvent(
+    eventId: string,
+  ): Promise<{ success: boolean; message: string }> {
     try {
       if (!(await this.checkCalendarAccess())) {
         return {
           success: false,
           message:
-            'Cannot access Calendar app. Please grant access in System Settings > Privacy & Security > Automation.'
+            'Cannot access Calendar app. Please grant access in System Settings > Privacy & Security > Automation.',
         }
       }
 
@@ -1076,12 +1125,12 @@ class CalendarUtils {
 
       return {
         success: true,
-        message: `Calendar app opened for event: ${eventId}`
+        message: `Calendar app opened for event: ${eventId}`,
       }
     } catch (error) {
       return {
         success: false,
-        message: `Error opening event: ${error instanceof Error ? error.message : String(error)}`
+        message: `Error opening event: ${error instanceof Error ? error.message : String(error)}`,
       }
     }
   }
@@ -1101,15 +1150,22 @@ const CalendarArgsSchema = z.object({
   location: z.string().optional(),
   notes: z.string().optional(),
   isAllDay: z.boolean().optional(),
-  calendarName: z.string().optional()
+  calendarName: z.string().optional(),
 })
 
 const ContactsArgsSchema = z.object({
-  name: z.string().optional()
+  name: z.string().optional(),
 })
 
 const MailArgsSchema = z.object({
-  operation: z.enum(['unread', 'search', 'send', 'mailboxes', 'accounts', 'latest']),
+  operation: z.enum([
+    'unread',
+    'search',
+    'send',
+    'mailboxes',
+    'accounts',
+    'latest',
+  ]),
   account: z.string().optional(),
   mailbox: z.string().optional(),
   limit: z.number().optional(),
@@ -1118,7 +1174,7 @@ const MailArgsSchema = z.object({
   subject: z.string().optional(),
   body: z.string().optional(),
   cc: z.string().optional(),
-  bcc: z.string().optional()
+  bcc: z.string().optional(),
 })
 
 const MapsArgsSchema = z.object({
@@ -1129,7 +1185,7 @@ const MapsArgsSchema = z.object({
     'pin',
     'listGuides',
     'addToGuide',
-    'createGuide'
+    'createGuide',
   ]),
   query: z.string().optional(),
   limit: z.number().optional(),
@@ -1138,7 +1194,7 @@ const MapsArgsSchema = z.object({
   fromAddress: z.string().optional(),
   toAddress: z.string().optional(),
   transportType: z.enum(['driving', 'walking', 'transit']).optional(),
-  guideName: z.string().optional()
+  guideName: z.string().optional(),
 })
 
 const MessagesArgsSchema = z.object({
@@ -1146,7 +1202,7 @@ const MessagesArgsSchema = z.object({
   phoneNumber: z.string().optional(),
   message: z.string().optional(),
   limit: z.number().optional(),
-  scheduledTime: z.string().optional()
+  scheduledTime: z.string().optional(),
 })
 
 const NotesArgsSchema = z.object({
@@ -1154,7 +1210,7 @@ const NotesArgsSchema = z.object({
   searchText: z.string().optional(),
   title: z.string().optional(),
   body: z.string().optional(),
-  folderName: z.string().optional()
+  folderName: z.string().optional(),
 })
 
 const RemindersArgsSchema = z.object({
@@ -1165,7 +1221,7 @@ const RemindersArgsSchema = z.object({
   listId: z.string().optional(),
   props: z.array(z.string()).optional(),
   notes: z.string().optional(),
-  dueDate: z.string().optional()
+  dueDate: z.string().optional(),
 })
 
 export class AppleServer {
@@ -1181,13 +1237,13 @@ export class AppleServer {
     this.server = new Server(
       {
         name: 'deepchat/apple-server',
-        version: '1.0.0'
+        version: '1.0.0',
       },
       {
         capabilities: {
-          tools: {}
-        }
-      }
+          tools: {},
+        },
+      },
     )
 
     // 设置请求处理器
@@ -1208,43 +1264,45 @@ export class AppleServer {
       tools: [
         {
           name: 'calendar',
-          description: 'Search, create, and open calendar events in Apple Calendar app',
-          inputSchema: zodToJsonSchema(CalendarArgsSchema)
+          description:
+            'Search, create, and open calendar events in Apple Calendar app',
+          inputSchema: zodToJsonSchema(CalendarArgsSchema),
         },
         {
           name: 'contacts',
           description: 'Search and retrieve contacts from Apple Contacts app',
-          inputSchema: zodToJsonSchema(ContactsArgsSchema)
+          inputSchema: zodToJsonSchema(ContactsArgsSchema),
         },
         {
           name: 'mail',
           description:
             'Interact with Apple Mail app - read unread emails, search emails, and send emails',
-          inputSchema: zodToJsonSchema(MailArgsSchema)
+          inputSchema: zodToJsonSchema(MailArgsSchema),
         },
         {
           name: 'maps',
           description:
             'Search locations, manage guides, save favorites, and get directions using Apple Maps',
-          inputSchema: zodToJsonSchema(MapsArgsSchema)
+          inputSchema: zodToJsonSchema(MapsArgsSchema),
         },
         {
           name: 'messages',
           description:
             'Interact with Apple Messages app - send, read, schedule messages and check unread messages',
-          inputSchema: zodToJsonSchema(MessagesArgsSchema)
+          inputSchema: zodToJsonSchema(MessagesArgsSchema),
         },
         {
           name: 'notes',
           description: 'Search, retrieve and create notes in Apple Notes app',
-          inputSchema: zodToJsonSchema(NotesArgsSchema)
+          inputSchema: zodToJsonSchema(NotesArgsSchema),
         },
         {
           name: 'reminders',
-          description: 'Search, create, and open reminders in Apple Reminders app',
-          inputSchema: zodToJsonSchema(RemindersArgsSchema)
-        }
-      ]
+          description:
+            'Search, create, and open reminders in Apple Reminders app',
+          inputSchema: zodToJsonSchema(RemindersArgsSchema),
+        },
+      ],
     }))
 
     // 注册工具调用处理器
@@ -1275,10 +1333,10 @@ export class AppleServer {
           content: [
             {
               type: 'text' as const,
-              text: `Error: ${error instanceof Error ? error.message : String(error)}`
-            }
+              text: `Error: ${error instanceof Error ? error.message : String(error)}`,
+            },
           ],
-          isError: true
+          isError: true,
         }
       }
     })
@@ -1298,7 +1356,7 @@ export class AppleServer {
             parsedArgs.searchText,
             parsedArgs.limit,
             parsedArgs.fromDate,
-            parsedArgs.toDate
+            parsedArgs.toDate,
           )
           return {
             content: [
@@ -1307,18 +1365,18 @@ export class AppleServer {
                 text: `Found ${searchResults.length} events matching "${parsedArgs.searchText}":\n\n${searchResults
                   .map(
                     (event) =>
-                      `• ${event.title} (${event.startDate ? new Date(event.startDate).toLocaleDateString() : 'No date'})`
+                      `• ${event.title} (${event.startDate ? new Date(event.startDate).toLocaleDateString() : 'No date'})`,
                   )
-                  .join('\n')}`
-              }
-            ]
+                  .join('\n')}`,
+              },
+            ],
           }
 
         case 'list':
           const events = await CalendarUtils.getEvents(
             parsedArgs.limit,
             parsedArgs.fromDate,
-            parsedArgs.toDate
+            parsedArgs.toDate,
           )
           return {
             content: [
@@ -1327,16 +1385,22 @@ export class AppleServer {
                 text: `Found ${events.length} upcoming events:\n\n${events
                   .map(
                     (event) =>
-                      `• ${event.title} (${event.startDate ? new Date(event.startDate).toLocaleDateString() : 'No date'})`
+                      `• ${event.title} (${event.startDate ? new Date(event.startDate).toLocaleDateString() : 'No date'})`,
                   )
-                  .join('\n')}`
-              }
-            ]
+                  .join('\n')}`,
+              },
+            ],
           }
 
         case 'create':
-          if (!parsedArgs.title || !parsedArgs.startDate || !parsedArgs.endDate) {
-            throw new Error('Title, start date, and end date are required for create operation')
+          if (
+            !parsedArgs.title ||
+            !parsedArgs.startDate ||
+            !parsedArgs.endDate
+          ) {
+            throw new Error(
+              'Title, start date, and end date are required for create operation',
+            )
           }
           const createResult = await CalendarUtils.createEvent(
             parsedArgs.title,
@@ -1345,15 +1409,15 @@ export class AppleServer {
             parsedArgs.location,
             parsedArgs.notes,
             parsedArgs.isAllDay,
-            parsedArgs.calendarName
+            parsedArgs.calendarName,
           )
           return {
             content: [
               {
                 type: 'text' as const,
-                text: createResult.message
-              }
-            ]
+                text: createResult.message,
+              },
+            ],
           }
 
         case 'open':
@@ -1365,9 +1429,9 @@ export class AppleServer {
             content: [
               {
                 type: 'text' as const,
-                text: openResult.message
-              }
-            ]
+                text: openResult.message,
+              },
+            ],
           }
 
         default:
@@ -1378,10 +1442,10 @@ export class AppleServer {
         content: [
           {
             type: 'text' as const,
-            text: `Calendar error: ${error instanceof Error ? error.message : String(error)}`
-          }
+            text: `Calendar error: ${error instanceof Error ? error.message : String(error)}`,
+          },
         ],
-        isError: true
+        isError: true,
       }
     }
   }
@@ -1400,34 +1464,37 @@ export class AppleServer {
             content: [
               {
                 type: 'text' as const,
-                text: `Found contact "${parsedArgs.name}" with numbers:\n${numbers.map((num) => `• ${num}`).join('\n')}`
-              }
-            ]
+                text: `Found contact "${parsedArgs.name}" with numbers:\n${numbers.map((num) => `• ${num}`).join('\n')}`,
+              },
+            ],
           }
         } else {
           return {
             content: [
               {
                 type: 'text' as const,
-                text: `No contact found with name "${parsedArgs.name}"`
-              }
-            ]
+                text: `No contact found with name "${parsedArgs.name}"`,
+              },
+            ],
           }
         }
       } else {
         // 返回所有联系人
         const contactsList = Object.entries(contactsData)
           .slice(0, 20) // 限制显示前20个联系人
-          .map(([name, numbers]) => `• ${name}: ${(numbers as string[]).join(', ')}`)
+          .map(
+            ([name, numbers]) =>
+              `• ${name}: ${(numbers as string[]).join(', ')}`,
+          )
           .join('\n')
 
         return {
           content: [
             {
               type: 'text' as const,
-              text: `Found ${Object.keys(contactsData).length} contacts:\n\n${contactsList}`
-            }
-          ]
+              text: `Found ${Object.keys(contactsData).length} contacts:\n\n${contactsList}`,
+            },
+          ],
         }
       }
     } catch (error) {
@@ -1435,10 +1502,10 @@ export class AppleServer {
         content: [
           {
             type: 'text' as const,
-            text: `Contacts error: ${error instanceof Error ? error.message : String(error)}`
-          }
+            text: `Contacts error: ${error instanceof Error ? error.message : String(error)}`,
+          },
         ],
-        isError: true
+        isError: true,
       }
     }
   }
@@ -1453,9 +1520,9 @@ export class AppleServer {
             content: [
               {
                 type: 'text' as const,
-                text: 'Found 3 unread emails:\n\n• Important Meeting - john@example.com\n• Project Update - jane@example.com\n• Weekly Report - team@example.com'
-              }
-            ]
+                text: 'Found 3 unread emails:\n\n• Important Meeting - john@example.com\n• Project Update - jane@example.com\n• Weekly Report - team@example.com',
+              },
+            ],
           }
 
         case 'search':
@@ -1466,22 +1533,24 @@ export class AppleServer {
             content: [
               {
                 type: 'text' as const,
-                text: `Found 2 emails matching "${parsedArgs.searchTerm}":\n\n• Email 1 containing "${parsedArgs.searchTerm}"\n• Email 2 containing "${parsedArgs.searchTerm}"`
-              }
-            ]
+                text: `Found 2 emails matching "${parsedArgs.searchTerm}":\n\n• Email 1 containing "${parsedArgs.searchTerm}"\n• Email 2 containing "${parsedArgs.searchTerm}"`,
+              },
+            ],
           }
 
         case 'send':
           if (!parsedArgs.to || !parsedArgs.subject || !parsedArgs.body) {
-            throw new Error('To, subject, and body are required for send operation')
+            throw new Error(
+              'To, subject, and body are required for send operation',
+            )
           }
           return {
             content: [
               {
                 type: 'text' as const,
-                text: `Email sent to ${parsedArgs.to} with subject "${parsedArgs.subject}"`
-              }
-            ]
+                text: `Email sent to ${parsedArgs.to} with subject "${parsedArgs.subject}"`,
+              },
+            ],
           }
 
         case 'mailboxes':
@@ -1489,9 +1558,9 @@ export class AppleServer {
             content: [
               {
                 type: 'text' as const,
-                text: 'Available mailboxes:\n\n• Inbox\n• Sent\n• Drafts\n• Trash'
-              }
-            ]
+                text: 'Available mailboxes:\n\n• Inbox\n• Sent\n• Drafts\n• Trash',
+              },
+            ],
           }
 
         case 'accounts':
@@ -1499,9 +1568,9 @@ export class AppleServer {
             content: [
               {
                 type: 'text' as const,
-                text: 'Available accounts:\n\n• iCloud\n• Gmail\n• Work Email'
-              }
-            ]
+                text: 'Available accounts:\n\n• iCloud\n• Gmail\n• Work Email',
+              },
+            ],
           }
 
         case 'latest':
@@ -1509,9 +1578,9 @@ export class AppleServer {
             content: [
               {
                 type: 'text' as const,
-                text: `Latest emails${parsedArgs.account ? ` from ${parsedArgs.account}` : ''}:\n\n• Latest Email 1\n• Latest Email 2\n• Latest Email 3`
-              }
-            ]
+                text: `Latest emails${parsedArgs.account ? ` from ${parsedArgs.account}` : ''}:\n\n• Latest Email 1\n• Latest Email 2\n• Latest Email 3`,
+              },
+            ],
           }
 
         default:
@@ -1522,10 +1591,10 @@ export class AppleServer {
         content: [
           {
             type: 'text' as const,
-            text: `Mail error: ${error instanceof Error ? error.message : String(error)}`
-          }
+            text: `Mail error: ${error instanceof Error ? error.message : String(error)}`,
+          },
         ],
-        isError: true
+        isError: true,
       }
     }
   }
@@ -1543,9 +1612,9 @@ export class AppleServer {
             content: [
               {
                 type: 'text' as const,
-                text: `Found locations for "${parsedArgs.query}":\n\n• Location 1: ${parsedArgs.query} Restaurant\n• Location 2: ${parsedArgs.query} Store\n• Location 3: ${parsedArgs.query} Center`
-              }
-            ]
+                text: `Found locations for "${parsedArgs.query}":\n\n• Location 1: ${parsedArgs.query} Restaurant\n• Location 2: ${parsedArgs.query} Store\n• Location 3: ${parsedArgs.query} Center`,
+              },
+            ],
           }
 
         case 'save':
@@ -1556,22 +1625,24 @@ export class AppleServer {
             content: [
               {
                 type: 'text' as const,
-                text: `Location "${parsedArgs.name}" saved at address: ${parsedArgs.address}`
-              }
-            ]
+                text: `Location "${parsedArgs.name}" saved at address: ${parsedArgs.address}`,
+              },
+            ],
           }
 
         case 'directions':
           if (!parsedArgs.fromAddress || !parsedArgs.toAddress) {
-            throw new Error('From address and to address are required for directions operation')
+            throw new Error(
+              'From address and to address are required for directions operation',
+            )
           }
           return {
             content: [
               {
                 type: 'text' as const,
-                text: `Directions from "${parsedArgs.fromAddress}" to "${parsedArgs.toAddress}" by ${parsedArgs.transportType || 'driving'} are now displayed in Maps app`
-              }
-            ]
+                text: `Directions from "${parsedArgs.fromAddress}" to "${parsedArgs.toAddress}" by ${parsedArgs.transportType || 'driving'} are now displayed in Maps app`,
+              },
+            ],
           }
 
         case 'pin':
@@ -1582,9 +1653,9 @@ export class AppleServer {
             content: [
               {
                 type: 'text' as const,
-                text: `Pin dropped for "${parsedArgs.name}" at ${parsedArgs.address}`
-              }
-            ]
+                text: `Pin dropped for "${parsedArgs.name}" at ${parsedArgs.address}`,
+              },
+            ],
           }
 
         case 'listGuides':
@@ -1592,22 +1663,24 @@ export class AppleServer {
             content: [
               {
                 type: 'text' as const,
-                text: 'Available guides:\n\n• Favorites\n• My Places\n• Travel Guide'
-              }
-            ]
+                text: 'Available guides:\n\n• Favorites\n• My Places\n• Travel Guide',
+              },
+            ],
           }
 
         case 'addToGuide':
           if (!parsedArgs.address || !parsedArgs.guideName) {
-            throw new Error('Address and guide name are required for addToGuide operation')
+            throw new Error(
+              'Address and guide name are required for addToGuide operation',
+            )
           }
           return {
             content: [
               {
                 type: 'text' as const,
-                text: `Location "${parsedArgs.address}" added to guide "${parsedArgs.guideName}"`
-              }
-            ]
+                text: `Location "${parsedArgs.address}" added to guide "${parsedArgs.guideName}"`,
+              },
+            ],
           }
 
         case 'createGuide':
@@ -1618,9 +1691,9 @@ export class AppleServer {
             content: [
               {
                 type: 'text' as const,
-                text: `Guide "${parsedArgs.guideName}" created successfully`
-              }
-            ]
+                text: `Guide "${parsedArgs.guideName}" created successfully`,
+              },
+            ],
           }
 
         default:
@@ -1631,10 +1704,10 @@ export class AppleServer {
         content: [
           {
             type: 'text' as const,
-            text: `Maps error: ${error instanceof Error ? error.message : String(error)}`
-          }
+            text: `Maps error: ${error instanceof Error ? error.message : String(error)}`,
+          },
         ],
-        isError: true
+        isError: true,
       }
     }
   }
@@ -1646,15 +1719,17 @@ export class AppleServer {
       switch (parsedArgs.operation) {
         case 'send':
           if (!parsedArgs.phoneNumber || !parsedArgs.message) {
-            throw new Error('Phone number and message are required for send operation')
+            throw new Error(
+              'Phone number and message are required for send operation',
+            )
           }
           return {
             content: [
               {
                 type: 'text' as const,
-                text: `Message sent to ${parsedArgs.phoneNumber}: "${parsedArgs.message}"`
-              }
-            ]
+                text: `Message sent to ${parsedArgs.phoneNumber}: "${parsedArgs.message}"`,
+              },
+            ],
           }
 
         case 'read':
@@ -1665,24 +1740,28 @@ export class AppleServer {
             content: [
               {
                 type: 'text' as const,
-                text: `Recent messages with ${parsedArgs.phoneNumber}:\n\n• Message 1 content\n• Message 2 content\n• Message 3 content`
-              }
-            ]
+                text: `Recent messages with ${parsedArgs.phoneNumber}:\n\n• Message 1 content\n• Message 2 content\n• Message 3 content`,
+              },
+            ],
           }
 
         case 'schedule':
-          if (!parsedArgs.phoneNumber || !parsedArgs.message || !parsedArgs.scheduledTime) {
+          if (
+            !parsedArgs.phoneNumber ||
+            !parsedArgs.message ||
+            !parsedArgs.scheduledTime
+          ) {
             throw new Error(
-              'Phone number, message, and scheduled time are required for schedule operation'
+              'Phone number, message, and scheduled time are required for schedule operation',
             )
           }
           return {
             content: [
               {
                 type: 'text' as const,
-                text: `Message scheduled to ${parsedArgs.phoneNumber} at ${parsedArgs.scheduledTime}: "${parsedArgs.message}"`
-              }
-            ]
+                text: `Message scheduled to ${parsedArgs.phoneNumber} at ${parsedArgs.scheduledTime}: "${parsedArgs.message}"`,
+              },
+            ],
           }
 
         case 'unread':
@@ -1690,9 +1769,9 @@ export class AppleServer {
             content: [
               {
                 type: 'text' as const,
-                text: 'Found 2 unread messages:\n\n• John Doe: "Hey, how are you?"\n• Jane Smith: "Meeting at 3pm"'
-              }
-            ]
+                text: 'Found 2 unread messages:\n\n• John Doe: "Hey, how are you?"\n• Jane Smith: "Meeting at 3pm"',
+              },
+            ],
           }
 
         default:
@@ -1703,10 +1782,10 @@ export class AppleServer {
         content: [
           {
             type: 'text' as const,
-            text: `Messages error: ${error instanceof Error ? error.message : String(error)}`
-          }
+            text: `Messages error: ${error instanceof Error ? error.message : String(error)}`,
+          },
         ],
-        isError: true
+        isError: true,
       }
     }
   }
@@ -1725,11 +1804,11 @@ export class AppleServer {
                 text: `Found ${allNotes.length} notes:\n\n${allNotes
                   .map(
                     (note) =>
-                      `• ${note.name}\n  ${note.content.substring(0, 100)}${note.content.length > 100 ? '...' : ''}`
+                      `• ${note.name}\n  ${note.content.substring(0, 100)}${note.content.length > 100 ? '...' : ''}`,
                   )
-                  .join('\n\n')}`
-              }
-            ]
+                  .join('\n\n')}`,
+              },
+            ],
           }
 
         case 'search':
@@ -1744,11 +1823,11 @@ export class AppleServer {
                 text: `Found ${searchResults.length} notes matching "${parsedArgs.searchText}":\n\n${searchResults
                   .map(
                     (note) =>
-                      `• ${note.name}\n  ${note.content.substring(0, 200)}${note.content.length > 200 ? '...' : ''}`
+                      `• ${note.name}\n  ${note.content.substring(0, 200)}${note.content.length > 200 ? '...' : ''}`,
                   )
-                  .join('\n\n')}`
-              }
-            ]
+                  .join('\n\n')}`,
+              },
+            ],
           }
 
         case 'create':
@@ -1758,7 +1837,7 @@ export class AppleServer {
           const createResult = await NotesUtils.createNote(
             parsedArgs.title,
             parsedArgs.body,
-            parsedArgs.folderName
+            parsedArgs.folderName,
           )
           return {
             content: [
@@ -1766,9 +1845,9 @@ export class AppleServer {
                 type: 'text' as const,
                 text: createResult.success
                   ? `Note "${parsedArgs.title}" created successfully in folder "${createResult.folderName}"`
-                  : createResult.message || 'Failed to create note'
-              }
-            ]
+                  : createResult.message || 'Failed to create note',
+              },
+            ],
           }
 
         default:
@@ -1779,10 +1858,10 @@ export class AppleServer {
         content: [
           {
             type: 'text' as const,
-            text: `Notes error: ${error instanceof Error ? error.message : String(error)}`
-          }
+            text: `Notes error: ${error instanceof Error ? error.message : String(error)}`,
+          },
         ],
-        isError: true
+        isError: true,
       }
     }
   }
@@ -1801,18 +1880,20 @@ export class AppleServer {
                 text: `Found ${allReminders.length} reminders:\n\n${allReminders
                   .map(
                     (reminder) =>
-                      `• ${reminder.name} (${reminder.listName}) - ${reminder.completed ? 'Completed' : 'Pending'}${reminder.dueDate ? `\n  Due: ${new Date(reminder.dueDate).toLocaleDateString()}` : ''}`
+                      `• ${reminder.name} (${reminder.listName}) - ${reminder.completed ? 'Completed' : 'Pending'}${reminder.dueDate ? `\n  Due: ${new Date(reminder.dueDate).toLocaleDateString()}` : ''}`,
                   )
-                  .join('\n\n')}`
-              }
-            ]
+                  .join('\n\n')}`,
+              },
+            ],
           }
 
         case 'search':
           if (!parsedArgs.searchText) {
             throw new Error('Search text is required for search operation')
           }
-          const searchResults = await RemindersUtils.searchReminders(parsedArgs.searchText)
+          const searchResults = await RemindersUtils.searchReminders(
+            parsedArgs.searchText,
+          )
           return {
             content: [
               {
@@ -1820,11 +1901,11 @@ export class AppleServer {
                 text: `Found ${searchResults.length} reminders matching "${parsedArgs.searchText}":\n\n${searchResults
                   .map(
                     (reminder) =>
-                      `• ${reminder.name} (${reminder.listName}) - ${reminder.completed ? 'Completed' : 'Pending'}\n  ${reminder.body}`
+                      `• ${reminder.name} (${reminder.listName}) - ${reminder.completed ? 'Completed' : 'Pending'}\n  ${reminder.body}`,
                   )
-                  .join('\n\n')}`
-              }
-            ]
+                  .join('\n\n')}`,
+              },
+            ],
           }
 
         case 'create':
@@ -1835,29 +1916,31 @@ export class AppleServer {
             parsedArgs.name,
             parsedArgs.listName,
             parsedArgs.notes,
-            parsedArgs.dueDate
+            parsedArgs.dueDate,
           )
           return {
             content: [
               {
                 type: 'text' as const,
-                text: `Reminder "${newReminder.name}" created successfully in list "${newReminder.listName}"`
-              }
-            ]
+                text: `Reminder "${newReminder.name}" created successfully in list "${newReminder.listName}"`,
+              },
+            ],
           }
 
         case 'open':
           if (!parsedArgs.searchText) {
             throw new Error('Search text is required for open operation')
           }
-          const openResult = await RemindersUtils.openReminder(parsedArgs.searchText)
+          const openResult = await RemindersUtils.openReminder(
+            parsedArgs.searchText,
+          )
           return {
             content: [
               {
                 type: 'text' as const,
-                text: openResult.message
-              }
-            ]
+                text: openResult.message,
+              },
+            ],
           }
 
         case 'listById':
@@ -1873,25 +1956,27 @@ export class AppleServer {
                 text: `Found ${listReminders.length} reminders in list ${parsedArgs.listId}:\n\n${listReminders
                   .map(
                     (reminder) =>
-                      `• ${reminder.name} - ${reminder.completed ? 'Completed' : 'Pending'}`
+                      `• ${reminder.name} - ${reminder.completed ? 'Completed' : 'Pending'}`,
                   )
-                  .join('\n')}`
-              }
-            ]
+                  .join('\n')}`,
+              },
+            ],
           }
 
         default:
-          throw new Error(`Unknown reminders operation: ${parsedArgs.operation}`)
+          throw new Error(
+            `Unknown reminders operation: ${parsedArgs.operation}`,
+          )
       }
     } catch (error) {
       return {
         content: [
           {
             type: 'text' as const,
-            text: `Reminders error: ${error instanceof Error ? error.message : String(error)}`
-          }
+            text: `Reminders error: ${error instanceof Error ? error.message : String(error)}`,
+          },
         ],
-        isError: true
+        isError: true,
       }
     }
   }

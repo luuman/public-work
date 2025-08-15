@@ -26,7 +26,10 @@ export class AnthropicOAuth {
   // 1. Generate PKCE pair
   private generatePKCE(): PKCEPair {
     const verifier = crypto.randomBytes(32).toString('base64url')
-    const challenge = crypto.createHash('sha256').update(verifier).digest('base64url')
+    const challenge = crypto
+      .createHash('sha256')
+      .update(verifier)
+      .digest('base64url')
 
     return { verifier, challenge }
   }
@@ -38,8 +41,14 @@ export class AnthropicOAuth {
     url.searchParams.set('code', 'true')
     url.searchParams.set('client_id', CLIENT_ID)
     url.searchParams.set('response_type', 'code')
-    url.searchParams.set('redirect_uri', 'https://console.anthropic.com/oauth/code/callback')
-    url.searchParams.set('scope', 'org:create_api_key user:profile user:inference')
+    url.searchParams.set(
+      'redirect_uri',
+      'https://console.anthropic.com/oauth/code/callback',
+    )
+    url.searchParams.set(
+      'scope',
+      'org:create_api_key user:profile user:inference',
+    )
     url.searchParams.set('code_challenge', pkce.challenge)
     url.searchParams.set('code_challenge_method', 'S256')
     url.searchParams.set('state', pkce.verifier)
@@ -48,23 +57,29 @@ export class AnthropicOAuth {
   }
 
   // 3. Exchange authorization code for tokens
-  private async exchangeCodeForTokens(code: string, verifier: string): Promise<Credentials> {
+  private async exchangeCodeForTokens(
+    code: string,
+    verifier: string,
+  ): Promise<Credentials> {
     // Handle both legacy format (code#state) and new format (pure code)
     const authCode = code.includes('#') ? code.split('#')[0] : code
     const state = code.includes('#') ? code.split('#')[1] : verifier
 
-    const response = await fetch('https://console.anthropic.com/v1/oauth/token', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        code: authCode,
-        state: state,
-        grant_type: 'authorization_code',
-        client_id: CLIENT_ID,
-        redirect_uri: 'https://console.anthropic.com/oauth/code/callback',
-        code_verifier: verifier
-      })
-    })
+    const response = await fetch(
+      'https://console.anthropic.com/v1/oauth/token',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          code: authCode,
+          state: state,
+          grant_type: 'authorization_code',
+          client_id: CLIENT_ID,
+          redirect_uri: 'https://console.anthropic.com/oauth/code/callback',
+          code_verifier: verifier,
+        }),
+      },
+    )
 
     if (!response.ok) {
       throw new Error(`Token exchange failed: ${response.statusText}`)
@@ -75,21 +90,24 @@ export class AnthropicOAuth {
     return {
       access_token: data.access_token,
       refresh_token: data.refresh_token,
-      expires_at: Date.now() + data.expires_in * 1000
+      expires_at: Date.now() + data.expires_in * 1000,
     }
   }
 
   // 4. Refresh access token
   private async refreshAccessToken(refreshToken: string): Promise<Credentials> {
-    const response = await fetch('https://console.anthropic.com/v1/oauth/token', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        grant_type: 'refresh_token',
-        refresh_token: refreshToken,
-        client_id: CLIENT_ID
-      })
-    })
+    const response = await fetch(
+      'https://console.anthropic.com/v1/oauth/token',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          grant_type: 'refresh_token',
+          refresh_token: refreshToken,
+          client_id: CLIENT_ID,
+        }),
+      },
+    )
 
     if (!response.ok) {
       throw new Error(`Token refresh failed: ${response.statusText}`)
@@ -100,7 +118,7 @@ export class AnthropicOAuth {
     return {
       access_token: data.access_token,
       refresh_token: data.refresh_token,
-      expires_at: Date.now() + data.expires_in * 1000
+      expires_at: Date.now() + data.expires_in * 1000,
     }
   }
 
@@ -165,12 +183,17 @@ export class AnthropicOAuth {
   // 9. Complete OAuth flow with manual code input
   public async completeOAuthWithCode(code: string): Promise<string> {
     if (!this.currentPKCE) {
-      throw new Error('OAuth flow not started. Please call startOAuthFlow first.')
+      throw new Error(
+        'OAuth flow not started. Please call startOAuthFlow first.',
+      )
     }
 
     try {
       // Exchange code for tokens using stored PKCE verifier
-      const credentials = await this.exchangeCodeForTokens(code, this.currentPKCE.verifier)
+      const credentials = await this.exchangeCodeForTokens(
+        code,
+        this.currentPKCE.verifier,
+      )
       await this.saveCredentials(credentials)
 
       // Clear stored PKCE after successful exchange
@@ -178,7 +201,7 @@ export class AnthropicOAuth {
 
       return credentials.access_token
     } catch (error) {
-      console.error('OAuth code exchange failed:', error)
+      console.error('❌OAuth code exchange failed:', error)
       // Clear PKCE on error
       this.currentPKCE = null
       throw error

@@ -1,14 +1,16 @@
-import { resolve } from 'path';
-import { defineConfig, externalizeDepsPlugin } from 'electron-vite';
-import vue from '@vitejs/plugin-vue';
+import { resolve } from 'path'
+import { defineConfig, externalizeDepsPlugin } from 'electron-vite'
+import vue from '@vitejs/plugin-vue'
 // import autoprefixer from 'autoprefixer'
 // import tailwind from 'tailwindcss'
-import vueDevTools from 'vite-plugin-vue-devtools';
+import vueDevTools from 'vite-plugin-vue-devtools'
 // import svgLoader from 'vite-svg-loader'
 // import monacoEditorPlugin from 'vite-plugin-monaco-editor-esm'
-import path from 'node:path';
+import path from 'node:path'
 // import path from 'path';
-import { createSvgIconsPlugin } from 'vite-plugin-svg-icons';
+import { createSvgIconsPlugin } from 'vite-plugin-svg-icons'
+
+const isDev = process.env.NODE_ENV === 'development'
 
 export default defineConfig({
   main: {
@@ -17,6 +19,9 @@ export default defineConfig({
         exclude: ['mermaid', 'dompurify'],
       }),
     ],
+    define: {
+      __DEV__: process.env.NODE_ENV !== 'development',
+    },
     resolve: {
       alias: {
         '@': resolve('src/main/'),
@@ -24,7 +29,32 @@ export default defineConfig({
       },
     },
     build: {
+      minify: isDev ? false : 'terser',
+      terserOptions: {
+        compress: {
+          drop_console: !isDev,
+          drop_debugger: !isDev,
+        },
+      },
       rollupOptions: {
+        input: {
+          index: resolve('src/main/index.ts'),
+          fibonacciWorker: resolve('src/main/worker/fibonacciWorker.ts'),
+          logWorker: resolve('src/main/worker/logWorker.ts'),
+          log4jsWorker: resolve('src/main/worker/log4jsWorker/index.ts'),
+        },
+        output: {
+          entryFileNames: (chunk) => {
+            if (
+              chunk.name === 'fibonacciWorker' ||
+              chunk.name === 'logWorker' ||
+              chunk.name === 'log4jsWorker'
+            ) {
+              return 'worker/[name].js'
+            }
+            return '[name].js'
+          },
+        },
         external: ['file-type', 'sharp', 'pdf-parse-new'],
       },
     },
@@ -37,6 +67,13 @@ export default defineConfig({
       },
     },
     build: {
+      minify: isDev ? false : 'terser',
+      terserOptions: {
+        compress: {
+          drop_console: !isDev,
+          drop_debugger: !isDev,
+        },
+      },
       rollupOptions: {
         input: {
           index: resolve('src/preload/index.ts'),
@@ -96,4 +133,4 @@ export default defineConfig({
       },
     },
   },
-});
+})

@@ -13,7 +13,7 @@ import {
   IVectorDatabasePresenter,
   KnowledgeFileMessage,
   KnowledgeChunkMessage,
-  KnowledgeTaskStatus
+  KnowledgeTaskStatus,
 } from '@shared/presenter'
 
 import { nanoid } from 'nanoid'
@@ -45,8 +45,8 @@ const MIGRATIONS: DatabaseMigration[] = [
     up: async (_presenter: DuckDBPresenter) => {
       // 初始版本的迁移在 initialize 方法中已经处理
       console.log('[DuckDB Migration] Applied initial schema (v1)')
-    }
-  }
+    },
+  },
   // 未来的迁移示例：
   // {
   //   version: 2,
@@ -104,7 +104,7 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
       console.log(`[DuckDB] set initial database version`)
       await this.setDatabaseVersion(CURRENT_DB_VERSION)
     } catch (error) {
-      console.error('[DuckDB] initialization failed:', error)
+      console.error('❌[DuckDB] initialization failed:', error)
       this.close()
     }
   }
@@ -120,8 +120,10 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
         await this.repairIndex()
       } catch (error) {
         // TODO 数据库已无法修复，提示用户重建
-        console.error('[DuckDB] Error opening database:', error)
-        throw new Error('Failed to open database, please check the logs for details.')
+        console.error('❌[DuckDB] Error opening database:', error)
+        throw new Error(
+          'Failed to open database, please check the logs for details.',
+        )
       }
     }
 
@@ -151,7 +153,10 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
         try {
           await this.currentTransactionPromise
         } catch (error) {
-          console.warn('[DuckDB] Error waiting for transaction to complete during close:', error)
+          console.warn(
+            '[DuckDB] Error waiting for transaction to complete during close:',
+            error,
+          )
         }
       }
 
@@ -176,7 +181,7 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
       }
       console.log('[DuckDB] DuckDB connection closed')
     } catch (err) {
-      console.error('[DuckDB] close error', err)
+      console.error('❌[DuckDB] close error', err)
     }
   }
 
@@ -192,7 +197,10 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
       }
       console.log(`[DuckDB] Database at ${this.dbPath} destroyed.`)
     } catch (err) {
-      console.error(`[DuckDB] Error destroying database at ${this.dbPath}:`, err)
+      console.error(
+        `[DuckDB] Error destroying database at ${this.dbPath}:`,
+        err,
+      )
     }
   }
 
@@ -211,7 +219,7 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
         file.mimeType,
         file.status,
         String(file.uploadedAt),
-        JSON.stringify(file.metadata)
+        JSON.stringify(file.metadata),
       ])
     })
   }
@@ -230,7 +238,7 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
         file.status,
         String(file.uploadedAt),
         JSON.stringify(file.metadata),
-        file.id
+        file.id,
       ])
     })
   }
@@ -244,22 +252,28 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
       const row = rows[0]
       return this.toKnowledgeFileMessage(row)
     } catch (err) {
-      console.error('[DuckDB] queryFile error', sql, id, err)
+      console.error('❌[DuckDB] queryFile error', sql, id, err)
       throw err
     }
   }
 
-  async queryFiles(where: Partial<KnowledgeFileMessage>): Promise<KnowledgeFileMessage[]> {
+  async queryFiles(
+    where: Partial<KnowledgeFileMessage>,
+  ): Promise<KnowledgeFileMessage[]> {
     const camelToSnake = (key: string) =>
       key.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`)
 
-    const entries = Object.entries(where).filter(([, value]) => value !== undefined)
+    const entries = Object.entries(where).filter(
+      ([, value]) => value !== undefined,
+    )
 
     let sql = `SELECT * FROM ${this.fileTable}`
     const params: any[] = []
 
     if (entries.length > 0) {
-      const conditions = entries.map(([key]) => `${camelToSnake(key)} = ?`).join(' AND ')
+      const conditions = entries
+        .map(([key]) => `${camelToSnake(key)} = ?`)
+        .join(' AND ')
       sql += ` WHERE ${conditions}`
       params.push(...entries.map(([, value]) => value))
     }
@@ -271,7 +285,7 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
       const rows = reader.getRowObjectsJson()
       return rows.map((row) => this.toKnowledgeFileMessage(row))
     } catch (err) {
-      console.error('[DuckDB] queryFiles error', sql, params, err)
+      console.error('❌[DuckDB] queryFiles error', sql, params, err)
       throw err
     }
   }
@@ -283,15 +297,19 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
       const rows = reader.getRowObjectsJson()
       return rows.map((row) => this.toKnowledgeFileMessage(row))
     } catch (err) {
-      console.error('[DuckDB] listFiles error', sql, err)
+      console.error('❌[DuckDB] listFiles error', sql, err)
       throw err
     }
   }
 
   async deleteFile(id: string): Promise<void> {
     await this.executeInTransaction(async () => {
-      await this.safeRun(`DELETE FROM ${this.chunkTable} WHERE file_id = ?;`, [id])
-      await this.safeRun(`DELETE FROM ${this.vectorTable} WHERE file_id = ?;`, [id])
+      await this.safeRun(`DELETE FROM ${this.chunkTable} WHERE file_id = ?;`, [
+        id,
+      ])
+      await this.safeRun(`DELETE FROM ${this.vectorTable} WHERE file_id = ?;`, [
+        id,
+      ])
       await this.safeRun(`DELETE FROM ${this.fileTable} WHERE id = ?;`, [id])
     })
   }
@@ -308,7 +326,7 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
         chunk.chunkIndex,
         chunk.content,
         chunk.status,
-        chunk.error ?? ''
+        chunk.error ?? '',
       )
     }
     await this.executeInTransaction(async () => {
@@ -319,28 +337,33 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
   async updateChunkStatus(
     chunkId: string,
     status: KnowledgeTaskStatus,
-    error?: string
+    error?: string,
   ): Promise<void> {
     await this.executeInTransaction(async () => {
-      await this.safeRun(`UPDATE ${this.chunkTable} SET status = ?, error = ? WHERE id = ?;`, [
-        status,
-        error ?? '',
-        chunkId
-      ])
+      await this.safeRun(
+        `UPDATE ${this.chunkTable} SET status = ?, error = ? WHERE id = ?;`,
+        [status, error ?? '', chunkId],
+      )
     })
   }
 
-  async queryChunks(where: Partial<KnowledgeChunkMessage>): Promise<KnowledgeChunkMessage[]> {
+  async queryChunks(
+    where: Partial<KnowledgeChunkMessage>,
+  ): Promise<KnowledgeChunkMessage[]> {
     const camelToSnake = (key: string) =>
       key.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`)
 
-    const entries = Object.entries(where).filter(([, value]) => value !== undefined)
+    const entries = Object.entries(where).filter(
+      ([, value]) => value !== undefined,
+    )
 
     let sql = `SELECT * FROM ${this.chunkTable}`
     const params: any[] = []
 
     if (entries.length > 0) {
-      const conditions = entries.map(([key]) => `${camelToSnake(key)} = ?`).join(' AND ')
+      const conditions = entries
+        .map(([key]) => `${camelToSnake(key)} = ?`)
+        .join(' AND ')
       sql += ` WHERE ${conditions}`
       params.push(...entries.map(([, value]) => value))
     }
@@ -350,14 +373,16 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
       const rows = reader.getRowObjectsJson()
       return rows.map((row) => this.toKnowledgeChunkMessage(row))
     } catch (err) {
-      console.error('[DuckDB] queryChunks error', sql, params, err)
+      console.error('❌[DuckDB] queryChunks error', sql, params, err)
       throw err
     }
   }
 
   async deleteChunksByFile(fileId: string): Promise<void> {
     await this.executeInTransaction(async () => {
-      await this.safeRun(`DELETE FROM ${this.chunkTable} WHERE file_id = ?;`, [fileId])
+      await this.safeRun(`DELETE FROM ${this.chunkTable} WHERE file_id = ?;`, [
+        fileId,
+      ])
     })
   }
 
@@ -372,7 +397,7 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
       await this.safeRun(
         `INSERT INTO ${this.vectorTable} (id, embedding, file_id, chunk_id)
          VALUES (?, ?::FLOAT[], ?, ?);`,
-        [nanoid(), vec, opts.fileId, opts.chunkId]
+        [nanoid(), vec, opts.fileId, opts.chunkId],
       )
     })
   }
@@ -394,7 +419,10 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
     })
   }
 
-  async similarityQuery(vector: number[], options: QueryOptions): Promise<QueryResult[]> {
+  async similarityQuery(
+    vector: number[],
+    options: QueryOptions,
+  ): Promise<QueryResult[]> {
     const k = options.topK
     const fn =
       options.metric === 'ip'
@@ -425,18 +453,20 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
         metadata: {
           from: r.name,
           filePath: r.path,
-          content: r.content
-        }
+          content: r.content,
+        },
       }))
     } catch (err) {
-      console.error('[DuckDB] similarityQuery error', sql, paramsArr, err)
+      console.error('❌[DuckDB] similarityQuery error', sql, paramsArr, err)
       throw err
     }
   }
 
   async deleteVectorsByFile(fileId: string): Promise<void> {
     await this.executeInTransaction(async () => {
-      await this.safeRun(`DELETE FROM ${this.vectorTable} WHERE file_id = ?;`, [fileId])
+      await this.safeRun(`DELETE FROM ${this.vectorTable} WHERE file_id = ?;`, [
+        fileId,
+      ])
     })
   }
 
@@ -450,7 +480,8 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
       mimeType: o.mime_type,
       status: o.status,
       uploadedAt: Number(o.uploaded_at),
-      metadata: typeof o.metadata === 'string' ? JSON.parse(o.metadata) : o.metadata
+      metadata:
+        typeof o.metadata === 'string' ? JSON.parse(o.metadata) : o.metadata,
     }
   }
 
@@ -461,7 +492,7 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
       chunkIndex: o.chunk_index,
       content: o.content,
       status: o.status,
-      error: o.error
+      error: o.error,
     }
   }
 
@@ -480,13 +511,15 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
   /**
    * 将操作添加到事务队列中，确保所有数据库操作串行执行
    */
-  private async executeInTransaction<T>(operation: () => Promise<T>): Promise<T> {
+  private async executeInTransaction<T>(
+    operation: () => Promise<T>,
+  ): Promise<T> {
     return new Promise((resolve, reject) => {
       this.transactionQueue.push({
         operation,
         resolve,
         reject,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       })
 
       // 如果当前没有正在处理事务，则开始处理队列
@@ -518,10 +551,14 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
 
         // 检查是否有超时的操作
         const now = Date.now()
-        const timeoutOps = operations.filter((op) => now - op.timestamp > this.TRANSACTION_TIMEOUT)
+        const timeoutOps = operations.filter(
+          (op) => now - op.timestamp > this.TRANSACTION_TIMEOUT,
+        )
 
         if (timeoutOps.length > 0) {
-          console.warn(`[DuckDB] Found ${timeoutOps.length} timeout operations, rejecting them`)
+          console.warn(
+            `[DuckDB] Found ${timeoutOps.length} timeout operations, rejecting them`,
+          )
           const timeoutError = new Error('Transaction operation timeout')
           for (const { reject } of timeoutOps) {
             reject(timeoutError)
@@ -530,7 +567,7 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
 
         // 只处理未超时的操作
         const validOperations = operations.filter(
-          (op) => now - op.timestamp <= this.TRANSACTION_TIMEOUT
+          (op) => now - op.timestamp <= this.TRANSACTION_TIMEOUT,
         )
 
         if (validOperations.length === 0) {
@@ -577,12 +614,12 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
         }
       } catch (error) {
         // 处理事务操作本身的错误
-        console.error('[DuckDB] Transaction processing error:', error)
+        console.error('❌[DuckDB] Transaction processing error:', error)
 
         try {
           await this.safeRun('ROLLBACK;')
         } catch (rollbackError) {
-          console.error('[DuckDB] Rollback error:', rollbackError)
+          console.error('❌[DuckDB] Rollback error:', rollbackError)
         }
 
         // 拒绝所有队列中的操作
@@ -614,7 +651,7 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
         return await this.connection.run(sql)
       }
     } catch (err) {
-      console.error('[DuckDB] sql error', sql, params, err)
+      console.error('❌[DuckDB] sql error', sql, params, err)
       throw err
     }
   }
@@ -623,13 +660,13 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
     // paused chunk
     await this.executeInTransaction(async () => {
       await this.safeRun(
-        `UPDATE ${this.chunkTable} SET status = 'paused' WHERE status = 'processing';`
+        `UPDATE ${this.chunkTable} SET status = 'paused' WHERE status = 'processing';`,
       )
     })
     // paused file
     await this.executeInTransaction(async () => {
       await this.safeRun(
-        `UPDATE ${this.fileTable} SET status = 'paused' WHERE status = 'processing';`
+        `UPDATE ${this.fileTable} SET status = 'paused' WHERE status = 'processing';`,
       )
     })
   }
@@ -638,13 +675,13 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
     // resumed chunk
     await this.executeInTransaction(async () => {
       await this.safeRun(
-        `UPDATE ${this.chunkTable} SET status = 'processing' WHERE status = 'paused';`
+        `UPDATE ${this.chunkTable} SET status = 'processing' WHERE status = 'paused';`,
       )
     })
     // resumed file
     await this.executeInTransaction(async () => {
       await this.safeRun(
-        `UPDATE ${this.fileTable} SET status = 'processing' WHERE status = 'paused';`
+        `UPDATE ${this.fileTable} SET status = 'processing' WHERE status = 'paused';`,
       )
     })
   }
@@ -699,7 +736,7 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
   /** 安装并加载 VSS 扩展 */
   private async installAndLoadExtension(
     name: string,
-    afterRun?: () => Promise<void>
+    afterRun?: () => Promise<void>,
   ): Promise<void> {
     const extensionPath = path.join(extensionDir, `${name}${extensionSuffix}`)
     if (fs.existsSync(extensionPath)) {
@@ -725,7 +762,7 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
         status VARCHAR,
         uploaded_at BIGINT,
         metadata JSON
-      );`
+      );`,
     )
   }
 
@@ -739,7 +776,7 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
         status VARCHAR,
         chunk_index INTEGER,
         error VARCHAR
-      );`
+      );`,
     )
   }
 
@@ -751,7 +788,7 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
          embedding FLOAT[${dimensions}],
          file_id VARCHAR,
          chunk_id VARCHAR
-       );`
+       );`,
     )
   }
 
@@ -759,23 +796,23 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
   private async initTableIndex(opts?: IndexOptions): Promise<void> {
     // file
     await this.safeRun(
-      `CREATE INDEX IF NOT EXISTS idx_${this.fileTable}_file_id ON ${this.fileTable} (id);`
+      `CREATE INDEX IF NOT EXISTS idx_${this.fileTable}_file_id ON ${this.fileTable} (id);`,
     )
     await this.safeRun(
-      `CREATE INDEX IF NOT EXISTS idx_${this.fileTable}_file_status ON ${this.fileTable} (status);`
+      `CREATE INDEX IF NOT EXISTS idx_${this.fileTable}_file_status ON ${this.fileTable} (status);`,
     )
     await this.safeRun(
-      `CREATE INDEX IF NOT EXISTS idx_${this.fileTable}_file_path ON ${this.fileTable} (path);`
+      `CREATE INDEX IF NOT EXISTS idx_${this.fileTable}_file_path ON ${this.fileTable} (path);`,
     )
     // chunk
     await this.safeRun(
-      `CREATE INDEX IF NOT EXISTS idx_${this.chunkTable}_chunk_id ON ${this.chunkTable} (id);`
+      `CREATE INDEX IF NOT EXISTS idx_${this.chunkTable}_chunk_id ON ${this.chunkTable} (id);`,
     )
     await this.safeRun(
-      `CREATE INDEX IF NOT EXISTS idx_${this.chunkTable}_file_id ON ${this.chunkTable} (file_id);`
+      `CREATE INDEX IF NOT EXISTS idx_${this.chunkTable}_file_id ON ${this.chunkTable} (file_id);`,
     )
     await this.safeRun(
-      `CREATE INDEX IF NOT EXISTS idx_${this.chunkTable}_status ON ${this.chunkTable} (status);`
+      `CREATE INDEX IF NOT EXISTS idx_${this.chunkTable}_status ON ${this.chunkTable} (status);`,
     )
     // vector
     const metric = opts?.metric || 'cosine' // 支持 'l2sq' | 'cosine' | 'ip'
@@ -791,10 +828,10 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
      );`
     await this.safeRun(sql)
     await this.safeRun(
-      `CREATE INDEX IF NOT EXISTS idx_${this.vectorTable}_file_id ON ${this.vectorTable} (file_id);`
+      `CREATE INDEX IF NOT EXISTS idx_${this.vectorTable}_file_id ON ${this.vectorTable} (file_id);`,
     )
     await this.safeRun(
-      `CREATE INDEX IF NOT EXISTS idx_${this.vectorTable}_chunk_id ON ${this.vectorTable} (chunk_id);`
+      `CREATE INDEX IF NOT EXISTS idx_${this.vectorTable}_chunk_id ON ${this.vectorTable} (chunk_id);`,
     )
   }
 
@@ -834,7 +871,7 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
       `CREATE TABLE IF NOT EXISTS ${this.metadataTable} (
         key VARCHAR PRIMARY KEY,
         value VARCHAR
-      );`
+      );`,
     )
   }
 
@@ -856,14 +893,14 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
 
     if (currentVersion > CURRENT_DB_VERSION) {
       console.warn(
-        `[DuckDB] Database version (${currentVersion}) is newer than supported version (${CURRENT_DB_VERSION})`
+        `[DuckDB] Database version (${currentVersion}) is newer than supported version (${CURRENT_DB_VERSION})`,
       )
       return
     }
 
     // 执行从当前版本到目标版本的所有迁移
     const migrationsToRun = MIGRATIONS.filter(
-      (m) => m.version > currentVersion && m.version <= CURRENT_DB_VERSION
+      (m) => m.version > currentVersion && m.version <= CURRENT_DB_VERSION,
     )
 
     if (migrationsToRun.length === 0) {
@@ -877,7 +914,9 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
     migrationsToRun.sort((a, b) => a.version - b.version)
 
     for (const migration of migrationsToRun) {
-      console.log(`[DuckDB] Running migration v${migration.version}: ${migration.description}`)
+      console.log(
+        `[DuckDB] Running migration v${migration.version}: ${migration.description}`,
+      )
 
       try {
         await this.executeInTransaction(async () => {
@@ -885,15 +924,19 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
         })
         await this.setDatabaseVersion(migration.version)
 
-        console.log(`[DuckDB] Migration v${migration.version} completed successfully`)
+        console.log(
+          `[DuckDB] Migration v${migration.version} completed successfully`,
+        )
       } catch (error) {
         console.error(`[DuckDB] Migration v${migration.version} failed:`, error)
-        throw new Error(`Database migration v${migration.version} failed: ${error}`)
+        throw new Error(
+          `Database migration v${migration.version} failed: ${error}`,
+        )
       }
     }
 
     console.log(
-      `[DuckDB] All migrations completed successfully. Database updated to version ${CURRENT_DB_VERSION}`
+      `[DuckDB] All migrations completed successfully. Database updated to version ${CURRENT_DB_VERSION}`,
     )
   }
 
@@ -913,7 +956,7 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
       }
       return metadata
     } catch (error) {
-      console.error('[DuckDB] Error getting database metadata:', error)
+      console.error('❌[DuckDB] Error getting database metadata:', error)
       return {}
     }
   }
@@ -937,10 +980,15 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
     try {
       const metadata = await this.getDatabaseMetadata()
       const version = metadata[DB_VERSION_KEY]
-      return version ? parseInt(typeof version === 'string' ? version : String(version), 10) : 0
+      return version
+        ? parseInt(typeof version === 'string' ? version : String(version), 10)
+        : 0
     } catch (error) {
       // 如果元数据表不存在，说明是旧版本数据库
-      console.warn('[DuckDB] Cannot get database version, assuming version 0:', error)
+      console.warn(
+        '[DuckDB] Cannot get database version, assuming version 0:',
+        error,
+      )
       return 0
     }
   }

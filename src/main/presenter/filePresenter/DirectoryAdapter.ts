@@ -20,7 +20,7 @@ export class DirectoryAdapter {
     }
     return {
       dirCreated: stat.birthtime,
-      dirModified: stat.mtime
+      dirModified: stat.mtime,
     }
   }
 
@@ -32,10 +32,10 @@ export class DirectoryAdapter {
           dirName: path.basename(this.dirPath),
           dirPath: this.dirPath,
           dirCreated,
-          dirModified
+          dirModified,
         }
       } catch (error) {
-        console.error('Error processing directory:', error)
+        console.error('❌Error processing directory:', error)
         return null
       }
     }

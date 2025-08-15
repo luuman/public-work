@@ -34,12 +34,15 @@ export class ImageFileAdapter extends BaseFileAdapter {
       this.imageMetadata = {
         width: metadata.width,
         height: metadata.height,
-        format: metadata.format
+        format: metadata.format,
       }
     } catch (error) {
-      console.error('Error extracting image metadata:', error)
+      console.error('❌Error extracting image metadata:', error)
       // 如果 sharp 失败，至少从文件扩展名获取格式
-      this.imageMetadata.format = path.extname(this.filePath).substring(1).toLowerCase()
+      this.imageMetadata.format = path
+        .extname(this.filePath)
+        .substring(1)
+        .toLowerCase()
     }
   }
 
@@ -49,12 +52,12 @@ export class ImageFileAdapter extends BaseFileAdapter {
       .resize(256, 256, {
         // 限制最大尺寸
         fit: 'inside',
-        withoutEnlargement: true
+        withoutEnlargement: true,
       })
       .jpeg({
         // 统一转换为JPG
         quality: 70, // 压缩质量
-        mozjpeg: true // 使用mozjpeg优化
+        mozjpeg: true, // 使用mozjpeg优化
       })
 
     const buffer = await compressedImage.toBuffer()
@@ -77,12 +80,12 @@ export class ImageFileAdapter extends BaseFileAdapter {
       .resize(1200, 1200, {
         // 限制最大尺寸
         fit: 'inside',
-        withoutEnlargement: true
+        withoutEnlargement: true,
       })
       .jpeg({
         // 统一转换为JPG
         quality: 70, // 压缩质量
-        mozjpeg: true // 使用mozjpeg优化
+        mozjpeg: true, // 使用mozjpeg优化
       })
     this.imageMetadata.compressWidth =
       (await compressedImage.metadata()).width ?? this.imageMetadata.width

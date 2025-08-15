@@ -1,4 +1,9 @@
-import { LLM_PROVIDER, LLMResponse, ChatMessage, KeyStatus } from '@shared/presenter'
+import {
+  LLM_PROVIDER,
+  LLMResponse,
+  ChatMessage,
+  KeyStatus,
+} from '@shared/presenter'
 import { OpenAICompatibleProvider } from './openAICompatibleProvider'
 import { ConfigPresenter } from '../../configPresenter'
 import { SUMMARY_TITLES_PROMPT } from '../baseProvider'
@@ -23,7 +28,7 @@ export class DeepseekProvider extends OpenAICompatibleProvider {
     messages: ChatMessage[],
     modelId: string,
     temperature?: number,
-    maxTokens?: number
+    maxTokens?: number,
   ): Promise<LLMResponse> {
     return this.openAICompletion(messages, modelId, temperature, maxTokens)
   }
@@ -32,18 +37,18 @@ export class DeepseekProvider extends OpenAICompatibleProvider {
     text: string,
     modelId: string,
     temperature?: number,
-    maxTokens?: number
+    maxTokens?: number,
   ): Promise<LLMResponse> {
     return this.openAICompletion(
       [
         {
           role: 'user',
-          content: `${SUMMARY_TITLES_PROMPT}\n\n${text}`
-        }
+          content: `${SUMMARY_TITLES_PROMPT}\n\n${text}`,
+        },
       ],
       modelId,
       temperature,
-      maxTokens
+      maxTokens,
     )
   }
 
@@ -51,18 +56,18 @@ export class DeepseekProvider extends OpenAICompatibleProvider {
     prompt: string,
     modelId: string,
     temperature?: number,
-    maxTokens?: number
+    maxTokens?: number,
   ): Promise<LLMResponse> {
     return this.openAICompletion(
       [
         {
           role: 'user',
-          content: prompt
-        }
+          content: prompt,
+        },
       ],
       modelId,
       temperature,
-      maxTokens
+      maxTokens,
     )
   }
 
@@ -79,14 +84,14 @@ export class DeepseekProvider extends OpenAICompatibleProvider {
       method: 'GET',
       headers: {
         Accept: 'application/json',
-        Authorization: `Bearer ${this.provider.apiKey}`
-      }
+        Authorization: `Bearer ${this.provider.apiKey}`,
+      },
     })
 
     if (!response.ok) {
       const errorText = await response.text()
       throw new Error(
-        `DeepSeek API key check failed: ${response.status} ${response.statusText} - ${errorText}`
+        `DeepSeek API key check failed: ${response.status} ${response.statusText} - ${errorText}`,
       )
     }
 
@@ -112,7 +117,7 @@ export class DeepseekProvider extends OpenAICompatibleProvider {
     // Map to unified KeyStatus format
     return {
       limit_remaining: `${currencySymbol}${totalBalance}`,
-      remainNum: totalBalance
+      remainNum: totalBalance,
     }
   }
 
@@ -128,20 +133,21 @@ export class DeepseekProvider extends OpenAICompatibleProvider {
       if (keyStatus.remainNum !== undefined && keyStatus.remainNum <= 0) {
         return {
           isOk: false,
-          errorMsg: `API key quota exhausted. Remaining: ${keyStatus.limit_remaining}`
+          errorMsg: `API key quota exhausted. Remaining: ${keyStatus.limit_remaining}`,
         }
       }
 
       return { isOk: true, errorMsg: null }
     } catch (error: unknown) {
-      let errorMessage = 'An unknown error occurred during DeepSeek API key check.'
+      let errorMessage =
+        'An unknown error occurred during DeepSeek API key check.'
       if (error instanceof Error) {
         errorMessage = error.message
       } else if (typeof error === 'string') {
         errorMessage = error
       }
 
-      console.error('DeepSeek API key check failed:', error)
+      console.error('❌DeepSeek API key check failed:', error)
       return { isOk: false, errorMsg: errorMessage }
     }
   }

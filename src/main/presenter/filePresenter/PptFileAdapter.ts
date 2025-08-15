@@ -25,7 +25,9 @@ export class PptFileAdapter extends BaseFileAdapter {
   /**
    * Unzip a PPTX file and return slide files
    */
-  private async unzipPresentation(): Promise<Array<{ name: string; content: Uint8Array }>> {
+  private async unzipPresentation(): Promise<
+    Array<{ name: string; content: Uint8Array }>
+  > {
     const fileBuffer = await fs.readFile(this.filePath)
     const zipBuffer = new Uint8Array(fileBuffer.buffer)
 
@@ -51,7 +53,7 @@ export class PptFileAdapter extends BaseFileAdapter {
    */
   private async parseSlideSection(
     slideSection: XMLContent | XMLContent[] | string | string[],
-    collectedText: string[] = []
+    collectedText: string[] = [],
   ): Promise<string[]> {
     // If it's an array, process each element
     if (Array.isArray(slideSection)) {
@@ -75,7 +77,11 @@ export class PptFileAdapter extends BaseFileAdapter {
           if ((property === 'a:t' || property === '_') && value !== '') {
             collectedText.push(value)
           }
-        } else if (Array.isArray(value) && value.length > 0 && typeof value[0] === 'string') {
+        } else if (
+          Array.isArray(value) &&
+          value.length > 0 &&
+          typeof value[0] === 'string'
+        ) {
           if ((property === 'a:t' || property === '_') && value[0] !== '') {
             collectedText.push(value[0])
           }
@@ -116,7 +122,7 @@ export class PptFileAdapter extends BaseFileAdapter {
           this.fileContent = 'No slides found in the presentation.'
         }
       } catch (error) {
-        console.error('Error extracting text from PowerPoint:', error)
+        console.error('❌Error extracting text from PowerPoint:', error)
         this.fileContent = `Error processing PowerPoint file: ${(error as Error).message}`
       }
     }
@@ -148,12 +154,12 @@ export class PptFileAdapter extends BaseFileAdapter {
 ${textLines.join('\n')}
 \`\`\`
 `
-        })
+        }),
       )
 
       return fileDescription + slidesContent.join('\n')
     } catch (error) {
-      console.error('Error generating LLM content for PowerPoint:', error)
+      console.error('❌Error generating LLM content for PowerPoint:', error)
       return `Error processing PowerPoint file: ${(error as Error).message}`
     }
   }

@@ -5,7 +5,7 @@ import {
   ChatMessage,
   LLMCoreStreamEvent,
   ModelConfig,
-  MCPToolDefinition
+  MCPToolDefinition,
 } from '@shared/presenter'
 import { BaseLLMProvider, SUMMARY_TITLES_PROMPT } from '../baseProvider'
 import { ConfigPresenter } from '../../configPresenter'
@@ -40,7 +40,7 @@ export class GithubCopilotProvider extends BaseLLMProvider {
       name: provider.name,
       enable: provider.enable,
       hasApiKey: !!provider.apiKey,
-      apiKeyLength: provider.apiKey?.length || 0
+      apiKeyLength: provider.apiKey?.length || 0,
     })
 
     this.init()
@@ -64,26 +64,38 @@ export class GithubCopilotProvider extends BaseLLMProvider {
         console.log('🔧 [GitHub Copilot] Auto-enabling models if needed...')
         await this.autoEnableModelsIfNeeded()
 
-        console.info('✅ [GitHub Copilot] Provider initialized successfully:', this.provider.name)
+        console.info(
+          '✅ [GitHub Copilot] Provider initialized successfully:',
+          this.provider.name,
+        )
       } catch (error) {
         console.warn(
           '❌ [GitHub Copilot] Provider initialization failed:',
           this.provider.name,
-          error
+          error,
         )
-        console.error('   Initialization error details:', error)
+        console.error('❌   Initialization error details:', error)
 
         // 即使初始化失败，也要确保模型列表可用
         try {
-          console.log('🔄 [GitHub Copilot] Trying to fetch models after init error...')
+          console.log(
+            '🔄 [GitHub Copilot] Trying to fetch models after init error...',
+          )
           await this.fetchModels()
-          console.log('✅ [GitHub Copilot] Models fetched successfully after init error')
+          console.log(
+            '✅ [GitHub Copilot] Models fetched successfully after init error',
+          )
         } catch (modelError) {
-          console.warn('❌ [GitHub Copilot] Failed to fetch models after init error:', modelError)
+          console.warn(
+            '❌ [GitHub Copilot] Failed to fetch models after init error:',
+            modelError,
+          )
         }
       }
     } else {
-      console.log('⏸️ [GitHub Copilot] Provider is disabled, skipping initialization')
+      console.log(
+        '⏸️ [GitHub Copilot] Provider is disabled, skipping initialization',
+      )
     }
   }
 
@@ -97,14 +109,16 @@ export class GithubCopilotProvider extends BaseLLMProvider {
     // 检查token是否过期
     if (this.copilotToken && Date.now() < this.tokenExpiresAt) {
       console.log('✅ [GitHub Copilot] Using cached token (not expired)')
-      console.log(`   Token expires at: ${new Date(this.tokenExpiresAt).toISOString()}`)
+      console.log(
+        `   Token expires at: ${new Date(this.tokenExpiresAt).toISOString()}`,
+      )
       console.log(`   Current time: ${new Date().toISOString()}`)
       return this.copilotToken
     }
 
     console.log('🔄 [GitHub Copilot] Need to fetch new Copilot token')
     console.log(
-      `   Provider API Key: ${this.provider.apiKey ? 'EXISTS (length: ' + this.provider.apiKey.length + ')' : 'NOT SET'}`
+      `   Provider API Key: ${this.provider.apiKey ? 'EXISTS (length: ' + this.provider.apiKey.length + ')' : 'NOT SET'}`,
     )
     console.log(`   Token URL: ${this.tokenUrl}`)
 
@@ -112,13 +126,15 @@ export class GithubCopilotProvider extends BaseLLMProvider {
     const headers: Record<string, string> = {
       Authorization: `Bearer ${this.provider.apiKey}`,
       Accept: 'application/json',
-      'User-Agent': 'DeepChat/1.0.0'
+      'User-Agent': 'DeepChat/1.0.0',
     }
 
     console.log('📋 [GitHub Copilot] Request headers:')
     console.log(
       '   Authorization:',
-      headers.Authorization ? `Bearer ${this.provider.apiKey?.substring(0, 10)}...` : 'NOT SET'
+      headers.Authorization
+        ? `Bearer ${this.provider.apiKey?.substring(0, 10)}...`
+        : 'NOT SET',
     )
     console.log('   Accept:', headers.Accept)
     console.log('   User-Agent:', headers['User-Agent'])
@@ -126,7 +142,7 @@ export class GithubCopilotProvider extends BaseLLMProvider {
 
     const requestOptions: RequestInitWithAgent = {
       method: 'GET',
-      headers
+      headers,
     }
 
     // 添加代理支持
@@ -191,13 +207,17 @@ export class GithubCopilotProvider extends BaseLLMProvider {
         throw new Error(errorMessage)
       }
 
-      console.log('✅ [GitHub Copilot] Successfully received response, parsing JSON...')
+      console.log(
+        '✅ [GitHub Copilot] Successfully received response, parsing JSON...',
+      )
       const data: CopilotTokenResponse = await response.json()
 
       console.log('📊 [GitHub Copilot] Token response data:')
-      console.log(`   Token: ${data.token ? data.token.substring(0, 20) + '...' : 'NOT PRESENT'}`)
       console.log(
-        `   Expires at: ${data.expires_at} (${new Date(data.expires_at * 1000).toISOString()})`
+        `   Token: ${data.token ? data.token.substring(0, 20) + '...' : 'NOT PRESENT'}`,
+      )
+      console.log(
+        `   Expires at: ${data.expires_at} (${new Date(data.expires_at * 1000).toISOString()})`,
       )
       console.log(`   Refresh in: ${data.refresh_in || 'N/A'}`)
 
@@ -207,14 +227,17 @@ export class GithubCopilotProvider extends BaseLLMProvider {
       console.log('💾 [GitHub Copilot] Token cached successfully')
       return this.copilotToken
     } catch (error) {
-      console.error('💥 [GitHub Copilot] Error getting Copilot token:', error)
+      console.error('❌💥 [GitHub Copilot] Error getting Copilot token:', error)
       console.error(
         '   Error type:',
-        error instanceof Error ? error.constructor.name : typeof error
+        error instanceof Error ? error.constructor.name : typeof error,
       )
-      console.error('   Error message:', error instanceof Error ? error.message : error)
+      console.error(
+        '❌   Error message:',
+        error instanceof Error ? error.message : error,
+      )
       if (error instanceof Error && error.stack) {
-        console.error('   Stack trace:', error.stack)
+        console.error('❌   Stack trace:', error.stack)
       }
       throw error
     }
@@ -233,7 +256,7 @@ export class GithubCopilotProvider extends BaseLLMProvider {
         maxTokens: 4096,
         vision: true,
         functionCall: true,
-        reasoning: false
+        reasoning: false,
       },
       {
         id: 'gpt-4o-mini',
@@ -245,7 +268,7 @@ export class GithubCopilotProvider extends BaseLLMProvider {
         maxTokens: 16384,
         vision: true,
         functionCall: true,
-        reasoning: false
+        reasoning: false,
       },
       {
         id: 'gpt-4.1',
@@ -257,7 +280,7 @@ export class GithubCopilotProvider extends BaseLLMProvider {
         maxTokens: 8192,
         vision: true,
         functionCall: true,
-        reasoning: false
+        reasoning: false,
       },
       {
         id: 'claude-3.7-sonnet',
@@ -269,7 +292,7 @@ export class GithubCopilotProvider extends BaseLLMProvider {
         maxTokens: 8192,
         vision: true,
         functionCall: true,
-        reasoning: false
+        reasoning: false,
       },
       {
         id: 'claude-sonnet-4',
@@ -281,7 +304,7 @@ export class GithubCopilotProvider extends BaseLLMProvider {
         maxTokens: 8192,
         vision: true,
         functionCall: true,
-        reasoning: false
+        reasoning: false,
       },
       {
         id: 'gemini-2.5-pro',
@@ -293,7 +316,7 @@ export class GithubCopilotProvider extends BaseLLMProvider {
         maxTokens: 8192,
         vision: true,
         functionCall: true,
-        reasoning: false
+        reasoning: false,
       },
       {
         id: 'o3-mini',
@@ -305,7 +328,7 @@ export class GithubCopilotProvider extends BaseLLMProvider {
         maxTokens: 4096,
         vision: true,
         functionCall: true,
-        reasoning: true
+        reasoning: true,
       },
       {
         id: 'o3',
@@ -317,17 +340,22 @@ export class GithubCopilotProvider extends BaseLLMProvider {
         maxTokens: 4096,
         vision: true,
         functionCall: true,
-        reasoning: true
-      }
+        reasoning: true,
+      },
     ]
 
     return models
   }
 
-  private formatMessages(messages: ChatMessage[]): Array<{ role: string; content: string }> {
+  private formatMessages(
+    messages: ChatMessage[],
+  ): Array<{ role: string; content: string }> {
     return messages.map((msg) => ({
       role: msg.role,
-      content: typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content)
+      content:
+        typeof msg.content === 'string'
+          ? msg.content
+          : JSON.stringify(msg.content),
     }))
   }
 
@@ -337,7 +365,7 @@ export class GithubCopilotProvider extends BaseLLMProvider {
     _modelConfig: ModelConfig,
     temperature: number,
     maxTokens: number,
-    tools: MCPToolDefinition[]
+    tools: MCPToolDefinition[],
   ): AsyncGenerator<LLMCoreStreamEvent, void, unknown> {
     if (!modelId) throw new Error('Model ID is required')
     try {
@@ -350,7 +378,7 @@ export class GithubCopilotProvider extends BaseLLMProvider {
         messages: formattedMessages,
         max_tokens: maxTokens || 4096,
         stream: true,
-        temperature: temperature || 0.7
+        temperature: temperature || 0.7,
       }
 
       // Add tools when available
@@ -364,7 +392,7 @@ export class GithubCopilotProvider extends BaseLLMProvider {
         Accept: 'text/event-stream',
         'User-Agent': 'DeepChat/1.0.0',
         'editor-version': 'vscode/1.97.2',
-        'editor-plugin-version': 'copilot.vim/1.16.0'
+        'editor-plugin-version': 'copilot.vim/1.16.0',
       }
 
       // 添加详细的请求日志
@@ -377,7 +405,7 @@ export class GithubCopilotProvider extends BaseLLMProvider {
       const requestOptions: RequestInitWithAgent = {
         method: 'POST',
         headers,
-        body: JSON.stringify(requestBody)
+        body: JSON.stringify(requestBody),
       }
 
       // 添加代理支持
@@ -387,7 +415,10 @@ export class GithubCopilotProvider extends BaseLLMProvider {
         requestOptions.agent = agent
       }
 
-      const response = await fetch(`${this.baseApiUrl}/chat/completions`, requestOptions)
+      const response = await fetch(
+        `${this.baseApiUrl}/chat/completions`,
+        requestOptions,
+      )
 
       console.log('📥 [GitHub Copilot] Stream API Response:')
       console.log(`   Status: ${response.status} ${response.statusText}`)
@@ -408,7 +439,9 @@ export class GithubCopilotProvider extends BaseLLMProvider {
           console.log(`   Could not read error response: ${e}`)
         }
 
-        throw new Error(`GitHub Copilot API error: ${response.status} ${response.statusText}`)
+        throw new Error(
+          `GitHub Copilot API error: ${response.status} ${response.statusText}`,
+        )
       }
 
       if (!response.body) {
@@ -444,7 +477,7 @@ export class GithubCopilotProvider extends BaseLLMProvider {
               if (delta?.content) {
                 yield {
                   type: 'text',
-                  content: delta.content
+                  content: delta.content,
                 }
               }
 
@@ -455,14 +488,14 @@ export class GithubCopilotProvider extends BaseLLMProvider {
                     yield {
                       type: 'tool_call_start',
                       tool_call_id: toolCall.id,
-                      tool_call_name: toolCall.function.name
+                      tool_call_name: toolCall.function.name,
                     }
                   }
                   if (toolCall.function?.arguments) {
                     yield {
                       type: 'tool_call_chunk',
                       tool_call_id: toolCall.id,
-                      tool_call_arguments_chunk: toolCall.function.arguments
+                      tool_call_arguments_chunk: toolCall.function.arguments,
                     }
                   }
                 }
@@ -472,7 +505,7 @@ export class GithubCopilotProvider extends BaseLLMProvider {
               if (delta?.reasoning) {
                 yield {
                   type: 'reasoning',
-                  reasoning_content: delta.reasoning
+                  reasoning_content: delta.reasoning,
                 }
               }
             } catch (parseError) {
@@ -484,7 +517,7 @@ export class GithubCopilotProvider extends BaseLLMProvider {
         reader.releaseLock()
       }
     } catch (error) {
-      console.error('GitHub Copilot stream error:', error)
+      console.error('❌GitHub Copilot stream error:', error)
       throw error
     }
   }
@@ -493,7 +526,7 @@ export class GithubCopilotProvider extends BaseLLMProvider {
     messages: ChatMessage[],
     modelId: string,
     temperature?: number,
-    maxTokens?: number
+    maxTokens?: number,
   ): Promise<LLMResponse> {
     if (!modelId) throw new Error('Model ID is required')
     try {
@@ -506,7 +539,7 @@ export class GithubCopilotProvider extends BaseLLMProvider {
         messages: formattedMessages,
         max_tokens: maxTokens || 4096,
         stream: false,
-        temperature: temperature || 0.7
+        temperature: temperature || 0.7,
       }
 
       const headers: Record<string, string> = {
@@ -515,7 +548,7 @@ export class GithubCopilotProvider extends BaseLLMProvider {
         Accept: 'application/json',
         'User-Agent': 'DeepChat/1.0.0',
         'editor-version': 'vscode/1.97.2',
-        'editor-plugin-version': 'copilot.vim/1.16.0'
+        'editor-plugin-version': 'copilot.vim/1.16.0',
       }
 
       // 添加详细的请求日志
@@ -528,7 +561,7 @@ export class GithubCopilotProvider extends BaseLLMProvider {
       const requestOptions: RequestInitWithAgent = {
         method: 'POST',
         headers,
-        body: JSON.stringify(requestBody)
+        body: JSON.stringify(requestBody),
       }
 
       // 添加代理支持
@@ -538,7 +571,10 @@ export class GithubCopilotProvider extends BaseLLMProvider {
         requestOptions.agent = agent
       }
 
-      const response = await fetch(`${this.baseApiUrl}/chat/completions`, requestOptions)
+      const response = await fetch(
+        `${this.baseApiUrl}/chat/completions`,
+        requestOptions,
+      )
 
       console.log('📥 [GitHub Copilot] Completion API Response:')
       console.log(`   Status: ${response.status} ${response.statusText}`)
@@ -559,7 +595,9 @@ export class GithubCopilotProvider extends BaseLLMProvider {
           console.log(`   Could not read error response: ${e}`)
         }
 
-        throw new Error(`GitHub Copilot API error: ${response.status} ${response.statusText}`)
+        throw new Error(
+          `GitHub Copilot API error: ${response.status} ${response.statusText}`,
+        )
       }
 
       const data = await response.json()
@@ -570,7 +608,7 @@ export class GithubCopilotProvider extends BaseLLMProvider {
       }
 
       const result: LLMResponse = {
-        content: choice.message?.content || ''
+        content: choice.message?.content || '',
       }
 
       // 处理推理内容（对于o1模型）
@@ -580,7 +618,7 @@ export class GithubCopilotProvider extends BaseLLMProvider {
 
       return result
     } catch (error) {
-      console.error('GitHub Copilot completion error:', error)
+      console.error('❌GitHub Copilot completion error:', error)
       throw error
     }
   }
@@ -589,19 +627,19 @@ export class GithubCopilotProvider extends BaseLLMProvider {
     text: string,
     modelId: string,
     temperature?: number,
-    maxTokens?: number
+    maxTokens?: number,
   ): Promise<LLMResponse> {
     if (!modelId) throw new Error('Model ID is required')
     return this.completions(
       [
         {
           role: 'user',
-          content: `请总结以下内容，使用简洁的语言，突出重点：\n${text}`
-        }
+          content: `请总结以下内容，使用简洁的语言，突出重点：\n${text}`,
+        },
       ],
       modelId,
       temperature,
-      maxTokens
+      maxTokens,
     )
   }
 
@@ -609,18 +647,18 @@ export class GithubCopilotProvider extends BaseLLMProvider {
     prompt: string,
     modelId: string,
     temperature?: number,
-    maxTokens?: number
+    maxTokens?: number,
   ): Promise<LLMResponse> {
     return this.completions(
       [
         {
           role: 'user',
-          content: prompt
-        }
+          content: prompt,
+        },
       ],
       modelId,
       temperature,
-      maxTokens
+      maxTokens,
     )
   }
 
@@ -637,15 +675,19 @@ export class GithubCopilotProvider extends BaseLLMProvider {
         console.log('❌ [GitHub Copilot] No API Key found')
         return {
           isOk: false,
-          errorMsg: '请先使用 GitHub OAuth 登录以获取访问令牌'
+          errorMsg: '请先使用 GitHub OAuth 登录以获取访问令牌',
         }
       }
 
-      console.log(`✅ [GitHub Copilot] API Key exists (length: ${this.provider.apiKey.length})`)
-      console.log(`   API Key preview: ${this.provider.apiKey.substring(0, 20)}...`)
+      console.log(
+        `✅ [GitHub Copilot] API Key exists (length: ${this.provider.apiKey.length})`,
+      )
+      console.log(
+        `   API Key preview: ${this.provider.apiKey.substring(0, 20)}...`,
+      )
 
       console.log(
-        '🎯 [GitHub Copilot] Attempting to get Copilot token (this will test the connection)...'
+        '🎯 [GitHub Copilot] Attempting to get Copilot token (this will test the connection)...',
       )
       await this.getCopilotToken()
 
@@ -653,7 +695,7 @@ export class GithubCopilotProvider extends BaseLLMProvider {
       return { isOk: true, errorMsg: null }
     } catch (error) {
       console.log('❌ [GitHub Copilot] Provider check failed!')
-      console.error('   Error details:', error)
+      console.error('❌   Error details:', error)
 
       let errorMsg = error instanceof Error ? error.message : 'Unknown error'
 
@@ -669,27 +711,30 @@ export class GithubCopilotProvider extends BaseLLMProvider {
 
       return {
         isOk: false,
-        errorMsg
+        errorMsg,
       }
     }
   }
 
-  async summaryTitles(messages: ChatMessage[], modelId: string): Promise<string> {
+  async summaryTitles(
+    messages: ChatMessage[],
+    modelId: string,
+  ): Promise<string> {
     try {
       const response = await this.completions(
         [
           {
             role: 'user',
-            content: `${SUMMARY_TITLES_PROMPT}\n\n${messages.map((m) => `${m.role}: ${m.content}`).join('\n')}`
-          }
+            content: `${SUMMARY_TITLES_PROMPT}\n\n${messages.map((m) => `${m.role}: ${m.content}`).join('\n')}`,
+          },
         ],
         modelId,
         0.7,
-        50
+        50,
       )
       return response.content.trim()
     } catch (error) {
-      console.error('Error generating summary title:', error)
+      console.error('❌Error generating summary title:', error)
       return '新对话'
     }
   }

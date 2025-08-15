@@ -1,5 +1,8 @@
 import { Server } from '@modelcontextprotocol/sdk/server/index.js'
-import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js'
+import {
+  CallToolRequestSchema,
+  ListToolsRequestSchema,
+} from '@modelcontextprotocol/sdk/types.js'
 import { Transport } from '@modelcontextprotocol/sdk/shared/transport.js'
 import { z } from 'zod'
 import { zodToJsonSchema } from 'zod-to-json-schema'
@@ -12,7 +15,7 @@ import { Prompt } from '@shared/presenter'
 const TemplateParameterSchema = z.object({
   name: z.string().describe('参数名'),
   description: z.string().describe('参数描述'),
-  required: z.boolean().describe('是否为必填参数')
+  required: z.boolean().describe('是否为必填参数'),
   // type 字段已移除，所有模板参数都是 string
 })
 
@@ -22,7 +25,10 @@ const TemplateDefinitionSchema = z.object({
   name: z.string().describe('模板名称'),
   description: z.string().describe('模板描述'),
   content: z.string().describe('模板内容，包含占位符'),
-  parameters: z.array(TemplateParameterSchema).optional().describe('模板参数列表')
+  parameters: z
+    .array(TemplateParameterSchema)
+    .optional()
+    .describe('模板参数列表'),
 })
 
 // 使用 z.infer 从 Schema 推断出 TypeScript 类型
@@ -31,18 +37,26 @@ type TemplateDefinition = z.infer<typeof TemplateDefinitionSchema>
 
 // 获取模板参数信息的函数参数 Schema
 const GetTemplateParametersArgsSchema = z.object({
-  templateName: z.string().describe('要获取参数的模板名称')
+  templateName: z.string().describe('要获取参数的模板名称'),
 })
 
 // 填充模板的函数参数 Schema
 const FillTemplateArgsSchema = z.object({
   templateName: z.string().describe('要填充的模板名称'),
-  templateArgs: z.record(z.string(), z.string()).optional().describe('填充模板所需的参数键值对'),
-  additionalContent: z.string().optional().describe('用户希望添加到Prompt末尾的额外内容')
+  templateArgs: z
+    .record(z.string(), z.string())
+    .optional()
+    .describe('填充模板所需的参数键值对'),
+  additionalContent: z
+    .string()
+    .optional()
+    .describe('用户希望添加到Prompt末尾的额外内容'),
 })
 
 // Zod Schema 转换为 JSON Schema
-const GetTemplateParametersArgsJsonSchema = zodToJsonSchema(GetTemplateParametersArgsSchema)
+const GetTemplateParametersArgsJsonSchema = zodToJsonSchema(
+  GetTemplateParametersArgsSchema,
+)
 const FillTemplateArgsJsonSchema = zodToJsonSchema(FillTemplateArgsSchema)
 
 // --- MCP Server 实现 ---
@@ -53,13 +67,13 @@ export class AutoPromptingServer {
     this.server = new Server(
       {
         name: 'template-prompt-server',
-        version: '1.0.0'
+        version: '1.0.0',
       },
       {
         capabilities: {
-          tools: {} // 只声明提供工具能力
-        }
-      }
+          tools: {}, // 只声明提供工具能力
+        },
+      },
     )
 
     this.setupRequestHandlers()
@@ -75,9 +89,12 @@ export class AutoPromptingServer {
    * @param name 模板名称
    * @returns 模板定义或 undefined
    */
-  private async getTemplateDefinition(name: string): Promise<TemplateDefinition | undefined> {
+  private async getTemplateDefinition(
+    name: string,
+  ): Promise<TemplateDefinition | undefined> {
     try {
-      const prompts: Prompt[] = await presenter.configPresenter.getCustomPrompts()
+      const prompts: Prompt[] =
+        await presenter.configPresenter.getCustomPrompts()
       const prompt = prompts.find((p) => p.name === name)
 
       if (!prompt) {
@@ -89,12 +106,12 @@ export class AutoPromptingServer {
         name: prompt.name,
         description: prompt.description,
         content: prompt.content || '', // 如果 content 为 undefined，使用空字符串
-        parameters: prompt.parameters
+        parameters: prompt.parameters,
       }
 
       return templateDefinition
     } catch (error) {
-      console.error('Failed to retrieve custom templates:', error)
+      console.error('❌Failed to retrieve custom templates:', error)
       return undefined
     }
   }
@@ -106,19 +123,20 @@ export class AutoPromptingServer {
         {
           name: 'list_all_prompt_template_names',
           description: '获取所有可用提示词模板的名称列表。',
-          inputSchema: zodToJsonSchema(z.object({})) // 无需参数
+          inputSchema: zodToJsonSchema(z.object({})), // 无需参数
         },
         {
           name: 'get_prompt_template_parameters',
           description: '根据提示词模板名称获取其所需的参数列表和描述。',
-          inputSchema: GetTemplateParametersArgsJsonSchema
+          inputSchema: GetTemplateParametersArgsJsonSchema,
         },
         {
           name: 'fill_prompt_template',
-          description: '根据提示词模板名称和参数，填充模板内容并生成最终的Prompt。',
-          inputSchema: FillTemplateArgsJsonSchema
-        }
-      ]
+          description:
+            '根据提示词模板名称和参数，填充模板内容并生成最终的Prompt。',
+          inputSchema: FillTemplateArgsJsonSchema,
+        },
+      ],
     }
   }
 
@@ -129,13 +147,14 @@ export class AutoPromptingServer {
     if (name === 'list_all_prompt_template_names') {
       // 1. 得到所有模板名
       try {
-        const prompts: Prompt[] = await presenter.configPresenter.getCustomPrompts()
+        const prompts: Prompt[] =
+          await presenter.configPresenter.getCustomPrompts()
         const templateNames = prompts.map((p) => p.name)
         return {
-          content: [{ type: 'text', text: JSON.stringify(templateNames) }]
+          content: [{ type: 'text', text: JSON.stringify(templateNames) }],
         }
       } catch (error) {
-        console.error('Failed to retrieve the list of template names:', error)
+        console.error('❌Failed to retrieve the list of template names:', error)
         throw new Error('Unable to retrieve the list of template names.')
       }
     } else if (name === 'get_prompt_template_parameters') {
@@ -143,7 +162,7 @@ export class AutoPromptingServer {
       const parsed = GetTemplateParametersArgsSchema.safeParse(args)
       if (!parsed.success) {
         throw new Error(
-          `Invalid parameters for get_prompt_template_parameters: ${parsed.error.errors.map((e) => e.message).join(', ')}`
+          `Invalid parameters for get_prompt_template_parameters: ${parsed.error.errors.map((e) => e.message).join(', ')}`,
         )
       }
 
@@ -156,14 +175,16 @@ export class AutoPromptingServer {
 
       // 现在 template.parameters 已经是 TemplateParameterSchema 的类型，无需额外适配
       return {
-        content: [{ type: 'text', text: JSON.stringify(template.parameters || []) }]
+        content: [
+          { type: 'text', text: JSON.stringify(template.parameters || []) },
+        ],
       }
     } else if (name === 'fill_prompt_template') {
       // 3. 填充模板，得到最终prompt
       const parsed = FillTemplateArgsSchema.safeParse(args)
       if (!parsed.success) {
         throw new Error(
-          `Invalid parameters for fill_prompt_template: ${parsed.error.errors.map((e) => e.message).join(', ')}`
+          `Invalid parameters for fill_prompt_template: ${parsed.error.errors.map((e) => e.message).join(', ')}`,
         )
       }
 
@@ -180,7 +201,10 @@ export class AutoPromptingServer {
       if (templateArgs && template.parameters) {
         for (const param of template.parameters) {
           const value = templateArgs[param.name] || ''
-          filledContent = filledContent.replace(new RegExp(`{{${param.name}}}`, 'g'), value)
+          filledContent = filledContent.replace(
+            new RegExp(`{{${param.name}}}`, 'g'),
+            value,
+          )
         }
       }
 
@@ -190,7 +214,7 @@ export class AutoPromptingServer {
         : filledContent
 
       return {
-        content: [{ type: 'text', text: finalPrompt }]
+        content: [{ type: 'text', text: finalPrompt }],
       }
     }
 
@@ -209,10 +233,11 @@ export class AutoPromptingServer {
       try {
         return await this.handleToolCall(request)
       } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : String(error)
+        const errorMessage =
+          error instanceof Error ? error.message : String(error)
         return {
           content: [{ type: 'text', text: `Error: ${errorMessage}` }],
-          isError: true
+          isError: true,
         }
       }
     })

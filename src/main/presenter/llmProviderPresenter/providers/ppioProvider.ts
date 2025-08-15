@@ -1,4 +1,10 @@
-import { LLM_PROVIDER, LLMResponse, ChatMessage, KeyStatus, MODEL_META } from '@shared/presenter'
+import {
+  LLM_PROVIDER,
+  LLMResponse,
+  ChatMessage,
+  KeyStatus,
+  MODEL_META,
+} from '@shared/presenter'
 import { OpenAICompatibleProvider } from './openAICompatibleProvider'
 import { ConfigPresenter } from '../../configPresenter'
 
@@ -31,7 +37,7 @@ export class PPIOProvider extends OpenAICompatibleProvider {
     messages: ChatMessage[],
     modelId: string,
     temperature?: number,
-    maxTokens?: number
+    maxTokens?: number,
   ): Promise<LLMResponse> {
     return this.openAICompletion(messages, modelId, temperature, maxTokens)
   }
@@ -40,18 +46,18 @@ export class PPIOProvider extends OpenAICompatibleProvider {
     text: string,
     modelId: string,
     temperature?: number,
-    maxTokens?: number
+    maxTokens?: number,
   ): Promise<LLMResponse> {
     return this.openAICompletion(
       [
         {
           role: 'user',
-          content: `You need to summarize the user's conversation into a title of no more than 10 words, with the title language matching the user's primary language, without using punctuation or other special symbols：\n${text}`
-        }
+          content: `You need to summarize the user's conversation into a title of no more than 10 words, with the title language matching the user's primary language, without using punctuation or other special symbols：\n${text}`,
+        },
       ],
       modelId,
       temperature,
-      maxTokens
+      maxTokens,
     )
   }
 
@@ -59,18 +65,18 @@ export class PPIOProvider extends OpenAICompatibleProvider {
     prompt: string,
     modelId: string,
     temperature?: number,
-    maxTokens?: number
+    maxTokens?: number,
   ): Promise<LLMResponse> {
     return this.openAICompletion(
       [
         {
           role: 'user',
-          content: prompt
-        }
+          content: prompt,
+        },
       ],
       modelId,
       temperature,
-      maxTokens
+      maxTokens,
     )
   }
 
@@ -87,14 +93,14 @@ export class PPIOProvider extends OpenAICompatibleProvider {
       method: 'GET',
       headers: {
         Authorization: this.provider.apiKey,
-        'Content-Type': 'application/json'
-      }
+        'Content-Type': 'application/json',
+      },
     })
 
     if (!response.ok) {
       const errorText = await response.text()
       throw new Error(
-        `PPIO API key check failed: ${response.status} ${response.statusText} - ${errorText}`
+        `PPIO API key check failed: ${response.status} ${response.statusText} - ${errorText}`,
       )
     }
 
@@ -102,7 +108,7 @@ export class PPIOProvider extends OpenAICompatibleProvider {
     const remaining = '¥' + keyResponse.credit_balance / 10000
     return {
       limit_remaining: remaining,
-      remainNum: keyResponse.credit_balance
+      remainNum: keyResponse.credit_balance,
     }
   }
 
@@ -118,7 +124,7 @@ export class PPIOProvider extends OpenAICompatibleProvider {
       if (keyStatus.remainNum !== undefined && keyStatus.remainNum <= 0) {
         return {
           isOk: false,
-          errorMsg: `API key quota exhausted. Remaining: ${keyStatus.limit_remaining}`
+          errorMsg: `API key quota exhausted. Remaining: ${keyStatus.limit_remaining}`,
         }
       }
 
@@ -131,7 +137,7 @@ export class PPIOProvider extends OpenAICompatibleProvider {
         errorMessage = error
       }
 
-      console.error('PPIO API key check failed:', error)
+      console.error('❌PPIO API key check failed:', error)
       return { isOk: false, errorMsg: errorMessage }
     }
   }
@@ -141,7 +147,9 @@ export class PPIOProvider extends OpenAICompatibleProvider {
    * @param options - Request options
    * @returns Promise<MODEL_META[]> - Array of model metadata
    */
-  protected async fetchOpenAIModels(options?: { timeout: number }): Promise<MODEL_META[]> {
+  protected async fetchOpenAIModels(options?: {
+    timeout: number
+  }): Promise<MODEL_META[]> {
     try {
       const response = await this.openai.models.list(options)
       // console.log('PPIO models response:', JSON.stringify(response, null, 2))
@@ -162,11 +170,16 @@ export class PPIOProvider extends OpenAICompatibleProvider {
         // const hasStructuredOutputs = features.includes('structured-outputs')
 
         // Get existing model configuration first
-        const existingConfig = this.configPresenter.getModelConfig(modelId, this.provider.id)
+        const existingConfig = this.configPresenter.getModelConfig(
+          modelId,
+          this.provider.id,
+        )
 
         // Extract configuration values with proper fallback priority: API -> existing config -> default
-        const contextLength = ppioModel.context_size || existingConfig.contextLength || 4096
-        const maxTokens = ppioModel.max_output_tokens || existingConfig.maxTokens || 2048
+        const contextLength =
+          ppioModel.context_size || existingConfig.contextLength || 4096
+        const maxTokens =
+          ppioModel.max_output_tokens || existingConfig.maxTokens || 2048
 
         // Build new configuration based on API response
         const newConfig = {
@@ -176,7 +189,7 @@ export class PPIOProvider extends OpenAICompatibleProvider {
           vision: hasVision,
           reasoning: existingConfig.reasoning, // Keep existing reasoning setting
           temperature: existingConfig.temperature, // Keep existing temperature
-          type: existingConfig.type // Keep existing type
+          type: existingConfig.type, // Keep existing type
         }
 
         // Check if configuration has changed
@@ -198,7 +211,11 @@ export class PPIOProvider extends OpenAICompatibleProvider {
           //   new: newConfig
           // })
 
-          this.configPresenter.setModelConfig(modelId, this.provider.id, newConfig)
+          this.configPresenter.setModelConfig(
+            modelId,
+            this.provider.id,
+            newConfig,
+          )
         }
 
         // Create MODEL_META object
@@ -213,16 +230,18 @@ export class PPIOProvider extends OpenAICompatibleProvider {
           description: ppioModel.description,
           vision: hasVision,
           functionCall: hasFunctionCalling,
-          reasoning: existingConfig.reasoning || false
+          reasoning: existingConfig.reasoning || false,
         }
 
         models.push(modelMeta)
       }
 
-      console.log(`Processed ${models.length} PPIO models with dynamic configuration updates`)
+      console.log(
+        `Processed ${models.length} PPIO models with dynamic configuration updates`,
+      )
       return models
     } catch (error) {
-      console.error('Error fetching PPIO models:', error)
+      console.error('❌Error fetching PPIO models:', error)
       // Fallback to parent implementation
       return super.fetchOpenAIModels(options)
     }

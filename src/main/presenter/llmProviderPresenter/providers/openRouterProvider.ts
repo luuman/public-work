@@ -1,4 +1,10 @@
-import { LLM_PROVIDER, LLMResponse, ChatMessage, KeyStatus, MODEL_META } from '@shared/presenter'
+import {
+  LLM_PROVIDER,
+  LLMResponse,
+  ChatMessage,
+  KeyStatus,
+  MODEL_META,
+} from '@shared/presenter'
 import { OpenAICompatibleProvider } from './openAICompatibleProvider'
 import { ConfigPresenter } from '../../configPresenter'
 
@@ -59,7 +65,7 @@ export class OpenRouterProvider extends OpenAICompatibleProvider {
     messages: ChatMessage[],
     modelId: string,
     temperature?: number,
-    maxTokens?: number
+    maxTokens?: number,
   ): Promise<LLMResponse> {
     return this.openAICompletion(messages, modelId, temperature, maxTokens)
   }
@@ -68,18 +74,18 @@ export class OpenRouterProvider extends OpenAICompatibleProvider {
     text: string,
     modelId: string,
     temperature?: number,
-    maxTokens?: number
+    maxTokens?: number,
   ): Promise<LLMResponse> {
     return this.openAICompletion(
       [
         {
           role: 'user',
-          content: `You need to summarize the user's conversation into a title of no more than 10 words, with the title language matching the user's primary language, without using punctuation or other special symbols：\n${text}`
-        }
+          content: `You need to summarize the user's conversation into a title of no more than 10 words, with the title language matching the user's primary language, without using punctuation or other special symbols：\n${text}`,
+        },
       ],
       modelId,
       temperature,
-      maxTokens
+      maxTokens,
     )
   }
 
@@ -87,18 +93,18 @@ export class OpenRouterProvider extends OpenAICompatibleProvider {
     prompt: string,
     modelId: string,
     temperature?: number,
-    maxTokens?: number
+    maxTokens?: number,
   ): Promise<LLMResponse> {
     return this.openAICompletion(
       [
         {
           role: 'user',
-          content: prompt
-        }
+          content: prompt,
+        },
       ],
       modelId,
       temperature,
-      maxTokens
+      maxTokens,
     )
   }
 
@@ -115,14 +121,14 @@ export class OpenRouterProvider extends OpenAICompatibleProvider {
       method: 'GET',
       headers: {
         Authorization: `Bearer ${this.provider.apiKey}`,
-        'Content-Type': 'application/json'
-      }
+        'Content-Type': 'application/json',
+      },
     })
 
     if (response.status !== 200) {
       const errorText = await response.text()
       throw new Error(
-        `OpenRouter API key check failed: ${response.status} ${response.statusText} - ${errorText}`
+        `OpenRouter API key check failed: ${response.status} ${response.statusText} - ${errorText}`,
       )
     }
 
@@ -138,7 +144,7 @@ export class OpenRouterProvider extends OpenAICompatibleProvider {
 
     // Build KeyStatus based on available data
     const keyStatus: KeyStatus = {
-      usage: '$' + keyResponse.data.usage
+      usage: '$' + keyResponse.data.usage,
     }
 
     // Only include limit_remaining if it's not null (has actual limit)
@@ -162,20 +168,21 @@ export class OpenRouterProvider extends OpenAICompatibleProvider {
       if (keyStatus.remainNum !== undefined && keyStatus.remainNum <= 0) {
         return {
           isOk: false,
-          errorMsg: `API key quota exhausted. Remaining: ${keyStatus.limit_remaining}`
+          errorMsg: `API key quota exhausted. Remaining: ${keyStatus.limit_remaining}`,
         }
       }
 
       return { isOk: true, errorMsg: null }
     } catch (error: unknown) {
-      let errorMessage = 'An unknown error occurred during OpenRouter API key check.'
+      let errorMessage =
+        'An unknown error occurred during OpenRouter API key check.'
       if (error instanceof Error) {
         errorMessage = error.message
       } else if (typeof error === 'string') {
         errorMessage = error
       }
 
-      console.error('OpenRouter API key check failed:', error)
+      console.error('❌OpenRouter API key check failed:', error)
       return { isOk: false, errorMsg: errorMessage }
     }
   }
@@ -185,7 +192,9 @@ export class OpenRouterProvider extends OpenAICompatibleProvider {
    * @param options - Request options
    * @returns Promise<MODEL_META[]> - Array of model metadata
    */
-  protected async fetchOpenAIModels(options?: { timeout: number }): Promise<MODEL_META[]> {
+  protected async fetchOpenAIModels(options?: {
+    timeout: number
+  }): Promise<MODEL_META[]> {
     try {
       const response = await this.openai.models.list(options)
       // console.log('OpenRouter models response:', JSON.stringify(response, null, 2))
@@ -199,7 +208,8 @@ export class OpenRouterProvider extends OpenAICompatibleProvider {
         // Extract model information
         const modelId = openRouterModel.id
         const supportedParameters = openRouterModel.supported_parameters || []
-        const inputModalities = openRouterModel.architecture?.input_modalities || []
+        const inputModalities =
+          openRouterModel.architecture?.input_modalities || []
 
         // Check capabilities based on supported parameters and architecture
         const hasFunctionCalling = supportedParameters.includes('tools')
@@ -210,7 +220,8 @@ export class OpenRouterProvider extends OpenAICompatibleProvider {
 
         // Get existing model configuration first
         const existingConfig =
-          this.configPresenter.getModelConfig(modelId, this.provider.id) ?? ({} as const)
+          this.configPresenter.getModelConfig(modelId, this.provider.id) ??
+          ({} as const)
 
         // Extract configuration values with proper fallback priority: API -> existing config -> default
         const contextLength =
@@ -219,7 +230,9 @@ export class OpenRouterProvider extends OpenAICompatibleProvider {
           existingConfig.contextLength ||
           4096
         const maxTokens =
-          openRouterModel.top_provider?.max_completion_tokens || existingConfig.maxTokens || 2048
+          openRouterModel.top_provider?.max_completion_tokens ||
+          existingConfig.maxTokens ||
+          2048
 
         // Build new configuration based on API response
         const newConfig = {
@@ -229,7 +242,7 @@ export class OpenRouterProvider extends OpenAICompatibleProvider {
           vision: hasVision,
           reasoning: hasReasoning || existingConfig.reasoning, // Use API info or keep existing
           temperature: existingConfig.temperature, // Keep existing temperature
-          type: existingConfig.type // Keep existing type
+          type: existingConfig.type, // Keep existing type
         }
 
         // Check if configuration has changed
@@ -253,7 +266,11 @@ export class OpenRouterProvider extends OpenAICompatibleProvider {
           //   new: newConfig
           // })
 
-          this.configPresenter.setModelConfig(modelId, this.provider.id, newConfig)
+          this.configPresenter.setModelConfig(
+            modelId,
+            this.provider.id,
+            newConfig,
+          )
         }
 
         // Create MODEL_META object
@@ -268,16 +285,18 @@ export class OpenRouterProvider extends OpenAICompatibleProvider {
           description: openRouterModel.description,
           vision: hasVision,
           functionCall: hasFunctionCalling,
-          reasoning: hasReasoning || existingConfig.reasoning || false
+          reasoning: hasReasoning || existingConfig.reasoning || false,
         }
 
         models.push(modelMeta)
       }
 
-      console.log(`Processed ${models.length} OpenRouter models with dynamic configuration updates`)
+      console.log(
+        `Processed ${models.length} OpenRouter models with dynamic configuration updates`,
+      )
       return models
     } catch (error) {
-      console.error('Error fetching OpenRouter models:', error)
+      console.error('❌Error fetching OpenRouter models:', error)
       // Fallback to parent implementation
       return super.fetchOpenAIModels(options)
     }

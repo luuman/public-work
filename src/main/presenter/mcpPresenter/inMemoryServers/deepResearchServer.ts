@@ -3,7 +3,10 @@
 // 已替换搜索引擎为 Bocha，重写页面内容提取逻辑。
 // 采用基于反思的增量迭代研究模式。
 import { Server } from '@modelcontextprotocol/sdk/server/index.js'
-import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js'
+import {
+  CallToolRequestSchema,
+  ListToolsRequestSchema,
+} from '@modelcontextprotocol/sdk/types.js'
 import { z } from 'zod'
 import { zodToJsonSchema } from 'zod-to-json-schema'
 import { Transport } from '@modelcontextprotocol/sdk/shared/transport.js'
@@ -15,20 +18,27 @@ import { nanoid } from 'nanoid'
 
 // StartDeepResearchArgsSchema: 启动深度研究的参数。
 const StartDeepResearchArgsSchema = z.object({
-  question: z.string().describe('要开始深度研究的研究问题或主题。')
+  question: z.string().describe('要开始深度研究的研究问题或主题。'),
 })
 
 // SingleWebSearchArgsSchema: 执行单次网页搜索的参数。
 const SingleWebSearchArgsSchema = z.object({
   session_id: z.string().describe('来自 start_deep_research 的研究会话ID。'),
   query: z.string().describe('要执行的单个搜索查询。'),
-  max_results: z.number().min(5).max(15).default(10).describe('此搜索查询的最大结果数 (5-15)。')
+  max_results: z
+    .number()
+    .min(5)
+    .max(15)
+    .default(10)
+    .describe('此搜索查询的最大结果数 (5-15)。'),
 })
 
 // RequestResearchDataArgsScema: LLM 请求当前累积搜索结果以进行反思的参数。
 const RequestResearchDataArgsSchema = z.object({
   session_id: z.string().describe('研究会话ID。'),
-  iteration: z.number().describe('当前研究迭代次数。LLM 应自行维护此数值并传入。')
+  iteration: z
+    .number()
+    .describe('当前研究迭代次数。LLM 应自行维护此数值并传入。'),
 })
 
 // SubmitReflectionResultsArgsSchema: LLM 提交反思结果的参数。
@@ -36,20 +46,27 @@ const SubmitReflectionResultsArgsSchema = z.object({
   session_id: z.string().describe('研究会话ID。'),
   iteration: z.number().describe('此反思对应的迭代次数。'),
   needs_more_research: z.boolean().describe('LLM 分析后认为是否需要更多研究。'),
-  missing_information: z.array(z.string()).describe('LLM 识别出的缺失信息列表，如果需要更多研究。'),
+  missing_information: z
+    .array(z.string())
+    .describe('LLM 识别出的缺失信息列表，如果需要更多研究。'),
   quality_assessment: z.string().describe('LLM 对当前研究结果的质量评估。'),
-  suggested_queries: z.array(z.string()).describe('LLM 基于当前信息和缺失点，建议的后续搜索查询。'),
+  suggested_queries: z
+    .array(z.string())
+    .describe('LLM 基于当前信息和缺失点，建议的后续搜索查询。'),
   confidence_score: z
     .number()
     .min(0)
     .max(1)
-    .describe('LLM 对当前研究完整性和准确性的置信度（0-1 范围）。')
+    .describe('LLM 对当前研究完整性和准确性的置信度（0-1 范围）。'),
 })
 
 // GenerateFinalAnswerArgsSchema: 生成最终研究报告的参数。
 const GenerateFinalAnswerArgsSchema = z.object({
   session_id: z.string().describe('来自 start_deep_research 的研究会话ID。'),
-  documentation_prompt: z.string().optional().describe('自定义文档生成提示词。')
+  documentation_prompt: z
+    .string()
+    .optional()
+    .describe('自定义文档生成提示词。'),
 })
 
 // 默认文档生成提示词
@@ -177,13 +194,13 @@ export class DeepResearchServer {
     this.server = new Server(
       {
         name: 'deepchat-inmemory/deep-research-server',
-        version: '2.0.0' // 版本号更新
+        version: '2.0.0', // 版本号更新
       },
       {
         capabilities: {
-          tools: {} // 声明支持工具能力
-        }
-      }
+          tools: {}, // 声明支持工具能力
+        },
+      },
     )
 
     this.setupRequestHandlers() // 设置请求处理器
@@ -201,7 +218,7 @@ export class DeepResearchServer {
       () => {
         this.cleanupExpiredSessions()
       },
-      5 * 60 * 1000 // 每 5 分钟检查一次
+      5 * 60 * 1000, // 每 5 分钟检查一次
     )
   }
 
@@ -211,7 +228,10 @@ export class DeepResearchServer {
     const expiredSessions: string[] = []
 
     for (const [sessionId, session] of this.researchSessions.entries()) {
-      if (now.getTime() - session.last_accessed_at.getTime() > this.SESSION_TIMEOUT) {
+      if (
+        now.getTime() - session.last_accessed_at.getTime() >
+        this.SESSION_TIMEOUT
+      ) {
         expiredSessions.push(sessionId)
       }
     }
@@ -224,10 +244,14 @@ export class DeepResearchServer {
     // 如果会话数超限，清理最早访问的会话
     if (this.researchSessions.size > this.MAX_SESSIONS) {
       const sortedSessions = Array.from(this.researchSessions.entries()).sort(
-        ([, a], [, b]) => a.last_accessed_at.getTime() - b.last_accessed_at.getTime()
+        ([, a], [, b]) =>
+          a.last_accessed_at.getTime() - b.last_accessed_at.getTime(),
       )
 
-      const toRemove = sortedSessions.slice(0, this.researchSessions.size - this.MAX_SESSIONS)
+      const toRemove = sortedSessions.slice(
+        0,
+        this.researchSessions.size - this.MAX_SESSIONS,
+      )
       toRemove.forEach(([sessionId]) => {
         this.researchSessions.delete(sessionId)
         console.log(`因超限已清理旧研究会话: ${sessionId}`)
@@ -258,7 +282,7 @@ export class DeepResearchServer {
       last_reflected_search_index: -1, // 初始无结果被反思
       created_at: new Date(),
       last_accessed_at: new Date(),
-      is_completed: false
+      is_completed: false,
     }
 
     this.researchSessions.set(sessionId, session)
@@ -281,30 +305,33 @@ export class DeepResearchServer {
         tools: [
           {
             name: 'start_deep_research',
-            description: '启动一个新的深度研究会话。返回 session_id 用于后续操作。',
-            inputSchema: zodToJsonSchema(StartDeepResearchArgsSchema)
+            description:
+              '启动一个新的深度研究会话。返回 session_id 用于后续操作。',
+            inputSchema: zodToJsonSchema(StartDeepResearchArgsSchema),
           },
           {
             name: 'execute_single_web_search',
             description: '在研究会话内执行一次网页搜索。',
-            inputSchema: zodToJsonSchema(SingleWebSearchArgsSchema)
+            inputSchema: zodToJsonSchema(SingleWebSearchArgsSchema),
           },
           {
             name: 'request_research_data',
-            description: '请求当前会话中新增的搜索结果和研究背景，供 LLM 反思。',
-            inputSchema: zodToJsonSchema(RequestResearchDataArgsSchema)
+            description:
+              '请求当前会话中新增的搜索结果和研究背景，供 LLM 反思。',
+            inputSchema: zodToJsonSchema(RequestResearchDataArgsSchema),
           },
           {
             name: 'submit_reflection_results',
-            description: 'LLM 提交其对研究数据的反思结果（如是否需更多研究、建议查询等）。',
-            inputSchema: zodToJsonSchema(SubmitReflectionResultsArgsSchema)
+            description:
+              'LLM 提交其对研究数据的反思结果（如是否需更多研究、建议查询等）。',
+            inputSchema: zodToJsonSchema(SubmitReflectionResultsArgsSchema),
           },
           {
             name: 'generate_final_answer',
             description: '根据累积研究生成最终答案，并清理会话数据。',
-            inputSchema: zodToJsonSchema(GenerateFinalAnswerArgsSchema)
-          }
-        ]
+            inputSchema: zodToJsonSchema(GenerateFinalAnswerArgsSchema),
+          },
+        ],
       }
     })
 
@@ -328,7 +355,7 @@ export class DeepResearchServer {
             throw new Error(`未知工具: ${name}`)
         }
       } catch (error) {
-        console.error('调用工具时出错:', error)
+        console.error('❌调用工具时出错:', error)
         const errorMessage =
           error instanceof Error
             ? error.message
@@ -338,7 +365,7 @@ export class DeepResearchServer {
 
         return {
           content: [{ type: 'text', text: `错误: ${errorMessage}` }],
-          isError: true
+          isError: true,
         }
       }
     })
@@ -356,9 +383,11 @@ export class DeepResearchServer {
     // 优化：返回简洁响应，包含 session_id 和下一步指示
     const response = {
       session_id: session.session_id,
-      next_steps: `研究会话已创建 (ID: ${session.session_id})。LLM 请生成初始搜索查询，并使用 execute_single_web_search 执行搜索。完成后调用 request_research_data 获取数据反思。`
+      next_steps: `研究会话已创建 (ID: ${session.session_id})。LLM 请生成初始搜索查询，并使用 execute_single_web_search 执行搜索。完成后调用 request_research_data 获取数据反思。`,
     }
-    return { content: [{ type: 'text', text: JSON.stringify(response, null, 2) }] }
+    return {
+      content: [{ type: 'text', text: JSON.stringify(response, null, 2) }],
+    }
   }
 
   // 处理单次网页搜索请求
@@ -371,18 +400,23 @@ export class DeepResearchServer {
     const session = this.getSession(session_id)
 
     try {
-      const searchResult = await this.performSingleBochaSearch(query, max_results)
+      const searchResult = await this.performSingleBochaSearch(
+        query,
+        max_results,
+      )
       session.search_results.push(searchResult) // 存储搜索结果
 
       // 优化：返回简洁响应，包含结果数量和下一步指示
       const response = {
         results_count: searchResult.results.length,
-        next_steps: `搜索结果已存储。可继续搜索，或调用 request_research_data 获取数据反思。`
+        next_steps: `搜索结果已存储。可继续搜索，或调用 request_research_data 获取数据反思。`,
       }
-      return { content: [{ type: 'text', text: JSON.stringify(response, null, 2) }] }
+      return {
+        content: [{ type: 'text', text: JSON.stringify(response, null, 2) }],
+      }
     } catch (error) {
       const axiosError = error as { message?: string }
-      console.error('单次网页搜索出错:', axiosError.message)
+      console.error('❌单次网页搜索出错:', axiosError.message)
       throw new Error(`单次网页搜索失败: ${axiosError.message}`)
     }
   }
@@ -411,9 +445,9 @@ export class DeepResearchServer {
                 `URL: ${result.url}\n` +
                 `发布日期: ${result.published_date || '未知'}\n` +
                 `内容摘要: ${result.snippet}\n` + // 使用 Bocha 提供的 summary
-                `---`
+                `---`,
             )
-            .join('\n')
+            .join('\n'),
       )
       .join('\n\n')
 
@@ -434,9 +468,11 @@ export class DeepResearchServer {
 
 请严格以 JSON 格式输出，不要包含任何额外解释。
 `,
-      next_steps: `LLM 请使用上述数据和指令进行反思，然后调用 submit_reflection_results 提交分析结果。`
+      next_steps: `LLM 请使用上述数据和指令进行反思，然后调用 submit_reflection_results 提交分析结果。`,
     }
-    return { content: [{ type: 'text', text: JSON.stringify(response, null, 2) }] }
+    return {
+      content: [{ type: 'text', text: JSON.stringify(response, null, 2) }],
+    }
   }
 
   // 处理提交反思结果的请求
@@ -452,7 +488,7 @@ export class DeepResearchServer {
       missing_information,
       quality_assessment,
       suggested_queries,
-      confidence_score
+      confidence_score,
     } = parsed.data
     const session = this.getSession(session_id)
 
@@ -462,7 +498,7 @@ export class DeepResearchServer {
       missing_information,
       quality_assessment,
       suggested_queries,
-      confidence_score
+      confidence_score,
     }
     session.reflections.push(reflection)
     session.iteration = iteration // LLM 更新迭代次数
@@ -478,7 +514,12 @@ export class DeepResearchServer {
       : `LLM 分析表明已收集足够信息。LLM 请调用 generate_final_answer 生成最终报告。`
 
     return {
-      content: [{ type: 'text', text: JSON.stringify({ next_steps: nextStepsMessage }, null, 2) }]
+      content: [
+        {
+          type: 'text',
+          text: JSON.stringify({ next_steps: nextStepsMessage }, null, 2),
+        },
+      ],
     }
   }
 
@@ -496,13 +537,16 @@ export class DeepResearchServer {
       original_question: session.question, // 报告主题
       total_iterations: session.iteration,
       total_searches: session.search_results.length,
-      total_results: session.search_results.reduce((sum, sr) => sum + sr.results.length, 0),
+      total_results: session.search_results.reduce(
+        (sum, sr) => sum + sr.results.length,
+        0,
+      ),
       reflections: session.reflections, // LLM 历次反思结果
       // 最终置信度取自最后一次反思
       final_confidence:
         session.reflections.length > 0
           ? session.reflections[session.reflections.length - 1].confidence_score
-          : 0.5 // 若无反思，默认0.5
+          : 0.5, // 若无反思，默认0.5
     }
 
     const locale = presenter.configPresenter.getLanguage?.() || 'zh-CN' // 获取用户语言设置
@@ -522,7 +566,7 @@ export class DeepResearchServer {
         total_iterations: researchData.total_iterations,
         total_searches: researchData.total_searches,
         total_sources: researchData.total_results,
-        final_confidence_score: `${(researchData.final_confidence * 100).toFixed(1)}%`
+        final_confidence_score: `${(researchData.final_confidence * 100).toFixed(1)}%`,
       },
       // research_reflections: LLM 历次反思过程，帮助其理解决策历史。
       research_reflections: session.reflections.map((reflection, index) => ({
@@ -531,7 +575,7 @@ export class DeepResearchServer {
         confidence_score: `${(reflection.confidence_score * 100).toFixed(1)}%`,
         quality_assessment: reflection.quality_assessment,
         missing_information: reflection.missing_information,
-        suggested_queries: reflection.suggested_queries
+        suggested_queries: reflection.suggested_queries,
       })),
       // consolidated_research_content: 所有搜索结果的摘要合并文本，LLM 生成报告的核心依据。
       consolidated_research_content: session.search_results
@@ -545,9 +589,9 @@ export class DeepResearchServer {
                   `URL: ${result.url}\n` +
                   `发布日期: ${result.published_date || '未知'}\n` +
                   `内容摘要: ${result.snippet}\n` +
-                  `---`
+                  `---`,
               )
-              .join('\n')
+              .join('\n'),
         )
         .join('\n\n'),
       documentation_instructions: finalDocumentationPrompt, // 文档生成指令
@@ -568,7 +612,7 @@ export class DeepResearchServer {
 - 适当引用具体来源和链接
 `,
       cleanup_status: '此响应后会话数据将被清理',
-      original_research_question: researchData.original_question // 明确提供原始研究问题
+      original_research_question: researchData.original_question, // 明确提供原始研究问题
     }
 
     session.is_completed = true // 标记会话完成，准备清理
@@ -578,14 +622,19 @@ export class DeepResearchServer {
     }, 1000)
 
     return {
-      content: [{ type: 'text', text: JSON.stringify(completeResearchContent, null, 2) }]
+      content: [
+        {
+          type: 'text',
+          text: JSON.stringify(completeResearchContent, null, 2),
+        },
+      ],
     }
   }
 
   // 执行单次 Bocha 网页搜索
   private async performSingleBochaSearch(
     query: string,
-    maxResults: number
+    maxResults: number,
   ): Promise<QuerySearchResult> {
     try {
       const response = await axios.post(
@@ -594,15 +643,15 @@ export class DeepResearchServer {
           query,
           summary: true, // 请求摘要
           freshness: 'noLimit', // 不限制时效性
-          count: maxResults // 结果数量
+          count: maxResults, // 结果数量
         },
         {
           headers: {
             Authorization: `Bearer ${this.bochaApiKey}`,
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
           },
-          timeout: 30000 // 30秒超时
-        }
+          timeout: 30000, // 30秒超时
+        },
       )
 
       const searchResponse = response.data as BochaWebSearchResponse
@@ -615,9 +664,9 @@ export class DeepResearchServer {
             title: item.name,
             url: item.url,
             snippet: item.summary, // 使用 Bocha 返回的 summary 作为 snippet
-            published_date: item.datePublished
-          })
-        )
+            published_date: item.datePublished,
+          }),
+        ),
       }
     } catch (error) {
       console.error(`查询 "${query}" 搜索失败:`, error)
@@ -653,7 +702,9 @@ export class DeepResearchServer {
       } else {
         activeCount++
       }
-      const ageMinutes = Math.round((now.getTime() - session.created_at.getTime()) / 1000 / 60)
+      const ageMinutes = Math.round(
+        (now.getTime() - session.created_at.getTime()) / 1000 / 60,
+      )
       if (ageMinutes > oldestAge) {
         oldestAge = ageMinutes
       }
@@ -663,7 +714,7 @@ export class DeepResearchServer {
       total_sessions: this.researchSessions.size,
       active_sessions: activeCount,
       completed_sessions: completedCount, // 已完成但可能尚未被清理的会话
-      oldest_session_age_minutes: oldestAge
+      oldest_session_age_minutes: oldestAge,
     }
   }
 }

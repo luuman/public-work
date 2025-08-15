@@ -2,6 +2,7 @@ import log from 'electron-log'
 import { app } from 'electron'
 import path from 'path'
 import { is } from '@electron-toolkit/utils'
+import { performance } from 'perf_hooks'
 
 // 配置日志文件路径
 // 使用logger记录而不是console
@@ -10,92 +11,106 @@ if (userData) {
   log.transports.file.resolvePathFn = () => path.join(userData, 'logs/main.log')
 }
 
-// 获取日志开关状态
-let loggingEnabled = false
-
-// 导出设置日志开关的方法
-export function setLoggingEnabled(enabled: boolean): void {
-  loggingEnabled = enabled
-  // 如果禁用日志，将文件日志级别设置为 false
-  log.transports.file.level = enabled ? 'info' : false
-}
-
 // 配置控制台日志
 log.transports.console.level = is.dev ? 'debug' : 'info'
-
-// 配置文件日志
 log.transports.file.level = 'info'
 log.transports.file.maxSize = 1024 * 1024 * 10 // 10MB
 log.transports.file.format = '[{y}-{m}-{d} {h}:{i}:{s}.{ms}] [{level}] {text}'
 
-// 创建不同级别的日志函数
-const logger = {
-  error: (...params: unknown[]) => log.error(...params),
-  warn: (...params: unknown[]) => log.warn(...params),
-  info: (...params: unknown[]) => log.info(...params),
-  verbose: (...params: unknown[]) => log.verbose(...params),
-  debug: (...params: unknown[]) => log.debug(...params),
-  silly: (...params: unknown[]) => log.silly(...params),
-  log: (...params: unknown[]) => log.info(...params)
+// 获取日志开关状态
+let loggingEnabled = false
+// 导出设置日志开关的方法
+export function setLoggingEnabled(enabled: boolean): void {
+  loggingEnabled = enabled
+  log.transports.file.level = enabled ? 'info' : false
+}
+
+const flushInterval = 100000 // ms
+let buffer: string[] = []
+let flushTimer: NodeJS.Timeout | null = null
+
+function flushLogs() {
+  buffer.forEach((msg) => log.transports.file.write(msg))
+  buffer = []
+  flushTimer = null
+}
+
+function bufferedWrite(message: string) {
+  buffer.push(message)
+  if (!flushTimer) {
+    flushTimer = setTimeout(flushLogs, flushInterval)
+  }
+}
+
+log.transports.file.write = bufferedWrite
+
+export function createLogger(moduleName?: string) {
+  const prefix = moduleName ? `[${moduleName}]` : ''
+  const wrap =
+    (fn: (...args: unknown[]) => void) =>
+    (...args: unknown[]) => {
+      if (loggingEnabled || is.dev) {
+        fn(`${prefix}`, ...args)
+      }
+    }
+
+  return {
+    error: wrap(log.error),
+    warn: wrap(log.warn),
+    info: wrap(log.info),
+    verbose: wrap(log.verbose),
+    debug: wrap(log.debug),
+    silly: wrap(log.silly),
+    log: wrap(log.info),
+  }
 }
 
 // 拦截console方法，重定向到logger
-function hookConsole() {
-  const originalConsole = {
-    log: console.log,
-    error: console.error,
-    warn: console.warn,
-    info: console.info,
-    debug: console.debug,
-    trace: console.trace
-  }
+export function hookConsole() {
+  const original = { ...console }
+  console.log = (...args: unknown[]) =>
+    loggingEnabled || is.dev ? log.info(...args) : undefined
+  console.warn = (...args: unknown[]) =>
+    loggingEnabled || is.dev ? log.warn(...args) : undefined
+  console.error = (...args: unknown[]) =>
+    loggingEnabled || is.dev ? log.error(...args) : undefined
+  console.info = (...args: unknown[]) =>
+    loggingEnabled || is.dev ? log.info(...args) : undefined
+  console.debug = (...args: unknown[]) =>
+    loggingEnabled || is.dev ? log.debug(...args) : undefined
+  console.trace = (...args: unknown[]) =>
+    loggingEnabled || is.dev ? log.info(new Error().stack, ...args) : undefined
+  return original
+}
 
-  // 替换console方法
-  console.log = (...args: unknown[]) => {
-    // 只有在启用日志或开发模式下才记录日志
-    if (loggingEnabled || is.dev) {
-      logger.info(...args)
+/**
+ * 开发环境才执行耗时日志
+ */
+
+export function timeLogger<T extends (...args: any[]) => any>(
+  fn: T,
+  label?: string,
+): (...args: Parameters<T>) => ReturnType<T> {
+  if (process.env.NODE_ENV !== 'development') return fn
+  const name = fn.name || 'anonymous'
+  return (...args: Parameters<T>) => {
+    const start = performance.now()
+    const result = fn(...args)
+    const logTime = () => {
+      const end = performance.now()
+      log.info(
+        `[耗时][DEV] ${label ?? ''} ${name}: ${(end - start).toFixed(2)}ms`,
+      )
+    }
+    if (result instanceof Promise) {
+      return result.finally(logTime)
+    } else {
+      logTime()
+      return result
     }
   }
-
-  console.error = (...args: unknown[]) => {
-    // 只有在启用日志或开发模式下才记录日志
-    if (loggingEnabled || is.dev) {
-      logger.error(...args)
-    }
-  }
-
-  console.warn = (...args: unknown[]) => {
-    // 只有在启用日志或开发模式下才记录日志
-    if (loggingEnabled || is.dev) {
-      logger.warn(...args)
-    }
-  }
-
-  console.info = (...args: unknown[]) => {
-    // 只有在启用日志或开发模式下才记录日志
-    if (loggingEnabled || is.dev) {
-      logger.info(...args)
-    }
-  }
-
-  console.debug = (...args: unknown[]) => {
-    // 只有在启用日志或开发模式下才记录日志
-    if (loggingEnabled || is.dev) {
-      logger.debug(...args)
-    }
-  }
-
-  console.trace = (...args: unknown[]) => {
-    // 只有在启用日志或开发模式下才记录日志
-    if (loggingEnabled || is.dev) {
-      logger.debug(...args)
-    }
-  }
-
-  return originalConsole
 }
 
 // 导出原始console方法，以便需要时可以恢复
 export const originalConsole = hookConsole()
-export default logger
+export default createLogger()

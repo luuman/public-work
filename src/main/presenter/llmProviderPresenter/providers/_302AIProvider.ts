@@ -1,4 +1,10 @@
-import { LLM_PROVIDER, LLMResponse, ChatMessage, KeyStatus, MODEL_META } from '@shared/presenter'
+import {
+  LLM_PROVIDER,
+  LLMResponse,
+  ChatMessage,
+  KeyStatus,
+  MODEL_META,
+} from '@shared/presenter'
 import { OpenAICompatibleProvider } from './openAICompatibleProvider'
 import { ConfigPresenter } from '../../configPresenter'
 
@@ -40,7 +46,7 @@ export class _302AIProvider extends OpenAICompatibleProvider {
     messages: ChatMessage[],
     modelId: string,
     temperature?: number,
-    maxTokens?: number
+    maxTokens?: number,
   ): Promise<LLMResponse> {
     return this.openAICompletion(messages, modelId, temperature, maxTokens)
   }
@@ -49,18 +55,18 @@ export class _302AIProvider extends OpenAICompatibleProvider {
     prompt: string,
     modelId: string,
     temperature?: number,
-    maxTokens?: number
+    maxTokens?: number,
   ): Promise<LLMResponse> {
     return this.openAICompletion(
       [
         {
           role: 'user',
-          content: prompt
-        }
+          content: prompt,
+        },
       ],
       modelId,
       temperature,
-      maxTokens
+      maxTokens,
     )
   }
 
@@ -77,14 +83,14 @@ export class _302AIProvider extends OpenAICompatibleProvider {
       method: 'GET',
       headers: {
         Authorization: `Bearer ${this.provider.apiKey}`,
-        'Content-Type': 'application/json'
-      }
+        'Content-Type': 'application/json',
+      },
     })
 
     if (!response.ok) {
       const errorText = await response.text()
       throw new Error(
-        `302AI API key check failed: ${response.status} ${response.statusText} - ${errorText}`
+        `302AI API key check failed: ${response.status} ${response.statusText} - ${errorText}`,
       )
     }
 
@@ -94,7 +100,7 @@ export class _302AIProvider extends OpenAICompatibleProvider {
 
     return {
       limit_remaining: remaining,
-      remainNum: balance
+      remainNum: balance,
     }
   }
 
@@ -109,7 +115,7 @@ export class _302AIProvider extends OpenAICompatibleProvider {
       if (keyStatus.remainNum !== undefined && keyStatus.remainNum <= 0) {
         return {
           isOk: false,
-          errorMsg: `API key quota exhausted. Remaining: ${keyStatus.limit_remaining}`
+          errorMsg: `API key quota exhausted. Remaining: ${keyStatus.limit_remaining}`,
         }
       }
 
@@ -122,7 +128,7 @@ export class _302AIProvider extends OpenAICompatibleProvider {
         errorMessage = error
       }
 
-      console.error('302AI API key check failed:', error)
+      console.error('❌302AI API key check failed:', error)
       return { isOk: false, errorMsg: errorMessage }
     }
   }
@@ -132,7 +138,9 @@ export class _302AIProvider extends OpenAICompatibleProvider {
    * @param options - Request options
    * @returns Promise<MODEL_META[]> - Array of model metadata
    */
-  protected async fetchOpenAIModels(options?: { timeout: number }): Promise<MODEL_META[]> {
+  protected async fetchOpenAIModels(options?: {
+    timeout: number
+  }): Promise<MODEL_META[]> {
     try {
       const response = await this.openai.models.list(options)
       // console.log('302AI models response:', JSON.stringify(response, null, 2))
@@ -153,7 +161,8 @@ export class _302AIProvider extends OpenAICompatibleProvider {
         const hasVision =
           modelId.includes('vision') ||
           modelId.includes('gpt-4o') ||
-          (_302aiModel.description && _302aiModel.description.includes('vision')) ||
+          (_302aiModel.description &&
+            _302aiModel.description.includes('vision')) ||
           (_302aiModel.description_en &&
             _302aiModel.description_en.toLowerCase().includes('vision')) ||
           modelId.includes('claude') || // Some Claude models support vision
@@ -161,10 +170,14 @@ export class _302AIProvider extends OpenAICompatibleProvider {
           (modelId.includes('qwen') && modelId.includes('vl')) // Qwen VL models
 
         // Get existing model configuration first
-        const existingConfig = this.configPresenter.getModelConfig(modelId, this.provider.id)
+        const existingConfig = this.configPresenter.getModelConfig(
+          modelId,
+          this.provider.id,
+        )
 
         // Extract configuration values with proper fallback priority: API -> existing config -> default
-        const contextLength = _302aiModel.content_length || existingConfig.contextLength || 4096
+        const contextLength =
+          _302aiModel.content_length || existingConfig.contextLength || 4096
 
         // Use max_completion_tokens if available, otherwise fall back to existing config or default
         const maxTokens =
@@ -180,7 +193,7 @@ export class _302AIProvider extends OpenAICompatibleProvider {
           vision: hasVision,
           reasoning: existingConfig.reasoning || false, // Keep existing reasoning setting
           temperature: existingConfig.temperature, // Keep existing temperature
-          type: existingConfig.type // Keep existing type
+          type: existingConfig.type, // Keep existing type
         }
 
         // Check if configuration has changed
@@ -197,7 +210,7 @@ export class _302AIProvider extends OpenAICompatibleProvider {
               contextLength: existingConfig.contextLength,
               maxTokens: existingConfig.maxTokens,
               functionCall: existingConfig.functionCall,
-              vision: existingConfig.vision
+              vision: existingConfig.vision,
             },
             new: newConfig,
             apiData: {
@@ -205,11 +218,15 @@ export class _302AIProvider extends OpenAICompatibleProvider {
               max_completion_tokens: _302aiModel.max_completion_tokens,
               supported_tools: _302aiModel.supported_tools,
               category: _302aiModel.category,
-              description: _302aiModel.description
-            }
+              description: _302aiModel.description,
+            },
           })
 
-          this.configPresenter.setModelConfig(modelId, this.provider.id, newConfig)
+          this.configPresenter.setModelConfig(
+            modelId,
+            this.provider.id,
+            newConfig,
+          )
         }
 
         // Create MODEL_META object
@@ -223,16 +240,18 @@ export class _302AIProvider extends OpenAICompatibleProvider {
           maxTokens: maxTokens,
           vision: hasVision,
           functionCall: hasFunctionCalling,
-          reasoning: existingConfig.reasoning || false
+          reasoning: existingConfig.reasoning || false,
         }
 
         models.push(modelMeta)
       }
 
-      console.log(`Processed ${models.length} 302AI models with dynamic configuration updates`)
+      console.log(
+        `Processed ${models.length} 302AI models with dynamic configuration updates`,
+      )
       return models
     } catch (error) {
-      console.error('Error fetching 302AI models:', error)
+      console.error('❌Error fetching 302AI models:', error)
       // Fallback to parent implementation
       return super.fetchOpenAIModels(options)
     }

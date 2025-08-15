@@ -1,4 +1,9 @@
-import { LLM_PROVIDER, LLMResponse, ChatMessage, MODEL_META } from '@shared/presenter'
+import {
+  LLM_PROVIDER,
+  LLMResponse,
+  ChatMessage,
+  MODEL_META,
+} from '@shared/presenter'
 import { OpenAICompatibleProvider } from './openAICompatibleProvider'
 import { ConfigPresenter } from '../../configPresenter'
 
@@ -31,7 +36,7 @@ export class GroqProvider extends OpenAICompatibleProvider {
     messages: ChatMessage[],
     modelId: string,
     temperature?: number,
-    maxTokens?: number
+    maxTokens?: number,
   ): Promise<LLMResponse> {
     return this.openAICompletion(messages, modelId, temperature, maxTokens)
   }
@@ -40,18 +45,18 @@ export class GroqProvider extends OpenAICompatibleProvider {
     text: string,
     modelId: string,
     temperature?: number,
-    maxTokens?: number
+    maxTokens?: number,
   ): Promise<LLMResponse> {
     return this.openAICompletion(
       [
         {
           role: 'user',
-          content: `Please summarize the following content using concise language and highlighting key points:\n${text}`
-        }
+          content: `Please summarize the following content using concise language and highlighting key points:\n${text}`,
+        },
       ],
       modelId,
       temperature,
-      maxTokens
+      maxTokens,
     )
   }
 
@@ -59,18 +64,18 @@ export class GroqProvider extends OpenAICompatibleProvider {
     prompt: string,
     modelId: string,
     temperature?: number,
-    maxTokens?: number
+    maxTokens?: number,
   ): Promise<LLMResponse> {
     return this.openAICompletion(
       [
         {
           role: 'user',
-          content: prompt
-        }
+          content: prompt,
+        },
       ],
       modelId,
       temperature,
-      maxTokens
+      maxTokens,
     )
   }
 
@@ -79,7 +84,9 @@ export class GroqProvider extends OpenAICompatibleProvider {
    * @param options - Request options
    * @returns Promise<MODEL_META[]> - Array of model metadata
    */
-  protected async fetchOpenAIModels(options?: { timeout: number }): Promise<MODEL_META[]> {
+  protected async fetchOpenAIModels(options?: {
+    timeout: number
+  }): Promise<MODEL_META[]> {
     try {
       const response = await this.openai.models.list(options)
       // console.log('Groq models response:', JSON.stringify(response, null, 2))
@@ -101,23 +108,30 @@ export class GroqProvider extends OpenAICompatibleProvider {
         const features = groqModel.features || []
 
         // Map Groq fields to PPIO-style naming
-        const contextSize = groqModel.context_size || groqModel.context_window || 4096
-        const maxOutputTokens = groqModel.max_output_tokens || groqModel.max_tokens || 2048
+        const contextSize =
+          groqModel.context_size || groqModel.context_window || 4096
+        const maxOutputTokens =
+          groqModel.max_output_tokens || groqModel.max_tokens || 2048
 
         // Check features for capabilities or infer from model name
         const hasFunctionCalling =
           features.includes('function-calling') ||
-          (!modelId.toLowerCase().includes('distil') && !modelId.toLowerCase().includes('gemma'))
+          (!modelId.toLowerCase().includes('distil') &&
+            !modelId.toLowerCase().includes('gemma'))
         const hasVision =
           features.includes('vision') ||
           modelId.toLowerCase().includes('vision') ||
           modelId.toLowerCase().includes('llava')
 
         // Get existing model configuration first
-        const existingConfig = this.configPresenter.getModelConfig(modelId, this.provider.id)
+        const existingConfig = this.configPresenter.getModelConfig(
+          modelId,
+          this.provider.id,
+        )
 
         // Extract configuration values with proper fallback priority: API -> existing config -> default
-        const contextLength = contextSize || existingConfig.contextLength || 4096
+        const contextLength =
+          contextSize || existingConfig.contextLength || 4096
         const maxTokens = maxOutputTokens || existingConfig.maxTokens || 2048
 
         // Build new configuration based on API response
@@ -128,7 +142,7 @@ export class GroqProvider extends OpenAICompatibleProvider {
           vision: hasVision,
           reasoning: existingConfig.reasoning, // Keep existing reasoning setting
           temperature: existingConfig.temperature, // Keep existing temperature
-          type: existingConfig.type // Keep existing type
+          type: existingConfig.type, // Keep existing type
         }
 
         // Check if configuration has changed
@@ -150,7 +164,11 @@ export class GroqProvider extends OpenAICompatibleProvider {
           //   new: newConfig
           // })
 
-          this.configPresenter.setModelConfig(modelId, this.provider.id, newConfig)
+          this.configPresenter.setModelConfig(
+            modelId,
+            this.provider.id,
+            newConfig,
+          )
         }
 
         // Create MODEL_META object
@@ -165,16 +183,18 @@ export class GroqProvider extends OpenAICompatibleProvider {
           description: groqModel.description || `Groq model ${modelId}`,
           vision: hasVision,
           functionCall: hasFunctionCalling,
-          reasoning: existingConfig.reasoning || false
+          reasoning: existingConfig.reasoning || false,
         }
 
         models.push(modelMeta)
       }
 
-      console.log(`Processed ${models.length} Groq models with dynamic configuration updates`)
+      console.log(
+        `Processed ${models.length} Groq models with dynamic configuration updates`,
+      )
       return models
     } catch (error) {
-      console.error('Error fetching Groq models:', error)
+      console.error('❌Error fetching Groq models:', error)
       // Fallback to parent implementation
       return super.fetchOpenAIModels(options)
     }

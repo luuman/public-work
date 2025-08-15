@@ -5,24 +5,24 @@ import {
   MESSAGE_STATUS,
   ISQLitePresenter,
   SQLITE_MESSAGE,
-} from '@shared/presenter';
-import { Message, AssistantMessageBlock } from '@shared/chat';
-import { eventBus, SendTarget } from '@/events/eventbus';
-import { CONVERSATION_EVENTS } from '@/events/events';
+} from '@shared/presenter'
+import { Message, AssistantMessageBlock } from '@shared/chat'
+import { eventBus, SendTarget } from '@/events/eventbus'
+import { CONVERSATION_EVENTS } from '@/events/events'
 
 export class MessageManager implements IMessageManager {
-  private sqlitePresenter: ISQLitePresenter;
+  private sqlitePresenter: ISQLitePresenter
 
   constructor(sqlitePresenter: ISQLitePresenter) {
-    this.sqlitePresenter = sqlitePresenter;
+    this.sqlitePresenter = sqlitePresenter
   }
 
   private convertToMessage(sqliteMessage: SQLITE_MESSAGE): Message {
-    let metadata: MESSAGE_METADATA | null = null;
+    let metadata: MESSAGE_METADATA | null = null
     try {
-      metadata = JSON.parse(sqliteMessage.metadata);
+      metadata = JSON.parse(sqliteMessage.metadata)
     } catch (e) {
-      console.error('Failed to parse metadata', e);
+      console.error('❌Failed to parse metadata', e)
     }
     return {
       id: sqliteMessage.id,
@@ -54,7 +54,7 @@ export class MessageManager implements IMessageManager {
         sqliteMessage.variants?.map((variant) =>
           this.convertToMessage(variant),
         ) || [],
-    };
+    }
   }
 
   async sendMessage(
@@ -67,7 +67,7 @@ export class MessageManager implements IMessageManager {
     searchResults?: string,
   ): Promise<Message> {
     const maxOrderSeq =
-      await this.sqlitePresenter.getMaxOrderSeq(conversationId);
+      await this.sqlitePresenter.getMaxOrderSeq(conversationId)
     const msgId = await this.sqlitePresenter.insertMessage(
       conversationId,
       content,
@@ -79,55 +79,55 @@ export class MessageManager implements IMessageManager {
       'pending',
       0,
       isVariant ? 1 : 0,
-    );
+    )
 
     if (searchResults) {
       await this.sqlitePresenter.addMessageAttachment(
         msgId,
         'search_results',
         searchResults,
-      );
+      )
     }
-    const message = await this.getMessage(msgId);
+    const message = await this.getMessage(msgId)
     if (!message) {
-      throw new Error('Failed to create message');
+      throw new Error('Failed to create message')
     }
-    return message;
+    return message
   }
 
   async editMessage(messageId: string, content: string): Promise<Message> {
-    await this.sqlitePresenter.updateMessage(messageId, { content });
-    const message = await this.sqlitePresenter.getMessage(messageId);
+    await this.sqlitePresenter.updateMessage(messageId, { content })
+    const message = await this.sqlitePresenter.getMessage(messageId)
     if (!message) {
-      throw new Error(`Message ${messageId} not found`);
+      throw new Error(`Message ${messageId} not found`)
     }
-    const msg = this.convertToMessage(message);
+    const msg = this.convertToMessage(message)
     eventBus.sendToRenderer(
       CONVERSATION_EVENTS.MESSAGE_EDITED,
       SendTarget.ALL_WINDOWS,
       messageId,
-    );
+    )
     if (msg.parentId) {
       eventBus.sendToRenderer(
         CONVERSATION_EVENTS.MESSAGE_EDITED,
         SendTarget.ALL_WINDOWS,
         msg.parentId,
-      );
+      )
     }
-    return msg;
+    return msg
   }
 
   async deleteMessage(messageId: string): Promise<void> {
-    await this.sqlitePresenter.deleteMessage(messageId);
+    await this.sqlitePresenter.deleteMessage(messageId)
   }
 
   async retryMessage(
     messageId: string,
     metadata: MESSAGE_METADATA,
   ): Promise<Message> {
-    const originalMessage = await this.getMessage(messageId);
+    const originalMessage = await this.getMessage(messageId)
     if (!originalMessage) {
-      throw new Error(`Message ${messageId} not found`);
+      throw new Error(`Message ${messageId} not found`)
     }
 
     // 创建一个新的变体消息
@@ -138,22 +138,22 @@ export class MessageManager implements IMessageManager {
       originalMessage.parentId || '',
       true,
       metadata,
-    );
+    )
 
-    return variantMessage;
+    return variantMessage
   }
 
   async getMessage(messageId: string): Promise<Message> {
-    const message = await this.sqlitePresenter.getMessage(messageId);
+    const message = await this.sqlitePresenter.getMessage(messageId)
     if (!message) {
-      throw new Error(`Message ${messageId} not found`);
+      throw new Error(`Message ${messageId} not found`)
     }
-    return this.convertToMessage(message);
+    return this.convertToMessage(message)
   }
 
   async getMessageVariants(messageId: string): Promise<Message[]> {
-    const variants = await this.sqlitePresenter.getMessageVariants(messageId);
-    return variants.map((variant) => this.convertToMessage(variant));
+    const variants = await this.sqlitePresenter.getMessageVariants(messageId)
+    return variants.map((variant) => this.convertToMessage(variant))
   }
 
   async getMainMessageByParentId(
@@ -163,11 +163,11 @@ export class MessageManager implements IMessageManager {
     const message = await this.sqlitePresenter.getMainMessageByParentId(
       conversationId,
       parentId,
-    );
+    )
     if (!message) {
-      return null;
+      return null
     }
-    return this.convertToMessage(message);
+    return this.convertToMessage(message)
   }
 
   async getMessageThread(
@@ -176,49 +176,49 @@ export class MessageManager implements IMessageManager {
     pageSize: number,
   ): Promise<{ total: number; list: Message[] }> {
     const sqliteMessages =
-      await this.sqlitePresenter.queryMessages(conversationId);
-    const start = (page - 1) * pageSize;
-    const end = start + pageSize;
+      await this.sqlitePresenter.queryMessages(conversationId)
+    const start = (page - 1) * pageSize
+    const end = start + pageSize
 
     // 处理消息的排序和变体关系
     const messages = sqliteMessages
       .sort((a, b) => {
         // 首先按创建时间排序
-        const timeCompare = a.created_at - b.created_at;
-        if (timeCompare !== 0) return timeCompare;
+        const timeCompare = a.created_at - b.created_at
+        if (timeCompare !== 0) return timeCompare
         // 如果创建时间相同，按序号排序
-        return a.order_seq - b.order_seq;
+        return a.order_seq - b.order_seq
       })
-      .map((msg) => this.convertToMessage(msg));
+      .map((msg) => this.convertToMessage(msg))
 
     return {
       total: messages.length,
       list: messages.slice(start, end),
-    };
+    }
   }
 
   async updateMessageStatus(
     messageId: string,
     status: MESSAGE_STATUS,
   ): Promise<void> {
-    await this.sqlitePresenter.updateMessage(messageId, { status });
+    await this.sqlitePresenter.updateMessage(messageId, { status })
   }
 
   async updateMessageMetadata(
     messageId: string,
     metadata: Partial<MESSAGE_METADATA>,
   ): Promise<void> {
-    const message = await this.sqlitePresenter.getMessage(messageId);
+    const message = await this.sqlitePresenter.getMessage(messageId)
     if (!message) {
-      return;
+      return
     }
     const updatedMetadata = {
       ...JSON.parse(message.metadata),
       ...metadata,
-    };
+    }
     await this.sqlitePresenter.updateMessage(messageId, {
       metadata: JSON.stringify(updatedMetadata),
-    });
+    })
   }
 
   async markMessageAsContextEdge(
@@ -227,7 +227,7 @@ export class MessageManager implements IMessageManager {
   ): Promise<void> {
     await this.sqlitePresenter.updateMessage(messageId, {
       isContextEdge: isEdge ? 1 : 0,
-    });
+    })
   }
 
   async getContextMessages(
@@ -235,40 +235,40 @@ export class MessageManager implements IMessageManager {
     messageCount: number,
   ): Promise<Message[]> {
     const sqliteMessages =
-      await this.sqlitePresenter.queryMessages(conversationId);
+      await this.sqlitePresenter.queryMessages(conversationId)
 
     // 按创建时间和序号倒序排序
     const messages = sqliteMessages
       .sort((a, b) => {
         // 首先按创建时间倒序排序
-        const timeCompare = b.created_at - a.created_at;
-        if (timeCompare !== 0) return timeCompare;
+        const timeCompare = b.created_at - a.created_at
+        if (timeCompare !== 0) return timeCompare
         // 如果创建时间相同，按序号倒序排序
-        return b.order_seq - a.order_seq;
+        return b.order_seq - a.order_seq
       })
       .slice(0, messageCount) // 只取需要的消息数量
       .sort((a, b) => {
         // 再次按正序排序以保持对话顺序
-        const timeCompare = a.created_at - b.created_at;
-        if (timeCompare !== 0) return timeCompare;
-        return a.order_seq - b.order_seq;
+        const timeCompare = a.created_at - b.created_at
+        if (timeCompare !== 0) return timeCompare
+        return a.order_seq - b.order_seq
       })
-      .map((msg) => this.convertToMessage(msg));
+      .map((msg) => this.convertToMessage(msg))
 
-    return messages;
+    return messages
   }
 
   async getLastUserMessage(conversationId: string): Promise<Message | null> {
     const sqliteMessage =
-      await this.sqlitePresenter.getLastUserMessage(conversationId);
+      await this.sqlitePresenter.getLastUserMessage(conversationId)
     if (!sqliteMessage) {
-      return null;
+      return null
     }
-    return this.convertToMessage(sqliteMessage);
+    return this.convertToMessage(sqliteMessage)
   }
 
   async clearAllMessages(conversationId: string): Promise<void> {
-    await this.sqlitePresenter.deleteAllMessagesInConversation(conversationId);
+    await this.sqlitePresenter.deleteAllMessagesInConversation(conversationId)
   }
   /**
    * 初始化未完成的消息
@@ -277,7 +277,7 @@ export class MessageManager implements IMessageManager {
     try {
       // 获取所有对话
       const { list: conversations } =
-        await this.sqlitePresenter.getConversationList(1, 1000);
+        await this.sqlitePresenter.getConversationList(1, 1000)
 
       for (const conversation of conversations) {
         // 获取每个对话的消息
@@ -285,23 +285,23 @@ export class MessageManager implements IMessageManager {
           conversation.id,
           1,
           1000,
-        );
+        )
 
         // 找出所有pending状态的assistant消息
         const pendingMessages = messages.filter(
           (msg) => msg.role === 'assistant' && msg.status === 'pending',
-        );
+        )
 
         // 处理每个未完成的消息
         for (const message of pendingMessages) {
           await this.handleMessageError(
             message.id,
             'common.error.sessionInterrupted',
-          );
+          )
         }
       }
     } catch (error) {
-      console.error('初始化未完成消息失败:', error);
+      console.error('❌初始化未完成消息失败:', error)
     }
   }
   /**
@@ -313,24 +313,24 @@ export class MessageManager implements IMessageManager {
     messageId: string,
     errorMessage: string = 'common.error.requestFailed',
   ): Promise<void> {
-    const message = await this.getMessage(messageId);
+    const message = await this.getMessage(messageId)
     if (!message) {
-      return;
+      return
     }
 
-    let content: AssistantMessageBlock[] = [];
+    let content: AssistantMessageBlock[] = []
     try {
-      content = message.content as AssistantMessageBlock[];
+      content = message.content as AssistantMessageBlock[]
     } catch {
-      content = [];
+      content = []
     }
 
     // 将所有loading状态的block改为error
     content.forEach((block: AssistantMessageBlock) => {
       if (block.status === 'loading') {
-        block.status = 'error';
+        block.status = 'error'
       }
-    });
+    })
 
     // 添加错误信息block
     content.push({
@@ -338,10 +338,10 @@ export class MessageManager implements IMessageManager {
       content: errorMessage,
       status: 'error',
       timestamp: Date.now(),
-    });
+    })
 
     // 更新消息状态和内容
-    await this.updateMessageStatus(messageId, 'error');
-    await this.editMessage(messageId, JSON.stringify(content));
+    await this.updateMessageStatus(messageId, 'error')
+    await this.editMessage(messageId, JSON.stringify(content))
   }
 }

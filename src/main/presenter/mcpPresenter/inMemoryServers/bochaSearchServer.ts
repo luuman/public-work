@@ -1,5 +1,8 @@
 import { Server } from '@modelcontextprotocol/sdk/server/index.js'
-import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js'
+import {
+  CallToolRequestSchema,
+  ListToolsRequestSchema,
+} from '@modelcontextprotocol/sdk/types.js'
 import { z } from 'zod'
 import { zodToJsonSchema } from 'zod-to-json-schema'
 import { Transport } from '@modelcontextprotocol/sdk/shared/transport.js'
@@ -13,9 +16,13 @@ const BochaWebSearchArgsSchema = z.object({
     .optional()
     .default('noLimit')
     .describe(
-      'The time range for the search results. (Available options YYYY-MM-DD, YYYY-MM-DD..YYYY-MM-DD, noLimit, oneYear, oneMonth, oneWeek, oneDay. Default is noLimit)'
+      'The time range for the search results. (Available options YYYY-MM-DD, YYYY-MM-DD..YYYY-MM-DD, noLimit, oneYear, oneMonth, oneWeek, oneDay. Default is noLimit)',
     ),
-  count: z.number().optional().default(10).describe('Number of results (1-50, default 10)')
+  count: z
+    .number()
+    .optional()
+    .default(10)
+    .describe('Number of results (1-50, default 10)'),
 })
 
 const BochaAiSearchArgsSchema = z.object({
@@ -25,9 +32,13 @@ const BochaAiSearchArgsSchema = z.object({
     .optional()
     .default('noLimit')
     .describe(
-      'The time range for the search results. (Available options noLimit, oneYear, oneMonth, oneWeek, oneDay. Default is noLimit)'
+      'The time range for the search results. (Available options noLimit, oneYear, oneMonth, oneWeek, oneDay. Default is noLimit)',
     ),
-  count: z.number().optional().default(10).describe('Number of results (1-50, default 10)')
+  count: z
+    .number()
+    .optional()
+    .default(10)
+    .describe('Number of results (1-50, default 10)'),
 })
 
 // 定义Bocha API返回的数据结构 - Web Search
@@ -103,13 +114,13 @@ export class BochaSearchServer {
     this.server = new Server(
       {
         name: 'deepchat-inmemory/bocha-search-server',
-        version: '0.1.2' // 版本更新
+        version: '0.1.2', // 版本更新
       },
       {
         capabilities: {
-          tools: {}
-        }
-      }
+          tools: {},
+        },
+      },
     )
 
     // 设置请求处理器
@@ -131,15 +142,15 @@ export class BochaSearchServer {
             name: 'bocha_web_search',
             description:
               'Search with Bocha Web Search and get enhanced search details from billions of web documents, including page titles, urls, summaries, site names, site icons, publication dates, image links, and more.', // 官方描述
-            inputSchema: zodToJsonSchema(BochaWebSearchArgsSchema)
+            inputSchema: zodToJsonSchema(BochaWebSearchArgsSchema),
           },
           {
             name: 'bocha_ai_search',
             description:
               'Search with Bocha AI Search, recognizes the semantics of search terms and additionally returns structured modal cards with content from vertical domains.', // 官方描述
-            inputSchema: zodToJsonSchema(BochaAiSearchArgsSchema)
-          }
-        ]
+            inputSchema: zodToJsonSchema(BochaAiSearchArgsSchema),
+          },
+        ],
       }
     })
 
@@ -164,14 +175,14 @@ export class BochaSearchServer {
                 query,
                 summary: true,
                 freshness, // 添加 freshness
-                count
+                count,
               },
               {
                 headers: {
                   Authorization: `Bearer ${this.apiKey}`,
-                  'Content-Type': 'application/json'
-                }
-              }
+                  'Content-Type': 'application/json',
+                },
+              },
             )
 
             // 处理响应数据
@@ -185,44 +196,46 @@ export class BochaSearchServer {
                 content: [
                   {
                     type: 'text',
-                    text: 'No results found.' // 统一提示信息
-                  }
-                ]
+                    text: 'No results found.', // 统一提示信息
+                  },
+                ],
               }
             }
 
             // 将结果转换为MCP资源格式
-            const results = searchResponse.data.webPages.value.map((item, index) => {
-              // 构建blob内容
-              const blobContent = {
-                title: item.name,
-                url: item.url,
-                rank: index + 1,
-                content: item.summary, // 使用 summary
-                icon: item.siteIcon,
-                publishedDate: item.datePublished, // 添加发布日期
-                siteName: item.siteName // 添加站点名称
-              }
-
-              return {
-                type: 'resource',
-                resource: {
-                  uri: item.url,
-                  mimeType: 'application/deepchat-webpage', // 保持你的类型
-                  text: JSON.stringify(blobContent)
+            const results = searchResponse.data.webPages.value.map(
+              (item, index) => {
+                // 构建blob内容
+                const blobContent = {
+                  title: item.name,
+                  url: item.url,
+                  rank: index + 1,
+                  content: item.summary, // 使用 summary
+                  icon: item.siteIcon,
+                  publishedDate: item.datePublished, // 添加发布日期
+                  siteName: item.siteName, // 添加站点名称
                 }
-              }
-            })
+
+                return {
+                  type: 'resource',
+                  resource: {
+                    uri: item.url,
+                    mimeType: 'application/deepchat-webpage', // 保持你的类型
+                    text: JSON.stringify(blobContent),
+                  },
+                }
+              },
+            )
 
             // 添加搜索摘要
             const summaryText = `Found ${results.length} results for "${query}"`
             const summary = {
               type: 'text',
-              text: summaryText
+              text: summaryText,
             }
 
             return {
-              content: [summary, ...results]
+              content: [summary, ...results],
             }
           }
 
@@ -242,26 +255,34 @@ export class BochaSearchServer {
                 freshness,
                 count,
                 answer: false, // 根据Python版本
-                stream: false // 根据Python版本
+                stream: false, // 根据Python版本
               },
               {
                 headers: {
                   Authorization: `Bearer ${this.apiKey}`,
-                  'Content-Type': 'application/json'
+                  'Content-Type': 'application/json',
                 },
-                timeout: 10000 // 设置超时，同Python版本
-              }
+                timeout: 10000, // 设置超时，同Python版本
+              },
             )
 
             const aiSearchResponse = response.data as BochaAiSearchResponse
-            const contentResults: Array<{ type: string; text?: string; resource?: McpResource }> =
-              []
+            const contentResults: Array<{
+              type: string
+              text?: string
+              resource?: McpResource
+            }> = []
 
-            if (aiSearchResponse.messages && aiSearchResponse.messages.length > 0) {
+            if (
+              aiSearchResponse.messages &&
+              aiSearchResponse.messages.length > 0
+            ) {
               aiSearchResponse.messages.forEach((message) => {
                 try {
                   if (message.content_type === 'webpage') {
-                    const webData = JSON.parse(message.content) as { value: AiSearchWebPageItem[] }
+                    const webData = JSON.parse(message.content) as {
+                      value: AiSearchWebPageItem[]
+                    }
                     if (webData.value && Array.isArray(webData.value)) {
                       webData.value.forEach((item, index) => {
                         const blobContent = {
@@ -270,7 +291,7 @@ export class BochaSearchServer {
                           rank: index + 1, // Rank might need adjustment based on overall results
                           content: item.summary,
                           publishedDate: item.datePublished,
-                          siteName: item.siteName
+                          siteName: item.siteName,
                           // icon is not available in AI search response apparently
                         }
                         contentResults.push({
@@ -278,24 +299,27 @@ export class BochaSearchServer {
                           resource: {
                             uri: item.url,
                             mimeType: 'application/deepchat-webpage', // 保持你的类型
-                            text: JSON.stringify(blobContent)
-                          }
+                            text: JSON.stringify(blobContent),
+                          },
                         })
                       })
                     }
-                  } else if (message.content_type !== 'image' && message.content !== '{}') {
+                  } else if (
+                    message.content_type !== 'image' &&
+                    message.content !== '{}'
+                  ) {
                     // 其他非空、非图片的内容视为文本
                     contentResults.push({
                       type: 'text',
-                      text: message.content
+                      text: message.content,
                     })
                   }
                 } catch (e) {
-                  console.error('Error parsing AI search message content:', e)
+                  console.error('❌Error parsing AI search message content:', e)
                   // Optionally add an error message to results
                   contentResults.push({
                     type: 'text',
-                    text: `Error processing result: ${message.content}`
+                    text: `Error processing result: ${message.content}`,
                   })
                 }
               })
@@ -306,9 +330,9 @@ export class BochaSearchServer {
                 content: [
                   {
                     type: 'text',
-                    text: 'No results found.'
-                  }
-                ]
+                    text: 'No results found.',
+                  },
+                ],
               }
             }
 
@@ -316,11 +340,11 @@ export class BochaSearchServer {
             const summaryText = `Found ${contentResults.filter((r) => r.type === 'resource').length} web results and ${contentResults.filter((r) => r.type === 'text').length} other content for "${query}" via AI Search.`
             const summary = {
               type: 'text',
-              text: summaryText
+              text: summaryText,
             }
 
             return {
-              content: [summary, ...contentResults]
+              content: [summary, ...contentResults],
             }
           }
 
@@ -328,7 +352,7 @@ export class BochaSearchServer {
             throw new Error(`Unknown tool: ${name}`)
         }
       } catch (error) {
-        console.error('Error calling tool:', error) // Log the error server-side
+        console.error('❌Error calling tool:', error) // Log the error server-side
         const errorMessage =
           error instanceof Error
             ? error.message
@@ -339,17 +363,19 @@ export class BochaSearchServer {
         // Check for specific Axios errors
         if (axios.isAxiosError(error)) {
           const status = error.response?.status
-          const details = error.response?.data ? JSON.stringify(error.response.data) : error.message
+          const details = error.response?.data
+            ? JSON.stringify(error.response.data)
+            : error.message
           const finalMessage = `Bocha API request failed: ${status ? `Status ${status}` : ''} - ${details}`
           return {
             content: [{ type: 'text', text: `Error: ${finalMessage}` }],
-            isError: true
+            isError: true,
           }
         }
 
         return {
           content: [{ type: 'text', text: `Error: ${errorMessage}` }],
-          isError: true
+          isError: true,
         }
       }
     })

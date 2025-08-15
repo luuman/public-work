@@ -6,20 +6,20 @@ import {
   LLMCoreStreamEvent,
   ModelConfig,
   ChatMessage,
-} from '@shared/presenter';
-import { BaseLLMProvider, SUMMARY_TITLES_PROMPT } from '../baseProvider';
-import OpenAI, { AzureOpenAI } from 'openai';
-import { ConfigPresenter } from '../../configPresenter';
-import { presenter } from '@/presenter';
-import { eventBus, SendTarget } from '@/events/eventbus';
-import { NOTIFICATION_EVENTS } from '@/events/events';
-import { jsonrepair } from 'jsonrepair';
-import { app } from 'electron';
-import path from 'path';
-import fs from 'fs';
-import sharp from 'sharp';
-import { proxyConfig } from '../../proxyConfig';
-import { ProxyAgent } from 'undici';
+} from '@shared/presenter'
+import { BaseLLMProvider, SUMMARY_TITLES_PROMPT } from '../baseProvider'
+import OpenAI, { AzureOpenAI } from 'openai'
+import { ConfigPresenter } from '../../configPresenter'
+import { presenter } from '@/presenter'
+import { eventBus, SendTarget } from '@/events/eventbus'
+import { NOTIFICATION_EVENTS } from '@/events/events'
+import { jsonrepair } from 'jsonrepair'
+import { app } from 'electron'
+import path from 'path'
+import fs from 'fs'
+import sharp from 'sharp'
+import { proxyConfig } from '../../proxyConfig'
+import { ProxyAgent } from 'undici'
 
 const OPENAI_REASONING_MODELS = [
   'o4-mini',
@@ -32,59 +32,59 @@ const OPENAI_REASONING_MODELS = [
   'o1-pro',
   'o1-preview',
   'o1',
-];
+]
 const OPENAI_IMAGE_GENERATION_MODELS = [
   'gpt-4o-all',
   'gpt-4o-image',
   'gpt-image-1',
   'dall-e-3',
   'dall-e-2',
-];
+]
 
 // 添加支持的图片尺寸常量
 const SUPPORTED_IMAGE_SIZES = {
   SQUARE: '1024x1024',
   LANDSCAPE: '1536x1024',
   PORTRAIT: '1024x1536',
-} as const;
+} as const
 
 // 添加可设置尺寸的模型列表
-const SIZE_CONFIGURABLE_MODELS = ['gpt-image-1', 'gpt-4o-image', 'gpt-4o-all'];
+const SIZE_CONFIGURABLE_MODELS = ['gpt-image-1', 'gpt-4o-image', 'gpt-4o-all']
 
 export class OpenAIResponsesProvider extends BaseLLMProvider {
-  protected openai!: OpenAI;
-  private isNoModelsApi: boolean = false;
+  protected openai!: OpenAI
+  private isNoModelsApi: boolean = false
   // 添加不支持 OpenAI 标准接口的供应商黑名单
-  private static readonly NO_MODELS_API_LIST: string[] = [];
+  private static readonly NO_MODELS_API_LIST: string[] = []
 
   constructor(provider: LLM_PROVIDER, configPresenter: ConfigPresenter) {
-    super(provider, configPresenter);
-    this.createOpenAIClient();
+    super(provider, configPresenter)
+    this.createOpenAIClient()
     if (
       OpenAIResponsesProvider.NO_MODELS_API_LIST.includes(
         this.provider.id.toLowerCase(),
       )
     ) {
-      this.isNoModelsApi = true;
+      this.isNoModelsApi = true
     }
-    this.init();
+    this.init()
   }
 
   private createOpenAIClient(): void {
     // Get proxy configuration
-    const proxyUrl = proxyConfig.getProxyUrl();
-    const fetchOptions: { dispatcher?: ProxyAgent } = {};
+    const proxyUrl = proxyConfig.getProxyUrl()
+    const fetchOptions: { dispatcher?: ProxyAgent } = {}
 
     if (proxyUrl) {
-      console.log(`[OpenAI Responses Provider] Using proxy: ${proxyUrl}`);
-      const proxyAgent = new ProxyAgent(proxyUrl);
-      fetchOptions.dispatcher = proxyAgent;
+      console.log(`[OpenAI Responses Provider] Using proxy: ${proxyUrl}`)
+      const proxyAgent = new ProxyAgent(proxyUrl)
+      fetchOptions.dispatcher = proxyAgent
     }
 
     if (this.provider.id === 'azure-openai') {
       try {
         const apiVersion =
-          this.configPresenter.getSetting<string>('azureApiVersion');
+          this.configPresenter.getSetting<string>('azureApiVersion')
         this.openai = new AzureOpenAI({
           apiKey: this.provider.apiKey,
           baseURL: this.provider.baseUrl,
@@ -93,9 +93,9 @@ export class OpenAIResponsesProvider extends BaseLLMProvider {
             ...this.defaultHeaders,
           },
           fetchOptions,
-        });
+        })
       } catch (e) {
-        console.warn('create azure openai failed', e);
+        console.warn('create azure openai failed', e)
       }
     } else {
       this.openai = new OpenAI({
@@ -105,29 +105,29 @@ export class OpenAIResponsesProvider extends BaseLLMProvider {
           ...this.defaultHeaders,
         },
         fetchOptions,
-      });
+      })
     }
   }
 
   public onProxyResolved(): void {
-    this.createOpenAIClient();
+    this.createOpenAIClient()
   }
 
   // 实现BaseLLMProvider中的抽象方法fetchProviderModels
   protected async fetchProviderModels(options?: {
-    timeout: number;
+    timeout: number
   }): Promise<MODEL_META[]> {
     // 检查供应商是否在黑名单中
     if (this.isNoModelsApi) {
-      return this.models;
+      return this.models
     }
-    return this.fetchOpenAIModels(options);
+    return this.fetchOpenAIModels(options)
   }
 
   protected async fetchOpenAIModels(options?: {
-    timeout: number;
+    timeout: number
   }): Promise<MODEL_META[]> {
-    const response = await this.openai.models.list(options);
+    const response = await this.openai.models.list(options)
 
     return response.data.map((model) => ({
       id: model.id,
@@ -137,7 +137,7 @@ export class OpenAIResponsesProvider extends BaseLLMProvider {
       isCustom: false,
       contextLength: 4096,
       maxTokens: 2048,
-    }));
+    }))
   }
 
   /**
@@ -149,7 +149,7 @@ export class OpenAIResponsesProvider extends BaseLLMProvider {
   protected formatMessages(
     messages: ChatMessage[],
   ): OpenAI.Responses.ResponseInput {
-    const result: OpenAI.Responses.ResponseInput = [];
+    const result: OpenAI.Responses.ResponseInput = []
 
     for (const msg of messages) {
       if (msg.role === 'tool') {
@@ -160,8 +160,8 @@ export class OpenAIResponsesProvider extends BaseLLMProvider {
             typeof msg.content === 'string'
               ? msg.content
               : JSON.stringify(msg.content),
-        });
-        continue;
+        })
+        continue
       }
 
       if (msg.role === 'assistant' && msg.tool_calls) {
@@ -171,12 +171,12 @@ export class OpenAIResponsesProvider extends BaseLLMProvider {
             call_id: toolCall.id,
             name: toolCall.function.name,
             arguments: toolCall.function.arguments,
-          });
+          })
         }
-        continue;
+        continue
       }
 
-      const content: OpenAI.Responses.ResponseInputMessageContentList = [];
+      const content: OpenAI.Responses.ResponseInputMessageContentList = []
 
       if (msg.content !== undefined) {
         if (typeof msg.content === 'string') {
@@ -184,7 +184,7 @@ export class OpenAIResponsesProvider extends BaseLLMProvider {
             //@ts-ignore api 和 sdk 定义不同
             type: msg.role === 'assistant' ? 'output_text' : 'input_text',
             text: msg.content,
-          });
+          })
         } else if (Array.isArray(msg.content)) {
           for (const part of msg.content) {
             if (part.type === 'text' && part.text) {
@@ -192,14 +192,14 @@ export class OpenAIResponsesProvider extends BaseLLMProvider {
                 //@ts-ignore api 和 sdk 定义不同
                 type: msg.role === 'assistant' ? 'output_text' : 'input_text',
                 text: part.text,
-              });
+              })
             }
             if (part.type === 'image_url' && part.image_url?.url) {
               content.push({
                 type: 'input_image',
                 image_url: part.image_url.url,
                 detail: 'auto',
-              });
+              })
             }
           }
         }
@@ -208,10 +208,10 @@ export class OpenAIResponsesProvider extends BaseLLMProvider {
       result.push({
         role: msg.role as 'system' | 'user' | 'assistant',
         content,
-      });
+      })
     }
 
-    return result;
+    return result
   }
 
   // OpenAI完成方法
@@ -222,51 +222,51 @@ export class OpenAIResponsesProvider extends BaseLLMProvider {
     maxTokens?: number,
   ): Promise<LLMResponse> {
     if (!this.isInitialized) {
-      throw new Error('Provider not initialized');
+      throw new Error('Provider not initialized')
     }
 
     if (!modelId) {
-      throw new Error('Model ID is required');
+      throw new Error('Model ID is required')
     }
 
-    const formattedMessages = this.formatMessages(messages);
+    const formattedMessages = this.formatMessages(messages)
     const requestParams: OpenAI.Responses.ResponseCreateParams = {
       model: modelId,
       input: formattedMessages,
       temperature: temperature,
       max_output_tokens: maxTokens,
       stream: false,
-    };
+    }
 
     OPENAI_REASONING_MODELS.forEach((noTempId) => {
       if (modelId.startsWith(noTempId)) {
-        delete requestParams.temperature;
+        delete requestParams.temperature
       }
-    });
+    })
 
-    const response = await this.openai.responses.create(requestParams);
+    const response = await this.openai.responses.create(requestParams)
     const resultResp: LLMResponse = {
       content: '',
-    };
+    }
 
     if (response.status === 'completed' && response.output.length > 0) {
-      const message = response.output[0];
+      const message = response.output[0]
       if (message.type === 'message' && message.content) {
         const textContent = message.content.find(
           (content) => content.type === 'output_text',
-        );
+        )
         if (textContent && 'text' in textContent) {
-          resultResp.content = textContent.text;
+          resultResp.content = textContent.text
         }
       }
     }
 
     // 处理 reasoning 内容
     if (response.reasoning?.summary) {
-      resultResp.reasoning_content = response.reasoning.summary;
+      resultResp.reasoning_content = response.reasoning.summary
     }
 
-    return resultResp;
+    return resultResp
   }
 
   ///////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -288,11 +288,11 @@ export class OpenAIResponsesProvider extends BaseLLMProvider {
     maxTokens: number,
     mcpTools: MCPToolDefinition[],
   ): AsyncGenerator<LLMCoreStreamEvent> {
-    if (!this.isInitialized) throw new Error('Provider not initialized');
-    if (!modelId) throw new Error('Model ID is required');
+    if (!this.isInitialized) throw new Error('Provider not initialized')
+    if (!modelId) throw new Error('Model ID is required')
 
     if (OPENAI_IMAGE_GENERATION_MODELS.includes(modelId)) {
-      yield* this.handleImgGeneration(messages, modelId);
+      yield* this.handleImgGeneration(messages, modelId)
     } else {
       yield* this.handleChatCompletion(
         messages,
@@ -301,7 +301,7 @@ export class OpenAIResponsesProvider extends BaseLLMProvider {
         temperature,
         maxTokens,
         mcpTools,
-      );
+      )
     }
   }
 
@@ -317,34 +317,34 @@ export class OpenAIResponsesProvider extends BaseLLMProvider {
     modelId: string,
   ): AsyncGenerator<LLMCoreStreamEvent> {
     // 获取最后几条消息，检查是否有图片
-    let prompt = '';
-    const imageUrls: string[] = [];
+    let prompt = ''
+    const imageUrls: string[] = []
     // 获取最后的用户消息内容作为提示词
-    const lastUserMessage = messages.findLast((m) => m.role === 'user');
+    const lastUserMessage = messages.findLast((m) => m.role === 'user')
     if (lastUserMessage?.content) {
       if (typeof lastUserMessage.content === 'string') {
-        prompt = lastUserMessage.content;
+        prompt = lastUserMessage.content
       } else if (Array.isArray(lastUserMessage.content)) {
         // 处理多模态内容，提取文本
-        const textParts: string[] = [];
+        const textParts: string[] = []
         for (const part of lastUserMessage.content) {
           if (part.type === 'text' && part.text) {
-            textParts.push(part.text);
+            textParts.push(part.text)
           }
         }
-        prompt = textParts.join('\n');
+        prompt = textParts.join('\n')
       }
     }
 
     // 检查最后几条消息中是否有图片
     // 通常我们只需要检查最后两条消息：最近的用户消息和最近的助手消息
-    const lastMessages = messages.slice(-2);
+    const lastMessages = messages.slice(-2)
     for (const message of lastMessages) {
       if (message.content) {
         if (Array.isArray(message.content)) {
           for (const part of message.content) {
             if (part.type === 'image_url' && part.image_url?.url) {
-              imageUrls.push(part.image_url.url);
+              imageUrls.push(part.image_url.url)
             }
           }
         }
@@ -354,145 +354,144 @@ export class OpenAIResponsesProvider extends BaseLLMProvider {
     if (!prompt) {
       console.error(
         '[handleImgGeneration] Could not extract prompt for image generation.',
-      );
+      )
       yield {
         type: 'error',
         error_message: 'Could not extract prompt for image generation.',
-      };
-      yield { type: 'stop', stop_reason: 'error' };
-      return;
+      }
+      yield { type: 'stop', stop_reason: 'error' }
+      return
     }
 
     try {
-      let result;
+      let result
 
       if (imageUrls.length > 0) {
         // 使用 images.edit 接口处理带有图片的请求
-        let imageBuffer: Buffer;
+        let imageBuffer: Buffer
 
         if (imageUrls[0].startsWith('imgcache://')) {
-          const filePath = imageUrls[0].slice('imgcache://'.length);
+          const filePath = imageUrls[0].slice('imgcache://'.length)
           const fullPath = path.join(
             app.getPath('userData'),
             'images',
             filePath,
-          );
-          imageBuffer = fs.readFileSync(fullPath);
+          )
+          imageBuffer = fs.readFileSync(fullPath)
         } else {
-          const imageResponse = await fetch(imageUrls[0]);
-          const imageBlob = await imageResponse.blob();
-          imageBuffer = Buffer.from(await imageBlob.arrayBuffer());
+          const imageResponse = await fetch(imageUrls[0])
+          const imageBlob = await imageResponse.blob()
+          imageBuffer = Buffer.from(await imageBlob.arrayBuffer())
         }
 
         // 创建临时文件
-        const imagePath = `/tmp/openai_image_${Date.now()}.png`;
+        const imagePath = `/tmp/openai_image_${Date.now()}.png`
         await new Promise<void>((resolve, reject) => {
           fs.writeFile(imagePath, imageBuffer, (err: Error | null) => {
             if (err) {
-              reject(err);
+              reject(err)
             } else {
-              resolve();
+              resolve()
             }
-          });
-        });
+          })
+        })
 
         // 使用文件路径创建 Readable 流
-        const imageFile = fs.createReadStream(imagePath);
+        const imageFile = fs.createReadStream(imagePath)
         const params: OpenAI.Images.ImageEditParams = {
           model: modelId,
           image: imageFile,
           prompt: prompt,
           n: 1,
-        };
+        }
 
         // 如果是支持尺寸配置的模型，检测图片尺寸并设置合适的参数
         if (SIZE_CONFIGURABLE_MODELS.includes(modelId)) {
           try {
-            const metadata = await sharp(imageBuffer).metadata();
+            const metadata = await sharp(imageBuffer).metadata()
             if (metadata.width && metadata.height) {
-              const aspectRatio = metadata.width / metadata.height;
+              const aspectRatio = metadata.width / metadata.height
 
               // 根据宽高比选择最接近的尺寸
               if (Math.abs(aspectRatio - 1) < 0.1) {
                 // 接近正方形
-                params.size = SUPPORTED_IMAGE_SIZES.SQUARE;
+                params.size = SUPPORTED_IMAGE_SIZES.SQUARE
               } else if (aspectRatio > 1) {
                 // 横向图片
-                params.size = SUPPORTED_IMAGE_SIZES.LANDSCAPE;
+                params.size = SUPPORTED_IMAGE_SIZES.LANDSCAPE
               } else {
                 // 纵向图片
-                params.size = SUPPORTED_IMAGE_SIZES.PORTRAIT;
+                params.size = SUPPORTED_IMAGE_SIZES.PORTRAIT
               }
             } else {
               // 如果无法获取宽高，使用默认参数
-              params.size = '1024x1536';
+              params.size = '1024x1536'
             }
-            params.quality = 'high';
+            params.quality = 'high'
           } catch (error) {
             console.warn(
               '[handleImgGeneration] Failed to detect image dimensions, using default size:',
               error,
-            );
+            )
             // 检测失败时使用默认参数
-            params.size = '1024x1536';
-            params.quality = 'high';
+            params.size = '1024x1536'
+            params.quality = 'high'
           }
         }
 
-        result = await this.openai.images.edit(params);
+        result = await this.openai.images.edit(params)
 
         // 清理临时文件
         try {
-          fs.unlinkSync(imagePath);
+          fs.unlinkSync(imagePath)
         } catch (e) {
           console.error(
             '[handleImgGeneration] Failed to delete temporary file:',
             e,
-          );
+          )
         }
       } else {
         // 使用原来的 images.generate 接口处理没有图片的请求
         console.log(
           `[handleImgGeneration] Generating image with model ${modelId} and prompt: "${prompt}"`,
-        );
+        )
         const params: OpenAI.Images.ImageGenerateParams = {
           model: modelId,
           prompt: prompt,
           n: 1,
           output_format: 'png',
-        };
+        }
         if (
           modelId === 'gpt-image-1' ||
           modelId === 'gpt-4o-image' ||
           modelId === 'gpt-4o-all'
         ) {
-          params.size = '1024x1536';
-          params.quality = 'high';
+          params.size = '1024x1536'
+          params.quality = 'high'
         }
         result = await this.openai.images.generate(params, {
           timeout: 300_000,
-        });
+        })
       }
       if (result.data && (result.data[0]?.url || result.data[0]?.b64_json)) {
         // 使用devicePresenter缓存图片URL
         try {
-          let imageUrl: string;
+          let imageUrl: string
           if (result.data[0]?.b64_json) {
             // 处理 base64 数据
-            const base64Data = result.data[0].b64_json;
+            const base64Data = result.data[0].b64_json
             // 直接使用 devicePresenter 缓存 base64 数据
             imageUrl = await presenter.devicePresenter.cacheImage(
               base64Data.startsWith('data:image/png;base64,')
                 ? base64Data
                 : 'data:image/png;base64,' + base64Data,
-            );
+            )
           } else {
             // 原有的 URL 处理逻辑
-            imageUrl = result.data[0]?.url || '';
+            imageUrl = result.data[0]?.url || ''
           }
 
-          const cachedUrl =
-            await presenter.devicePresenter.cacheImage(imageUrl);
+          const cachedUrl = await presenter.devicePresenter.cacheImage(imageUrl)
 
           // 返回缓存后的URL
           yield {
@@ -501,7 +500,7 @@ export class OpenAIResponsesProvider extends BaseLLMProvider {
               data: cachedUrl,
               mimeType: 'deepchat/image-url',
             },
-          };
+          }
 
           // 处理 usage 信息
           if (result.usage) {
@@ -512,48 +511,48 @@ export class OpenAIResponsesProvider extends BaseLLMProvider {
                 completion_tokens: result.usage.output_tokens || 0,
                 total_tokens: result.usage.total_tokens || 0,
               },
-            };
+            }
           }
 
-          yield { type: 'stop', stop_reason: 'complete' };
+          yield { type: 'stop', stop_reason: 'complete' }
         } catch (cacheError) {
           // 缓存失败时降级为使用原始URL
           console.warn(
             '[handleImgGeneration] Failed to cache image, using original URL:',
             cacheError,
-          );
+          )
           yield {
             type: 'image_data',
             image_data: {
               data: result.data[0]?.url || result.data[0]?.b64_json || '',
               mimeType: 'deepchat/image-url',
             },
-          };
-          yield { type: 'stop', stop_reason: 'complete' };
+          }
+          yield { type: 'stop', stop_reason: 'complete' }
         }
       } else {
         console.error(
           '[handleImgGeneration] No image data received from API.',
           result,
-        );
+        )
         yield {
           type: 'error',
           error_message: 'No image data received from API.',
-        };
-        yield { type: 'stop', stop_reason: 'error' };
+        }
+        yield { type: 'stop', stop_reason: 'error' }
       }
     } catch (error: unknown) {
       const errorMessage =
-        error instanceof Error ? error.message : String(error);
+        error instanceof Error ? error.message : String(error)
       console.error(
         '[handleImgGeneration] Error during image generation:',
         errorMessage,
-      );
+      )
       yield {
         type: 'error',
         error_message: `Image generation failed: ${errorMessage}`,
-      };
-      yield { type: 'stop', stop_reason: 'error' };
+      }
+      yield { type: 'stop', stop_reason: 'error' }
     }
   }
 
@@ -576,14 +575,14 @@ export class OpenAIResponsesProvider extends BaseLLMProvider {
     maxTokens: number,
     mcpTools: MCPToolDefinition[],
   ): AsyncGenerator<LLMCoreStreamEvent> {
-    const tools = mcpTools || [];
-    const supportsFunctionCall = modelConfig?.functionCall || false;
-    let processedMessages = this.formatMessages(messages);
+    const tools = mcpTools || []
+    const supportsFunctionCall = modelConfig?.functionCall || false
+    let processedMessages = this.formatMessages(messages)
     if (tools.length > 0 && !supportsFunctionCall) {
       processedMessages = this.prepareFunctionCallPrompt(
         processedMessages,
         tools,
-      );
+      )
     }
     const apiTools =
       tools.length > 0 && supportsFunctionCall
@@ -591,7 +590,7 @@ export class OpenAIResponsesProvider extends BaseLLMProvider {
             tools,
             this.provider.id,
           )
-        : undefined;
+        : undefined
 
     const requestParams: OpenAI.Responses.ResponseCreateParams = {
       model: modelId,
@@ -599,105 +598,105 @@ export class OpenAIResponsesProvider extends BaseLLMProvider {
       temperature,
       max_output_tokens: maxTokens,
       stream: true,
-    };
+    }
 
     // 如果模型支持函数调用且有工具,添加 tools 参数
     if (tools.length > 0 && supportsFunctionCall && apiTools) {
-      requestParams.tools = apiTools;
+      requestParams.tools = apiTools
     }
 
     OPENAI_REASONING_MODELS.forEach((noTempId) => {
-      if (modelId.startsWith(noTempId)) delete requestParams.temperature;
-    });
+      if (modelId.startsWith(noTempId)) delete requestParams.temperature
+    })
 
-    const stream = await this.openai.responses.create(requestParams);
+    const stream = await this.openai.responses.create(requestParams)
 
     // --- State Variables ---
-    type TagState = 'none' | 'start' | 'inside' | 'end';
-    let thinkState: TagState = 'none';
-    let funcState: TagState = 'none'; // Only relevant if !supportsFunctionCall
+    type TagState = 'none' | 'start' | 'inside' | 'end'
+    let thinkState: TagState = 'none'
+    let funcState: TagState = 'none' // Only relevant if !supportsFunctionCall
 
-    let pendingBuffer = ''; // Buffer for tag matching and potential text output
-    let thinkBuffer = ''; // Buffer for reasoning content
-    let funcCallBuffer = ''; // Buffer for non-native function call content
+    let pendingBuffer = '' // Buffer for tag matching and potential text output
+    let thinkBuffer = '' // Buffer for reasoning content
+    let funcCallBuffer = '' // Buffer for non-native function call content
 
-    const thinkStartMarker = '<think>';
-    const thinkEndMarker = '</think>';
-    const funcStartMarker = '<function_call>';
-    const funcEndMarker = '</function_call>';
+    const thinkStartMarker = '<think>'
+    const thinkEndMarker = '</think>'
+    const funcStartMarker = '<function_call>'
+    const funcEndMarker = '</function_call>'
 
     const nativeToolCalls: Record<
       string,
       { name: string; arguments: string; completed?: boolean }
-    > = {};
-    const stopReason: LLMCoreStreamEvent['stop_reason'] = 'complete';
-    let toolUseDetected = false;
+    > = {}
+    const stopReason: LLMCoreStreamEvent['stop_reason'] = 'complete'
+    let toolUseDetected = false
     let usage:
       | {
-          prompt_tokens: number;
-          completion_tokens: number;
-          total_tokens: number;
+          prompt_tokens: number
+          completion_tokens: number
+          total_tokens: number
         }
-      | undefined = undefined;
+      | undefined = undefined
 
     // --- Stream Processing Loop ---
     for await (const chunk of stream) {
       // 处理函数调用相关事件
       if (supportsFunctionCall && tools.length > 0) {
         if (chunk.type === 'response.output_item.added') {
-          const item = chunk.item;
+          const item = chunk.item
           if (item.type === 'function_call') {
-            toolUseDetected = true;
-            const id = item.call_id;
+            toolUseDetected = true
+            const id = item.call_id
             if (id) {
               nativeToolCalls[id] = {
                 name: item.name,
                 arguments: item.arguments || '',
                 completed: false,
-              };
+              }
               yield {
                 type: 'tool_call_start',
                 tool_call_id: id,
                 tool_call_name: item.name,
-              };
+              }
             }
           }
         } else if (chunk.type === 'response.function_call_arguments.delta') {
-          const itemId = chunk.item_id;
-          const delta = chunk.delta;
-          const toolCall = nativeToolCalls[itemId];
+          const itemId = chunk.item_id
+          const delta = chunk.delta
+          const toolCall = nativeToolCalls[itemId]
           if (toolCall) {
-            toolCall.arguments += delta;
+            toolCall.arguments += delta
             yield {
               type: 'tool_call_chunk',
               tool_call_id: itemId,
               tool_call_arguments_chunk: delta,
-            };
+            }
           }
         } else if (chunk.type === 'response.function_call_arguments.done') {
-          const itemId = chunk.item_id;
-          const argsData = chunk.arguments;
-          const toolCall = nativeToolCalls[itemId];
+          const itemId = chunk.item_id
+          const argsData = chunk.arguments
+          const toolCall = nativeToolCalls[itemId]
           if (toolCall) {
-            toolCall.arguments = argsData;
-            toolCall.completed = true;
+            toolCall.arguments = argsData
+            toolCall.completed = true
             yield {
               type: 'tool_call_end',
               tool_call_id: itemId,
               tool_call_arguments_complete: argsData,
-            };
+            }
           }
         } else if (chunk.type === 'response.output_item.done') {
-          const item = chunk.item;
+          const item = chunk.item
           if (item.type === 'function_call') {
-            const toolCall = nativeToolCalls[item.call_id];
+            const toolCall = nativeToolCalls[item.call_id]
             if (toolCall && !toolCall.completed) {
-              toolCall.completed = true;
+              toolCall.completed = true
               yield {
                 type: 'tool_call_end',
                 tool_call_id: item.call_id,
                 tool_call_arguments_complete: item.arguments,
-              };
+              }
             }
           }
         }
@@ -705,67 +704,67 @@ export class OpenAIResponsesProvider extends BaseLLMProvider {
 
       // 处理文本增量
       if (chunk.type === 'response.output_text.delta') {
-        const content = chunk.delta;
+        const content = chunk.delta
         for (const char of content) {
-          pendingBuffer += char;
-          let processedChar = false;
+          pendingBuffer += char
+          let processedChar = false
 
           // --- Thinking Tag Processing (Inside or End states) ---
           if (thinkState === 'inside') {
             if (pendingBuffer.endsWith(thinkEndMarker)) {
-              thinkState = 'none';
+              thinkState = 'none'
               if (thinkBuffer) {
-                yield { type: 'reasoning', reasoning_content: thinkBuffer };
-                thinkBuffer = '';
+                yield { type: 'reasoning', reasoning_content: thinkBuffer }
+                thinkBuffer = ''
               }
-              pendingBuffer = '';
-              processedChar = true;
+              pendingBuffer = ''
+              processedChar = true
             } else if (thinkEndMarker.startsWith(pendingBuffer)) {
-              thinkState = 'end';
-              processedChar = true;
+              thinkState = 'end'
+              processedChar = true
             } else if (pendingBuffer.length >= thinkEndMarker.length) {
               const charsToYield = pendingBuffer.slice(
                 0,
                 -thinkEndMarker.length + 1,
-              );
+              )
               if (charsToYield) {
-                thinkBuffer += charsToYield;
-                yield { type: 'reasoning', reasoning_content: charsToYield };
+                thinkBuffer += charsToYield
+                yield { type: 'reasoning', reasoning_content: charsToYield }
               }
-              pendingBuffer = pendingBuffer.slice(-thinkEndMarker.length + 1);
+              pendingBuffer = pendingBuffer.slice(-thinkEndMarker.length + 1)
               if (thinkEndMarker.startsWith(pendingBuffer)) {
-                thinkState = 'end';
+                thinkState = 'end'
               } else {
-                thinkBuffer += pendingBuffer;
-                yield { type: 'reasoning', reasoning_content: pendingBuffer };
-                pendingBuffer = '';
-                thinkState = 'inside';
+                thinkBuffer += pendingBuffer
+                yield { type: 'reasoning', reasoning_content: pendingBuffer }
+                pendingBuffer = ''
+                thinkState = 'inside'
               }
-              processedChar = true;
+              processedChar = true
             } else {
-              thinkBuffer += char;
-              yield { type: 'reasoning', reasoning_content: char };
-              pendingBuffer = '';
-              processedChar = true;
+              thinkBuffer += char
+              yield { type: 'reasoning', reasoning_content: char }
+              pendingBuffer = ''
+              processedChar = true
             }
           } else if (thinkState === 'end') {
             if (pendingBuffer.endsWith(thinkEndMarker)) {
-              thinkState = 'none';
+              thinkState = 'none'
               if (thinkBuffer) {
-                yield { type: 'reasoning', reasoning_content: thinkBuffer };
-                thinkBuffer = '';
+                yield { type: 'reasoning', reasoning_content: thinkBuffer }
+                thinkBuffer = ''
               }
-              pendingBuffer = '';
-              processedChar = true;
+              pendingBuffer = ''
+              processedChar = true
             } else if (!thinkEndMarker.startsWith(pendingBuffer)) {
-              const failedTagChars = pendingBuffer;
-              thinkBuffer += failedTagChars;
-              yield { type: 'reasoning', reasoning_content: failedTagChars };
-              pendingBuffer = '';
-              thinkState = 'inside';
-              processedChar = true;
+              const failedTagChars = pendingBuffer
+              thinkBuffer += failedTagChars
+              yield { type: 'reasoning', reasoning_content: failedTagChars }
+              pendingBuffer = ''
+              thinkState = 'inside'
+              processedChar = true
             } else {
-              processedChar = true;
+              processedChar = true
             }
           }
 
@@ -775,202 +774,199 @@ export class OpenAIResponsesProvider extends BaseLLMProvider {
             tools.length > 0 &&
             (funcState === 'inside' || funcState === 'end')
           ) {
-            processedChar = true; // Assume processed unless logic below changes state back
+            processedChar = true // Assume processed unless logic below changes state back
             if (funcState === 'inside') {
               if (pendingBuffer.endsWith(funcEndMarker)) {
-                funcState = 'none';
-                funcCallBuffer += pendingBuffer.slice(0, -funcEndMarker.length);
-                pendingBuffer = '';
-                toolUseDetected = true;
+                funcState = 'none'
+                funcCallBuffer += pendingBuffer.slice(0, -funcEndMarker.length)
+                pendingBuffer = ''
+                toolUseDetected = true
                 console.log(
                   `[handleChatCompletion] Non-native <function_call> end tag detected. Buffer to parse:`,
                   funcCallBuffer,
-                );
+                )
                 const parsedCalls = this.parseFunctionCalls(
                   `${funcStartMarker}${funcCallBuffer}${funcEndMarker}`,
-                );
+                )
                 for (const parsedCall of parsedCalls) {
                   yield {
                     type: 'tool_call_start',
                     tool_call_id: parsedCall.id,
                     tool_call_name: parsedCall.function.name,
-                  };
+                  }
                   yield {
                     type: 'tool_call_chunk',
                     tool_call_id: parsedCall.id,
                     tool_call_arguments_chunk: parsedCall.function.arguments,
-                  };
+                  }
                   yield {
                     type: 'tool_call_end',
                     tool_call_id: parsedCall.id,
                     tool_call_arguments_complete: parsedCall.function.arguments,
-                  };
+                  }
                 }
-                funcCallBuffer = '';
+                funcCallBuffer = ''
               } else if (funcEndMarker.startsWith(pendingBuffer)) {
-                funcState = 'end';
+                funcState = 'end'
               } else if (pendingBuffer.length >= funcEndMarker.length) {
                 const charsToAdd = pendingBuffer.slice(
                   0,
                   -funcEndMarker.length + 1,
-                );
-                funcCallBuffer += charsToAdd;
-                pendingBuffer = pendingBuffer.slice(-funcEndMarker.length + 1);
+                )
+                funcCallBuffer += charsToAdd
+                pendingBuffer = pendingBuffer.slice(-funcEndMarker.length + 1)
                 if (funcEndMarker.startsWith(pendingBuffer)) {
-                  funcState = 'end';
+                  funcState = 'end'
                 } else {
-                  funcCallBuffer += pendingBuffer;
-                  pendingBuffer = '';
-                  funcState = 'inside';
+                  funcCallBuffer += pendingBuffer
+                  pendingBuffer = ''
+                  funcState = 'inside'
                 }
               } else {
-                funcCallBuffer += char;
-                pendingBuffer = '';
+                funcCallBuffer += char
+                pendingBuffer = ''
               }
             } else {
               // funcState === 'end'
               if (pendingBuffer.endsWith(funcEndMarker)) {
-                funcState = 'none';
-                pendingBuffer = '';
-                toolUseDetected = true;
+                funcState = 'none'
+                pendingBuffer = ''
+                toolUseDetected = true
                 console.log(
                   `[handleChatCompletion] Non-native <function_call> end tag detected (from end state). Buffer to parse:`,
                   funcCallBuffer,
-                );
+                )
                 const parsedCalls = this.parseFunctionCalls(
                   `${funcStartMarker}${funcCallBuffer}${funcEndMarker}`,
-                );
+                )
                 for (const parsedCall of parsedCalls) {
                   yield {
                     type: 'tool_call_start',
                     tool_call_id: parsedCall.id,
                     tool_call_name: parsedCall.function.name,
-                  };
+                  }
                   yield {
                     type: 'tool_call_chunk',
                     tool_call_id: parsedCall.id,
                     tool_call_arguments_chunk: parsedCall.function.arguments,
-                  };
+                  }
                   yield {
                     type: 'tool_call_end',
                     tool_call_id: parsedCall.id,
                     tool_call_arguments_complete: parsedCall.function.arguments,
-                  };
+                  }
                 }
-                funcCallBuffer = '';
+                funcCallBuffer = ''
               } else if (!funcEndMarker.startsWith(pendingBuffer)) {
-                funcCallBuffer += pendingBuffer;
-                pendingBuffer = '';
-                funcState = 'inside';
+                funcCallBuffer += pendingBuffer
+                pendingBuffer = ''
+                funcState = 'inside'
               }
             }
           }
 
           // --- General Text / Start Tag Detection (When not inside any tag) ---
           if (!processedChar) {
-            let potentialThink = thinkStartMarker.startsWith(pendingBuffer);
+            let potentialThink = thinkStartMarker.startsWith(pendingBuffer)
             let potentialFunc =
               !supportsFunctionCall &&
               tools.length > 0 &&
-              funcStartMarker.startsWith(pendingBuffer);
-            const matchedThink = pendingBuffer.endsWith(thinkStartMarker);
+              funcStartMarker.startsWith(pendingBuffer)
+            const matchedThink = pendingBuffer.endsWith(thinkStartMarker)
             const matchedFunc =
               !supportsFunctionCall &&
               tools.length > 0 &&
-              pendingBuffer.endsWith(funcStartMarker);
+              pendingBuffer.endsWith(funcStartMarker)
 
             // --- Handle Full Matches First ---
             if (matchedThink) {
               const textBefore = pendingBuffer.slice(
                 0,
                 -thinkStartMarker.length,
-              );
+              )
               if (textBefore) {
-                yield { type: 'text', content: textBefore };
+                yield { type: 'text', content: textBefore }
               }
               console.log(
                 '[handleChatCompletion] <think> start tag matched. Entering inside state.',
-              );
-              thinkState = 'inside';
-              funcState = 'none'; // Reset other state
-              pendingBuffer = '';
+              )
+              thinkState = 'inside'
+              funcState = 'none' // Reset other state
+              pendingBuffer = ''
             } else if (matchedFunc) {
-              const textBefore = pendingBuffer.slice(
-                0,
-                -funcStartMarker.length,
-              );
+              const textBefore = pendingBuffer.slice(0, -funcStartMarker.length)
               if (textBefore) {
-                yield { type: 'text', content: textBefore };
+                yield { type: 'text', content: textBefore }
               }
               console.log(
                 '[handleChatCompletion] Non-native <function_call> start tag detected. Entering inside state.',
-              );
-              funcState = 'inside';
-              thinkState = 'none'; // Reset other state
-              pendingBuffer = '';
+              )
+              funcState = 'inside'
+              thinkState = 'none' // Reset other state
+              pendingBuffer = ''
             }
             // --- Handle Partial Matches (Keep Accumulating) ---
             else if (potentialThink || potentialFunc) {
               // If potentially matching either, just keep the buffer and wait for more chars
               // Update state but don't yield anything
-              thinkState = potentialThink ? 'start' : 'none';
-              funcState = potentialFunc ? 'start' : 'none';
+              thinkState = potentialThink ? 'start' : 'none'
+              funcState = potentialFunc ? 'start' : 'none'
             }
             // --- Handle No Match / Failure ---
             else if (pendingBuffer.length > 0) {
               // Buffer doesn't start with '<', or starts with '<' but doesn't match start of either tag anymore
-              const charToYield = pendingBuffer[0];
-              yield { type: 'text', content: charToYield };
-              pendingBuffer = pendingBuffer.slice(1);
+              const charToYield = pendingBuffer[0]
+              yield { type: 'text', content: charToYield }
+              pendingBuffer = pendingBuffer.slice(1)
               // Re-evaluate potential matches with the shortened buffer immediately
               potentialThink =
                 pendingBuffer.length > 0 &&
-                thinkStartMarker.startsWith(pendingBuffer);
+                thinkStartMarker.startsWith(pendingBuffer)
               potentialFunc =
                 pendingBuffer.length > 0 &&
                 !supportsFunctionCall &&
                 tools.length > 0 &&
-                funcStartMarker.startsWith(pendingBuffer);
-              thinkState = potentialThink ? 'start' : 'none';
-              funcState = potentialFunc ? 'start' : 'none';
+                funcStartMarker.startsWith(pendingBuffer)
+              thinkState = potentialThink ? 'start' : 'none'
+              funcState = potentialFunc ? 'start' : 'none'
             }
           }
         }
       }
 
       if (chunk.type === 'response.completed') {
-        const response = chunk.response;
+        const response = chunk.response
         if (response.usage) {
           usage = {
             prompt_tokens: response.usage.input_tokens || 0,
             completion_tokens: response.usage.output_tokens || 0,
             total_tokens: response.usage.total_tokens || 0,
-          };
-          yield { type: 'usage', usage };
+          }
+          yield { type: 'usage', usage }
         }
 
         if (response.reasoning?.summary) {
           yield {
             type: 'reasoning',
             reasoning_content: response.reasoning.summary,
-          };
+          }
         }
 
         yield {
           type: 'stop',
           stop_reason: toolUseDetected ? 'tool_use' : stopReason,
-        };
-        return;
+        }
+        return
       }
 
       if ('error' in chunk) {
-        const errorChunk = chunk as { error: { message?: string } };
+        const errorChunk = chunk as { error: { message?: string } }
         yield {
           type: 'error',
           error_message: errorChunk.error?.message || 'Unknown error occurred',
-        };
-        yield { type: 'stop', stop_reason: 'error' };
-        return;
+        }
+        yield { type: 'stop', stop_reason: 'error' }
+        return
       }
     }
 
@@ -980,18 +976,18 @@ export class OpenAIResponsesProvider extends BaseLLMProvider {
       console.warn(
         '[handleChatCompletion] Finalizing with non-empty pendingBuffer:',
         pendingBuffer,
-      );
+      )
       // Decide how to yield based on final state
       if (thinkState === 'inside' || thinkState === 'end') {
-        yield { type: 'reasoning', reasoning_content: pendingBuffer };
-        thinkBuffer += pendingBuffer;
+        yield { type: 'reasoning', reasoning_content: pendingBuffer }
+        thinkBuffer += pendingBuffer
       } else if (funcState === 'inside' || funcState === 'end') {
         // Add remaining to func buffer - it will be handled below
-        funcCallBuffer += pendingBuffer;
+        funcCallBuffer += pendingBuffer
       } else {
-        yield { type: 'text', content: pendingBuffer };
+        yield { type: 'text', content: pendingBuffer }
       }
-      pendingBuffer = '';
+      pendingBuffer = ''
     }
 
     // Yield remaining reasoning content
@@ -999,7 +995,7 @@ export class OpenAIResponsesProvider extends BaseLLMProvider {
       console.warn(
         '[handleChatCompletion] Finalizing with non-empty thinkBuffer (should have been yielded):',
         thinkBuffer,
-      );
+      )
     }
 
     // Handle incomplete non-native function call
@@ -1007,44 +1003,44 @@ export class OpenAIResponsesProvider extends BaseLLMProvider {
       console.warn(
         '[handleChatCompletion] Finalizing with non-empty function call buffer (likely incomplete tag):',
         funcCallBuffer,
-      );
+      )
       // Attempt to parse what we have, might fail
-      const potentialContent = `${funcStartMarker}${funcCallBuffer}`;
+      const potentialContent = `${funcStartMarker}${funcCallBuffer}`
       try {
-        const parsedCalls = this.parseFunctionCalls(potentialContent);
+        const parsedCalls = this.parseFunctionCalls(potentialContent)
         if (parsedCalls.length > 0) {
-          toolUseDetected = true;
+          toolUseDetected = true
           for (const parsedCall of parsedCalls) {
             yield {
               type: 'tool_call_start',
               tool_call_id: parsedCall.id + '-incomplete',
               tool_call_name: parsedCall.function.name,
-            };
+            }
             yield {
               type: 'tool_call_chunk',
               tool_call_id: parsedCall.id + '-incomplete',
               tool_call_arguments_chunk: parsedCall.function.arguments,
-            };
+            }
             yield {
               type: 'tool_call_end',
               tool_call_id: parsedCall.id + '-incomplete',
               tool_call_arguments_complete: parsedCall.function.arguments,
-            };
+            }
           }
         } else {
           console.log(
             '[handleChatCompletion] Incomplete function call buffer parsing yielded no calls. Emitting as text.',
-          );
-          yield { type: 'text', content: potentialContent };
+          )
+          yield { type: 'text', content: potentialContent }
         }
       } catch (e) {
         console.error(
           '[handleChatCompletion] Error parsing incomplete function call buffer:',
           e,
-        );
-        yield { type: 'text', content: potentialContent };
+        )
+        yield { type: 'text', content: potentialContent }
       }
-      funcCallBuffer = '';
+      funcCallBuffer = ''
     }
   }
 
@@ -1052,25 +1048,25 @@ export class OpenAIResponsesProvider extends BaseLLMProvider {
     messages: OpenAI.Responses.ResponseInput,
     mcpTools: MCPToolDefinition[],
   ): OpenAI.Responses.ResponseInput {
-    console.log('prepareFunc');
+    console.log('prepareFunc')
     // 创建消息副本而不是直接修改原始消息
-    const result = [...messages];
+    const result = [...messages]
 
-    const functionCallPrompt = this.getFunctionCallWrapPrompt(mcpTools);
+    const functionCallPrompt = this.getFunctionCallWrapPrompt(mcpTools)
 
     // 找到最后一条用户消息
     const lastUserMessageIndex = result.findLastIndex(
       (message) => 'role' in message && message.role === 'user',
-    );
+    )
 
     if (lastUserMessageIndex !== -1) {
-      const userMessage = result[lastUserMessageIndex];
+      const userMessage = result[lastUserMessageIndex]
       if ('content' in userMessage) {
         if (Array.isArray(userMessage.content)) {
           // 创建新的 content 数组
           const newContent: OpenAI.Responses.ResponseInputMessageContentList =
-            [];
-          let hasAddedPrompt = false;
+            []
+          let hasAddedPrompt = false
 
           // 遍历现有的 content 数组
           for (const content of userMessage.content) {
@@ -1079,14 +1075,14 @@ export class OpenAIResponsesProvider extends BaseLLMProvider {
               newContent.push({
                 type: 'input_text',
                 text: `${functionCallPrompt}\n\n${content.text}`,
-              } as OpenAI.Responses.ResponseInputText);
-              hasAddedPrompt = true;
+              } as OpenAI.Responses.ResponseInputText)
+              hasAddedPrompt = true
             } else if (
               content.type === 'input_text' ||
               content.type === 'input_image'
             ) {
               // 其他内容直接复制
-              newContent.push(content as OpenAI.Responses.ResponseInputContent);
+              newContent.push(content as OpenAI.Responses.ResponseInputContent)
             }
           }
 
@@ -1095,14 +1091,14 @@ export class OpenAIResponsesProvider extends BaseLLMProvider {
             newContent.unshift({
               type: 'input_text',
               text: functionCallPrompt,
-            } as OpenAI.Responses.ResponseInputText);
+            } as OpenAI.Responses.ResponseInputText)
           }
 
           // 更新消息的 content
           result[lastUserMessageIndex] = {
             ...userMessage,
             content: newContent,
-          } as OpenAI.Responses.ResponseInput[number];
+          } as OpenAI.Responses.ResponseInput[number]
         } else if (typeof userMessage.content === 'string') {
           // 如果 content 是字符串，直接添加提示词
           result[lastUserMessageIndex] = {
@@ -1113,33 +1109,33 @@ export class OpenAIResponsesProvider extends BaseLLMProvider {
                 text: `${functionCallPrompt}\n\n${userMessage.content}`,
               } as OpenAI.Responses.ResponseInputText,
             ],
-          } as OpenAI.Responses.ResponseInput[number];
+          } as OpenAI.Responses.ResponseInput[number]
         }
       }
     }
 
-    return result;
+    return result
   }
 
   public async check(): Promise<{ isOk: boolean; errorMsg: string | null }> {
     try {
       if (!this.isNoModelsApi) {
         // Use a reasonable timeout
-        const models = await this.fetchOpenAIModels({ timeout: 5000 }); // Increased timeout slightly
-        this.models = models; // Store fetched models
+        const models = await this.fetchOpenAIModels({ timeout: 5000 }) // Increased timeout slightly
+        this.models = models // Store fetched models
       }
       // Potentially add a simple API call test here if needed, e.g., list models even for no-API list to check key/endpoint
-      return { isOk: true, errorMsg: null };
+      return { isOk: true, errorMsg: null }
     } catch (error: unknown) {
       // Use unknown for type safety
-      let errorMessage = 'An unknown error occurred during provider check.';
+      let errorMessage = 'An unknown error occurred during provider check.'
       if (error instanceof Error) {
-        errorMessage = error.message;
+        errorMessage = error.message
       } else if (typeof error === 'string') {
-        errorMessage = error;
+        errorMessage = error
       }
       // Optionally log the full error object for debugging
-      console.error('OpenAIResponsesProvider check failed:', error);
+      console.error('❌OpenAIResponsesProvider check failed:', error)
 
       eventBus.sendToRenderer(
         NOTIFICATION_EVENTS.SHOW_ERROR,
@@ -1150,8 +1146,8 @@ export class OpenAIResponsesProvider extends BaseLLMProvider {
           id: `openai-check-error-${Date.now()}`,
           type: 'error',
         },
-      );
-      return { isOk: false, errorMsg: errorMessage };
+      )
+      return { isOk: false, errorMsg: errorMessage }
     }
   }
 
@@ -1159,10 +1155,10 @@ export class OpenAIResponsesProvider extends BaseLLMProvider {
     messages: ChatMessage[],
     modelId: string,
   ): Promise<string> {
-    const summaryText = `${SUMMARY_TITLES_PROMPT}\n\n${messages.map((m) => `${m.role}: ${m.content}`).join('\n')}`;
-    const fullMessage: ChatMessage[] = [{ role: 'user', content: summaryText }];
-    const response = await this.openAICompletion(fullMessage, modelId, 0.5);
-    return response.content.replace(/["']/g, '').trim();
+    const summaryText = `${SUMMARY_TITLES_PROMPT}\n\n${messages.map((m) => `${m.role}: ${m.content}`).join('\n')}`
+    const fullMessage: ChatMessage[] = [{ role: 'user', content: summaryText }]
+    const response = await this.openAICompletion(fullMessage, modelId, 0.5)
+    return response.content.replace(/["']/g, '').trim()
   }
 
   async completions(
@@ -1172,7 +1168,7 @@ export class OpenAIResponsesProvider extends BaseLLMProvider {
     maxTokens?: number,
   ): Promise<LLMResponse> {
     // Simple completion, no specific system prompt needed unless required by base class or future design
-    return this.openAICompletion(messages, modelId, temperature, maxTokens);
+    return this.openAICompletion(messages, modelId, temperature, maxTokens)
   }
 
   async summaries(
@@ -1181,18 +1177,18 @@ export class OpenAIResponsesProvider extends BaseLLMProvider {
     temperature?: number,
     maxTokens?: number,
   ): Promise<LLMResponse> {
-    const systemPrompt = `Summarize the following text concisely:`;
+    const systemPrompt = `Summarize the following text concisely:`
     // Create messages based on the input text
     const requestMessages: ChatMessage[] = [
       { role: 'system', content: systemPrompt },
       { role: 'user', content: text }, // Use the input text directly
-    ];
+    ]
     return this.openAICompletion(
       requestMessages,
       modelId,
       temperature,
       maxTokens,
-    );
+    )
   }
 
   async generateText(
@@ -1202,7 +1198,7 @@ export class OpenAIResponsesProvider extends BaseLLMProvider {
     maxTokens?: number,
   ): Promise<LLMResponse> {
     // Use the prompt directly as the user message content
-    const requestMessages: ChatMessage[] = [{ role: 'user', content: prompt }];
+    const requestMessages: ChatMessage[] = [{ role: 'user', content: prompt }]
     // Note: formatMessages might not be needed here if it's just a single prompt string,
     // but keeping it for consistency in case formatMessages adds system prompts or other logic.
     return this.openAICompletion(
@@ -1210,7 +1206,7 @@ export class OpenAIResponsesProvider extends BaseLLMProvider {
       modelId,
       temperature,
       maxTokens,
-    );
+    )
   }
 
   async suggestions(
@@ -1219,22 +1215,22 @@ export class OpenAIResponsesProvider extends BaseLLMProvider {
     temperature?: number,
     maxTokens?: number,
   ): Promise<string[]> {
-    const systemPrompt = `Based on the last user message in the conversation history, provide 3 brief, relevant follow-up suggestions or questions. Output ONLY the suggestions, each on a new line. Do not include numbering, bullet points, or introductory text like "Here are some suggestions:".`;
-    const lastUserMessage = messages.filter((m) => m.role === 'user').pop(); // Get the most recent user message
+    const systemPrompt = `Based on the last user message in the conversation history, provide 3 brief, relevant follow-up suggestions or questions. Output ONLY the suggestions, each on a new line. Do not include numbering, bullet points, or introductory text like "Here are some suggestions:".`
+    const lastUserMessage = messages.filter((m) => m.role === 'user').pop() // Get the most recent user message
 
     if (!lastUserMessage) {
-      console.warn('suggestions called without user messages.');
-      return []; // Return empty array if no user message found
+      console.warn('suggestions called without user messages.')
+      return [] // Return empty array if no user message found
     }
 
     // Provide some context if possible, e.g., last few messages
-    const contextMessages = messages.slice(-5); // Last 5 messages as context
+    const contextMessages = messages.slice(-5) // Last 5 messages as context
 
     const requestMessages: ChatMessage[] = [
       { role: 'system', content: systemPrompt },
       // Include context leading up to the last user message
       ...contextMessages,
-    ];
+    ]
 
     try {
       const response = await this.openAICompletion(
@@ -1242,15 +1238,15 @@ export class OpenAIResponsesProvider extends BaseLLMProvider {
         modelId,
         temperature ?? 0.7,
         maxTokens ?? 60,
-      ); // Adjusted temp/tokens
+      ) // Adjusted temp/tokens
       // Split, trim, and filter results robustly
       return response.content
         .split('\n')
         .map((s) => s.trim())
-        .filter((s) => s.length > 0 && !s.match(/^[0-9.\-*\s]*/)); // Fixed regex range
+        .filter((s) => s.length > 0 && !s.match(/^[0-9.\-*\s]*/)) // Fixed regex range
     } catch (error) {
-      console.error('Failed to get suggestions:', error);
-      return []; // Return empty on error
+      console.error('❌Failed to get suggestions:', error)
+      return [] // Return empty on error
     }
   }
 
@@ -1258,37 +1254,37 @@ export class OpenAIResponsesProvider extends BaseLLMProvider {
     response: string,
     fallbackIdPrefix: string = 'tool-call',
   ): Array<{
-    id: string;
-    type: string;
-    function: { name: string; arguments: string };
+    id: string
+    type: string
+    function: { name: string; arguments: string }
   }> {
     try {
       // 使用非贪婪模式匹配function_call标签对，能够处理多行内容
       const functionCallMatches = response.match(
         /<function_call>([\s\S]*?)<\/function_call>/gs,
-      );
+      )
       if (!functionCallMatches) {
-        return [];
+        return []
       }
 
       const toolCalls = functionCallMatches
         .map((match, index) => {
-          const content = match.replace(/<\/?function_call>/g, '').trim();
+          const content = match.replace(/<\/?function_call>/g, '').trim()
           if (!content) {
-            return null; // Skip empty content between tags
+            return null // Skip empty content between tags
           }
 
           try {
-            let parsedCall;
-            let repairedJson: string | undefined;
+            let parsedCall
+            let repairedJson: string | undefined
             try {
               // 首先尝试标准 JSON 解析
-              parsedCall = JSON.parse(content);
+              parsedCall = JSON.parse(content)
             } catch {
               try {
                 // 如果标准解析失败，使用 jsonrepair 进行修复
-                repairedJson = jsonrepair(content);
-                parsedCall = JSON.parse(repairedJson);
+                repairedJson = jsonrepair(content)
+                parsedCall = JSON.parse(repairedJson)
               } catch (repairError) {
                 console.error(
                   `[parseFunctionCalls] Failed to parse content for match ${index} even with jsonrepair:`,
@@ -1297,34 +1293,34 @@ export class OpenAIResponsesProvider extends BaseLLMProvider {
                   content,
                   'Repaired content attempt:',
                   repairedJson ?? 'N/A',
-                );
-                return null; // Skip this malformed call
+                )
+                return null // Skip this malformed call
               }
             }
 
             // 提取名称和参数，处理各种可能的结构
-            let functionName, functionArgs;
+            let functionName, functionArgs
             if (
               parsedCall.function_call &&
               typeof parsedCall.function_call === 'object'
             ) {
-              functionName = parsedCall.function_call.name;
-              functionArgs = parsedCall.function_call.arguments;
+              functionName = parsedCall.function_call.name
+              functionArgs = parsedCall.function_call.arguments
             } else if (parsedCall.name && parsedCall.arguments !== undefined) {
-              functionName = parsedCall.name;
-              functionArgs = parsedCall.arguments;
+              functionName = parsedCall.name
+              functionArgs = parsedCall.arguments
             } else if (
               parsedCall.function &&
               typeof parsedCall.function === 'object' &&
               parsedCall.function.name
             ) {
-              functionName = parsedCall.function.name;
-              functionArgs = parsedCall.function.arguments;
+              functionName = parsedCall.function.name
+              functionArgs = parsedCall.function.arguments
             } else {
               // 尝试在单个键下查找函数调用结构
-              const keys = Object.keys(parsedCall);
+              const keys = Object.keys(parsedCall)
               if (keys.length === 1) {
-                const potentialToolCall = parsedCall[keys[0]];
+                const potentialToolCall = parsedCall[keys[0]]
                 if (
                   potentialToolCall &&
                   typeof potentialToolCall === 'object'
@@ -1333,15 +1329,15 @@ export class OpenAIResponsesProvider extends BaseLLMProvider {
                     potentialToolCall.name &&
                     potentialToolCall.arguments !== undefined
                   ) {
-                    functionName = potentialToolCall.name;
-                    functionArgs = potentialToolCall.arguments;
+                    functionName = potentialToolCall.name
+                    functionArgs = potentialToolCall.arguments
                   } else if (
                     potentialToolCall.function &&
                     typeof potentialToolCall.function === 'object' &&
                     potentialToolCall.function.name
                   ) {
-                    functionName = potentialToolCall.function.name;
-                    functionArgs = potentialToolCall.function.arguments;
+                    functionName = potentialToolCall.function.name
+                    functionArgs = potentialToolCall.function.arguments
                   }
                 }
               }
@@ -1350,22 +1346,22 @@ export class OpenAIResponsesProvider extends BaseLLMProvider {
                 console.error(
                   '[parseFunctionCalls] Could not determine function name from parsed call:',
                   parsedCall,
-                );
-                return null;
+                )
+                return null
               }
             }
 
             // 确保参数是字符串格式
             if (typeof functionArgs !== 'string') {
               try {
-                functionArgs = JSON.stringify(functionArgs);
+                functionArgs = JSON.stringify(functionArgs)
               } catch (stringifyError) {
                 console.error(
                   '[parseFunctionCalls] Failed to stringify function arguments:',
                   stringifyError,
                   functionArgs,
-                );
-                functionArgs = '{"error": "failed to stringify arguments"}';
+                )
+                functionArgs = '{"error": "failed to stringify arguments"}'
               }
             }
 
@@ -1373,7 +1369,7 @@ export class OpenAIResponsesProvider extends BaseLLMProvider {
             const id =
               parsedCall.id ||
               functionName ||
-              `${fallbackIdPrefix}-${index}-${Date.now()}`;
+              `${fallbackIdPrefix}-${index}-${Date.now()}`
 
             return {
               id: String(id),
@@ -1382,24 +1378,24 @@ export class OpenAIResponsesProvider extends BaseLLMProvider {
                 name: String(functionName),
                 arguments: functionArgs,
               },
-            };
+            }
           } catch (processingError) {
             console.error(
               '[parseFunctionCalls] Error processing parsed function call JSON:',
               processingError,
               'Content:',
               content,
-            );
-            return null;
+            )
+            return null
           }
         })
         .filter(
           (
             call,
           ): call is {
-            id: string;
-            type: string;
-            function: { name: string; arguments: string };
+            id: string
+            type: string
+            function: { name: string; arguments: string }
           } =>
             call !== null &&
             typeof call.id === 'string' &&
@@ -1407,17 +1403,17 @@ export class OpenAIResponsesProvider extends BaseLLMProvider {
             call.function !== null &&
             typeof call.function.name === 'string' &&
             typeof call.function.arguments === 'string',
-        );
+        )
 
-      return toolCalls;
+      return toolCalls
     } catch (error) {
       console.error(
         '[parseFunctionCalls] Unexpected error during execution:',
         error,
         'Input:',
         response,
-      );
-      return [];
+      )
+      return []
     }
   }
 }

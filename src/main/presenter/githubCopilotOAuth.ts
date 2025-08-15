@@ -35,10 +35,10 @@ export class GitHubCopilotOAuth {
         webPreferences: {
           nodeIntegration: false,
           contextIsolation: true,
-          webSecurity: true
+          webSecurity: true,
         },
         autoHideMenuBar: true,
-        title: 'GitHub Copilot 授权'
+        title: 'GitHub Copilot 授权',
       })
 
       // 监听URL变化以捕获授权回调
@@ -95,7 +95,7 @@ export class GitHubCopilotOAuth {
       redirect_uri: this.config.redirectUri,
       scope: this.config.scope,
       state: this.state,
-      response_type: 'code'
+      response_type: 'code',
     })
 
     return `https://github.com/login/oauth/authorize?${params.toString()}`
@@ -107,7 +107,7 @@ export class GitHubCopilotOAuth {
   private handleCallback(
     url: string,
     resolve: (code: string) => void,
-    reject: (error: Error) => void
+    reject: (error: Error) => void,
   ): void {
     try {
       const urlObj = new URL(url)
@@ -120,14 +120,14 @@ export class GitHubCopilotOAuth {
 
         // 验证state参数
         if (returnedState !== this.state) {
-          console.error('State mismatch:', returnedState, 'vs', this.state)
+          console.error('❌State mismatch:', returnedState, 'vs', this.state)
           this.closeWindow()
           reject(new Error('安全验证失败：state参数不匹配'))
           return
         }
 
         if (error) {
-          console.error('OAuth error:', error)
+          console.error('❌OAuth error:', error)
           this.closeWindow()
           reject(new Error(`GitHub授权失败: ${error}`))
         } else if (code) {
@@ -139,7 +139,7 @@ export class GitHubCopilotOAuth {
         }
       }
     } catch (error) {
-      console.error('Error parsing callback URL:', error)
+      console.error('❌Error parsing callback URL:', error)
       this.closeWindow()
       reject(new Error('解析回调URL失败'))
     }
@@ -150,23 +150,28 @@ export class GitHubCopilotOAuth {
    */
   async exchangeCodeForToken(code: string): Promise<string> {
     try {
-      const response = await fetch('https://github.com/login/oauth/access_token', {
-        method: 'POST',
-        headers: {
-          Accept: 'application/json',
-          'Content-Type': 'application/json',
-          'User-Agent': 'DeepChat/1.0.0'
+      const response = await fetch(
+        'https://github.com/login/oauth/access_token',
+        {
+          method: 'POST',
+          headers: {
+            Accept: 'application/json',
+            'Content-Type': 'application/json',
+            'User-Agent': 'DeepChat/1.0.0',
+          },
+          body: JSON.stringify({
+            client_id: this.config.clientId,
+            client_secret: this.config.clientSecret,
+            code: code,
+            redirect_uri: this.config.redirectUri,
+          }),
         },
-        body: JSON.stringify({
-          client_id: this.config.clientId,
-          client_secret: this.config.clientSecret,
-          code: code,
-          redirect_uri: this.config.redirectUri
-        })
-      })
+      )
 
       if (!response.ok) {
-        throw new Error(`Token exchange failed: ${response.status} ${response.statusText}`)
+        throw new Error(
+          `Token exchange failed: ${response.status} ${response.statusText}`,
+        )
       }
 
       const data = (await response.json()) as {
@@ -176,7 +181,9 @@ export class GitHubCopilotOAuth {
       }
 
       if (data.error) {
-        throw new Error(`Token exchange error: ${data.error_description || data.error}`)
+        throw new Error(
+          `Token exchange error: ${data.error_description || data.error}`,
+        )
       }
 
       if (!data.access_token) {
@@ -185,7 +192,7 @@ export class GitHubCopilotOAuth {
 
       return data.access_token
     } catch (error) {
-      console.error('Token exchange failed:', error)
+      console.error('❌Token exchange failed:', error)
       throw error
     }
   }
@@ -198,13 +205,13 @@ export class GitHubCopilotOAuth {
       const response = await fetch('https://api.github.com/user', {
         headers: {
           Authorization: `Bearer ${token}`,
-          'User-Agent': 'DeepChat/1.0.0'
-        }
+          'User-Agent': 'DeepChat/1.0.0',
+        },
       })
 
       return response.ok
     } catch (error) {
-      console.error('Token validation failed:', error)
+      console.error('❌Token validation failed:', error)
       return false
     }
   }
@@ -226,7 +233,8 @@ export function createGitHubCopilotOAuth(): GitHubCopilotOAuth {
   const clientId = import.meta.env.VITE_GITHUB_CLIENT_ID
   const clientSecret = import.meta.env.VITE_GITHUB_CLIENT_SECRET
   const redirectUri =
-    import.meta.env.VITE_GITHUB_REDIRECT_URI || 'https://deepchatai.cn/auth/github/callback'
+    import.meta.env.VITE_GITHUB_REDIRECT_URI ||
+    'https://deepchatai.cn/auth/github/callback'
 
   console.log('GitHub OAuth Configuration:')
   console.log('- Client ID configured:', clientId ? '✅' : '❌')
@@ -235,26 +243,26 @@ export function createGitHubCopilotOAuth(): GitHubCopilotOAuth {
   console.log('- Environment variables check:')
   console.log(
     '  - import.meta.env.VITE_GITHUB_CLIENT_ID:',
-    import.meta.env.VITE_GITHUB_CLIENT_ID ? 'EXISTS' : 'NOT SET'
+    import.meta.env.VITE_GITHUB_CLIENT_ID ? 'EXISTS' : 'NOT SET',
   )
   console.log(
     '  - import.meta.env.VITE_GITHUB_CLIENT_SECRET:',
-    import.meta.env.VITE_GITHUB_CLIENT_SECRET ? 'EXISTS' : 'NOT SET'
+    import.meta.env.VITE_GITHUB_CLIENT_SECRET ? 'EXISTS' : 'NOT SET',
   )
   console.log(
     '  - import.meta.env.VITE_GITHUB_REDIRECT_URI:',
-    import.meta.env.VITE_GITHUB_REDIRECT_URI ? 'EXISTS' : 'NOT SET'
+    import.meta.env.VITE_GITHUB_REDIRECT_URI ? 'EXISTS' : 'NOT SET',
   )
 
   if (!clientId) {
     throw new Error(
-      'GITHUB_CLIENT_ID environment variable is required. Please create a .env file with your GitHub OAuth Client ID. You can use either GITHUB_CLIENT_ID or VITE_GITHUB_CLIENT_ID.'
+      'GITHUB_CLIENT_ID environment variable is required. Please create a .env file with your GitHub OAuth Client ID. You can use either GITHUB_CLIENT_ID or VITE_GITHUB_CLIENT_ID.',
     )
   }
 
   if (!clientSecret) {
     throw new Error(
-      'GITHUB_CLIENT_SECRET environment variable is required. Please create a .env file with your GitHub OAuth Client Secret. You can use either GITHUB_CLIENT_SECRET or VITE_GITHUB_CLIENT_SECRET.'
+      'GITHUB_CLIENT_SECRET environment variable is required. Please create a .env file with your GitHub OAuth Client Secret. You can use either GITHUB_CLIENT_SECRET or VITE_GITHUB_CLIENT_SECRET.',
     )
   }
 
@@ -262,7 +270,7 @@ export function createGitHubCopilotOAuth(): GitHubCopilotOAuth {
     clientId,
     clientSecret,
     redirectUri,
-    scope: 'read:user read:org'
+    scope: 'read:user read:org',
   }
   if (is.dev) {
     console.log('Final OAuth config:', {
@@ -272,7 +280,7 @@ export function createGitHubCopilotOAuth(): GitHubCopilotOAuth {
         config.clientId.substring(config.clientId.length - 4),
       redirectUri: config.redirectUri,
       scope: config.scope,
-      clientSecretLength: config.clientSecret.length
+      clientSecretLength: config.clientSecret.length,
     })
   }
 

@@ -1,5 +1,8 @@
 import { Server } from '@modelcontextprotocol/sdk/server/index.js'
-import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js'
+import {
+  CallToolRequestSchema,
+  ListToolsRequestSchema,
+} from '@modelcontextprotocol/sdk/types.js'
 import { z } from 'zod'
 import { zodToJsonSchema } from 'zod-to-json-schema'
 import { Transport } from '@modelcontextprotocol/sdk/shared/transport.js'
@@ -9,7 +12,11 @@ import axios from 'axios'
 const DifyKnowledgeSearchArgsSchema = z.object({
   query: z.string().describe('搜索查询内容 (必填)'),
   topK: z.number().optional().default(5).describe('返回结果数量 (默认5条)'),
-  scoreThreshold: z.number().optional().default(0.2).describe('相似度阈值 (0-1之间，默认0.2)')
+  scoreThreshold: z
+    .number()
+    .optional()
+    .default(0.2)
+    .describe('相似度阈值 (0-1之间，默认0.2)'),
 })
 
 // 定义Dify API返回的数据结构
@@ -87,7 +94,9 @@ export class DifyKnowledgeServer {
         throw new Error('需要提供Dify Dataset ID')
       }
       if (!env.description) {
-        throw new Error('需要提供对这个知识库的描述，以方便ai决定是否检索此知识库')
+        throw new Error(
+          '需要提供对这个知识库的描述，以方便ai决定是否检索此知识库',
+        )
       }
 
       this.configs.push({
@@ -95,7 +104,7 @@ export class DifyKnowledgeServer {
         datasetId: env.datasetId,
         endpoint: env.endpoint || 'https://api.dify.ai/v1',
         description: env.description,
-        enabled: env.enabled
+        enabled: env.enabled,
       })
     }
 
@@ -103,13 +112,13 @@ export class DifyKnowledgeServer {
     this.server = new Server(
       {
         name: 'deepchat-inmemory/dify-knowledge-server',
-        version: '0.1.0'
+        version: '0.1.0',
       },
       {
         capabilities: {
-          tools: {}
-        }
-      }
+          tools: {},
+        },
+      },
     )
 
     // 设置请求处理器
@@ -132,7 +141,7 @@ export class DifyKnowledgeServer {
           return {
             name: `dify_knowledge_search${suffix}`,
             description: config.description,
-            inputSchema: zodToJsonSchema(DifyKnowledgeSearchArgsSchema)
+            inputSchema: zodToJsonSchema(DifyKnowledgeSearchArgsSchema),
           }
         })
 
@@ -162,19 +171,22 @@ export class DifyKnowledgeServer {
 
           // 获取实际配置的索引
           const actualConfigIndex = this.configs.findIndex(
-            (config) => config === enabledConfigs[configIndex]
+            (config) => config === enabledConfigs[configIndex],
           )
 
-          return await this.performDifyKnowledgeSearch(parameters, actualConfigIndex)
+          return await this.performDifyKnowledgeSearch(
+            parameters,
+            actualConfigIndex,
+          )
         } catch (error) {
-          console.error('Dify知识库搜索失败:', error)
+          console.error('❌Dify知识库搜索失败:', error)
           return {
             content: [
               {
                 type: 'text',
-                text: `搜索失败: ${error instanceof Error ? error.message : String(error)}`
-              }
-            ]
+                text: `搜索失败: ${error instanceof Error ? error.message : String(error)}`,
+              },
+            ],
           }
         }
       }
@@ -183,9 +195,9 @@ export class DifyKnowledgeServer {
         content: [
           {
             type: 'text',
-            text: `未知工具: ${name}`
-          }
-        ]
+            text: `未知工具: ${name}`,
+          },
+        ],
       }
     })
   }
@@ -193,12 +205,12 @@ export class DifyKnowledgeServer {
   // 执行Dify知识库搜索
   private async performDifyKnowledgeSearch(
     parameters: Record<string, unknown> | undefined,
-    configIndex: number = 0
+    configIndex: number = 0,
   ): Promise<{ content: MCPTextContent[] }> {
     const {
       query,
       topK = 5,
-      scoreThreshold = 0.2
+      scoreThreshold = 0.2,
     } = parameters as {
       query: string
       topK?: number
@@ -218,8 +230,8 @@ export class DifyKnowledgeServer {
         query,
         retrieval_model: {
           top_k: topK,
-          score_threshold: scoreThreshold
-        }
+          score_threshold: scoreThreshold,
+        },
       })
 
       const response = await axios.post<DifySearchResponse>(
@@ -230,15 +242,15 @@ export class DifyKnowledgeServer {
             top_k: topK,
             score_threshold: scoreThreshold,
             reranking_enable: null, // 下面这两个字段即使为空也必须要有，否则接口无法请求
-            score_threshold_enabled: null
-          }
+            score_threshold_enabled: null,
+          },
         },
         {
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${config.apiKey}`
-          }
-        }
+            Authorization: `Bearer ${config.apiKey}`,
+          },
+        },
       )
 
       // 处理响应数据
@@ -253,7 +265,7 @@ export class DifyKnowledgeServer {
           documentId: docId,
           content: content,
           score: score,
-          keywords: record.segment.keywords || []
+          keywords: record.segment.keywords || [],
         }
       })
 
@@ -279,15 +291,15 @@ export class DifyKnowledgeServer {
         content: [
           {
             type: 'text',
-            text: resultText
-          }
-        ]
+            text: resultText,
+          },
+        ],
       }
     } catch (error) {
-      console.error('Dify API请求失败:', error)
+      console.error('❌Dify API请求失败:', error)
       if (axios.isAxiosError(error) && error.response) {
         throw new Error(
-          `Dify API错误 (${error.response.status}): ${JSON.stringify(error.response.data)}`
+          `Dify API错误 (${error.response.status}): ${JSON.stringify(error.response.data)}`,
         )
       }
       throw error

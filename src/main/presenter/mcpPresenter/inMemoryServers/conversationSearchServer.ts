@@ -1,15 +1,15 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { Server } from '@modelcontextprotocol/sdk/server/index.js';
+import { Server } from '@modelcontextprotocol/sdk/server/index.js'
 import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
-} from '@modelcontextprotocol/sdk/types.js';
-import { z } from 'zod';
-import { zodToJsonSchema } from 'zod-to-json-schema';
-import { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
-import { presenter } from '@/presenter'; // 导入全局的 presenter 对象
-import { eventBus } from '@/events/eventbus'; // 引入 eventBus
-import { TAB_EVENTS } from '@/events/events';
+} from '@modelcontextprotocol/sdk/types.js'
+import { z } from 'zod'
+import { zodToJsonSchema } from 'zod-to-json-schema'
+import { Transport } from '@modelcontextprotocol/sdk/shared/transport.js'
+import { presenter } from '@/presenter' // 导入全局的 presenter 对象
+import { eventBus } from '@/events/eventbus' // 引入 eventBus
+import { TAB_EVENTS } from '@/events/events'
 
 // Schema definitions
 const SearchConversationsArgsSchema = z.object({
@@ -28,7 +28,7 @@ const SearchConversationsArgsSchema = z.object({
     .optional()
     .default(0)
     .describe('Pagination offset (default 0)'),
-});
+})
 
 const SearchMessagesArgsSchema = z.object({
   query: z.string().describe('Search keyword to search in message contents'),
@@ -52,7 +52,7 @@ const SearchMessagesArgsSchema = z.object({
     .optional()
     .default(0)
     .describe('Pagination offset (default 0)'),
-});
+})
 
 const GetConversationHistoryArgsSchema = z.object({
   conversationId: z.string().describe('Conversation ID'),
@@ -61,7 +61,7 @@ const GetConversationHistoryArgsSchema = z.object({
     .optional()
     .default(false)
     .describe('Whether to include system messages'),
-});
+})
 
 const GetConversationStatsArgsSchema = z.object({
   days: z
@@ -69,7 +69,7 @@ const GetConversationStatsArgsSchema = z.object({
     .optional()
     .default(30)
     .describe('Statistics period in days (default 30 days)'),
-});
+})
 
 const CreateNewTabArgsSchema = z.object({
   url: z
@@ -89,75 +89,75 @@ const CreateNewTabArgsSchema = z.object({
     .string()
     .optional()
     .describe('Optional initial user input for the new chat tab.'),
-});
+})
 
 interface SearchResult {
   conversations?: Array<{
-    id: string;
-    title: string;
-    createdAt: number;
-    updatedAt: number;
-    messageCount: number;
-    snippet?: string;
-  }>;
+    id: string
+    title: string
+    createdAt: number
+    updatedAt: number
+    messageCount: number
+    snippet?: string
+  }>
   messages?: Array<{
-    id: string;
-    conversationId: string;
-    conversationTitle: string;
-    role: string;
-    content: string;
-    createdAt: number;
-    snippet?: string;
-  }>;
-  total: number;
+    id: string
+    conversationId: string
+    conversationTitle: string
+    role: string
+    content: string
+    createdAt: number
+    snippet?: string
+  }>
+  total: number
 }
 
 // 等待 Tab 内容就绪的辅助函数
 function awaitTabReady(webContentsId: number, timeout = 10000): Promise<void> {
   return new Promise((resolve, reject) => {
     const timer = setTimeout(() => {
-      eventBus.removeListener(TAB_EVENTS.RENDERER_TAB_READY, listener);
+      eventBus.removeListener(TAB_EVENTS.RENDERER_TAB_READY, listener)
       reject(
         new Error(`Timed out waiting for tab ${webContentsId} to be ready.`),
-      );
-    }, timeout);
+      )
+    }, timeout)
 
     const listener = (readyTabId: number) => {
       if (readyTabId === webContentsId) {
-        clearTimeout(timer);
-        eventBus.removeListener(TAB_EVENTS.RENDERER_TAB_READY, listener);
-        resolve();
+        clearTimeout(timer)
+        eventBus.removeListener(TAB_EVENTS.RENDERER_TAB_READY, listener)
+        resolve()
       }
-    };
+    }
 
-    eventBus.on(TAB_EVENTS.RENDERER_TAB_READY, listener);
-  });
+    eventBus.on(TAB_EVENTS.RENDERER_TAB_READY, listener)
+  })
 }
 
 // 等待 Tab 会话激活的辅助函数
 function awaitTabActivated(threadId: string, timeout = 5000): Promise<void> {
   return new Promise((resolve, reject) => {
     const timer = setTimeout(() => {
-      eventBus.removeListener(TAB_EVENTS.RENDERER_TAB_ACTIVATED, listener);
+      eventBus.removeListener(TAB_EVENTS.RENDERER_TAB_ACTIVATED, listener)
       reject(
         new Error(`Timed out waiting for thread ${threadId} to be activated.`),
-      );
-    }, timeout);
+      )
+    }, timeout)
 
     const listener = (activatedThreadId: string) => {
       if (activatedThreadId === threadId) {
-        clearTimeout(timer);
-        eventBus.removeListener(TAB_EVENTS.RENDERER_TAB_ACTIVATED, listener);
-        resolve();
+        clearTimeout(timer)
+        eventBus.removeListener(TAB_EVENTS.RENDERER_TAB_ACTIVATED, listener)
+        resolve()
       }
-    };
+    }
 
-    eventBus.on(TAB_EVENTS.RENDERER_TAB_ACTIVATED, listener);
-  });
+    eventBus.on(TAB_EVENTS.RENDERER_TAB_ACTIVATED, listener)
+  })
 }
 
 export class ConversationSearchServer {
-  private server: Server;
+  private server: Server
 
   constructor() {
     // 创建服务器实例
@@ -171,15 +171,15 @@ export class ConversationSearchServer {
           tools: {},
         },
       },
-    );
+    )
 
     // 设置请求处理器
-    this.setupRequestHandlers();
+    this.setupRequestHandlers()
   }
 
   // 启动服务器
   public startServer(transport: Transport): void {
-    this.server.connect(transport);
+    this.server.connect(transport)
   }
 
   // 搜索对话
@@ -189,10 +189,10 @@ export class ConversationSearchServer {
     offset: number = 0,
   ): Promise<SearchResult> {
     try {
-      const sqlitePresenter = presenter.sqlitePresenter;
+      const sqlitePresenter = presenter.sqlitePresenter
 
       // 使用原始SQL进行全文搜索
-      const searchQuery = `%${query}%`;
+      const searchQuery = `%${query}%`
 
       // 搜索对话标题
       const conversationSql = `
@@ -208,7 +208,7 @@ export class ConversationSearchServer {
         GROUP BY c.conv_id
         ORDER BY c.updated_at DESC
         LIMIT ? OFFSET ?
-      `;
+      `
 
       // 搜索消息内容并关联对话
       const messageSql = `
@@ -222,23 +222,23 @@ export class ConversationSearchServer {
         GROUP BY c.conv_id
         ORDER BY c.updated_at DESC
         LIMIT ? OFFSET ?
-      `;
+      `
 
       // 获取数据库实例
-      const db = (sqlitePresenter as any).db;
+      const db = (sqlitePresenter as any).db
 
       // 执行对话标题搜索
       const conversationResults = db
         .prepare(conversationSql)
-        .all(searchQuery, limit, offset);
+        .all(searchQuery, limit, offset)
 
       // 执行消息内容搜索
       const messageResults = db
         .prepare(messageSql)
-        .all(searchQuery, limit, offset);
+        .all(searchQuery, limit, offset)
 
       // 合并结果并去重
-      const conversationMap = new Map();
+      const conversationMap = new Map()
 
       // 添加标题匹配的对话
       conversationResults.forEach((conv: any) => {
@@ -249,8 +249,8 @@ export class ConversationSearchServer {
           updatedAt: conv.updatedAt,
           messageCount: conv.messageCount,
           snippet: `Title match: ${conv.title}`,
-        });
-      });
+        })
+      })
 
       // 添加内容匹配的对话
       messageResults.forEach((msg: any) => {
@@ -262,24 +262,21 @@ export class ConversationSearchServer {
             updatedAt: 0,
             messageCount: 0,
             snippet: this.createSnippet(msg.content, query),
-          });
+          })
         }
-      });
+      })
 
-      const conversations = Array.from(conversationMap.values()).slice(
-        0,
-        limit,
-      );
+      const conversations = Array.from(conversationMap.values()).slice(0, limit)
 
       return {
         conversations,
         total: conversations.length,
-      };
+      }
     } catch (error) {
-      console.error('Error searching conversations:', error);
+      console.error('❌Error searching conversations:', error)
       throw new Error(
         `Failed to search conversations: ${error instanceof Error ? error.message : String(error)}`,
-      );
+      )
     }
   }
 
@@ -292,8 +289,8 @@ export class ConversationSearchServer {
     offset: number = 0,
   ): Promise<SearchResult> {
     try {
-      const sqlitePresenter = presenter.sqlitePresenter;
-      const searchQuery = `%${query}%`;
+      const sqlitePresenter = presenter.sqlitePresenter
+      const searchQuery = `%${query}%`
 
       let sql = `
         SELECT
@@ -306,42 +303,42 @@ export class ConversationSearchServer {
         FROM messages m
         INNER JOIN conversations c ON m.conversation_id = c.conv_id
         WHERE m.content LIKE ?
-      `;
+      `
 
-      const params: any[] = [searchQuery];
+      const params: any[] = [searchQuery]
 
       if (conversationId) {
-        sql += ' AND m.conversation_id = ?';
-        params.push(conversationId);
+        sql += ' AND m.conversation_id = ?'
+        params.push(conversationId)
       }
 
       if (role) {
-        sql += ' AND m.role = ?';
-        params.push(role);
+        sql += ' AND m.role = ?'
+        params.push(role)
       }
 
-      sql += ' ORDER BY m.created_at DESC LIMIT ? OFFSET ?';
-      params.push(limit, offset);
+      sql += ' ORDER BY m.created_at DESC LIMIT ? OFFSET ?'
+      params.push(limit, offset)
 
       // 获取总数
       let countSql = `
         SELECT COUNT(*) as total
         FROM messages m
         WHERE m.content LIKE ?
-      `;
-      const countParams: any[] = [searchQuery];
+      `
+      const countParams: any[] = [searchQuery]
 
       if (conversationId) {
-        countSql += ' AND m.conversation_id = ?';
-        countParams.push(conversationId);
+        countSql += ' AND m.conversation_id = ?'
+        countParams.push(conversationId)
       }
 
       if (role) {
-        countSql += ' AND m.role = ?';
-        countParams.push(role);
+        countSql += ' AND m.role = ?'
+        countParams.push(role)
       }
 
-      const db = (sqlitePresenter as any).db;
+      const db = (sqlitePresenter as any).db
 
       const messages = db
         .prepare(sql)
@@ -354,20 +351,20 @@ export class ConversationSearchServer {
           content: msg.content,
           createdAt: msg.createdAt,
           snippet: this.createSnippet(msg.content, query),
-        }));
+        }))
 
-      const totalResult = db.prepare(countSql).get(...countParams);
-      const total = totalResult?.total || 0;
+      const totalResult = db.prepare(countSql).get(...countParams)
+      const total = totalResult?.total || 0
 
       return {
         messages,
         total,
-      };
+      }
     } catch (error) {
-      console.error('Error searching messages:', error);
+      console.error('❌Error searching messages:', error)
       throw new Error(
         `Failed to search messages: ${error instanceof Error ? error.message : String(error)}`,
-      );
+      )
     }
   }
 
@@ -377,14 +374,13 @@ export class ConversationSearchServer {
     includeSystem: boolean = false,
   ) {
     try {
-      const sqlitePresenter = presenter.sqlitePresenter;
-      const conversation =
-        await sqlitePresenter.getConversation(conversationId);
-      const messages = await sqlitePresenter.queryMessages(conversationId);
+      const sqlitePresenter = presenter.sqlitePresenter
+      const conversation = await sqlitePresenter.getConversation(conversationId)
+      const messages = await sqlitePresenter.queryMessages(conversationId)
 
       const filteredMessages = includeSystem
         ? messages
-        : messages.filter((msg) => msg.role !== 'system');
+        : messages.filter((msg) => msg.role !== 'system')
 
       return {
         conversation,
@@ -396,44 +392,44 @@ export class ConversationSearchServer {
           tokenCount: msg.token_count,
           status: msg.status,
         })),
-      };
+      }
     } catch (error) {
-      console.error('Error getting conversation history:', error);
+      console.error('❌Error getting conversation history:', error)
       throw new Error(
         `Failed to get conversation history: ${error instanceof Error ? error.message : String(error)}`,
-      );
+      )
     }
   }
 
   // 获取对话统计信息
   private async getConversationStats(days: number = 30) {
     try {
-      const sqlitePresenter = presenter.sqlitePresenter;
-      const db = (sqlitePresenter as any).db;
+      const sqlitePresenter = presenter.sqlitePresenter
+      const db = (sqlitePresenter as any).db
 
-      const sinceTimestamp = Date.now() - days * 24 * 60 * 60 * 1000;
+      const sinceTimestamp = Date.now() - days * 24 * 60 * 60 * 1000
 
       // 总对话数
       const totalConversations = db
         .prepare('SELECT COUNT(*) as count FROM conversations')
-        .get();
+        .get()
 
       // 最近N天的对话数
       const recentConversations = db
         .prepare(
           'SELECT COUNT(*) as count FROM conversations WHERE created_at >= ?',
         )
-        .get(sinceTimestamp);
+        .get(sinceTimestamp)
 
       // 总消息数
       const totalMessages = db
         .prepare('SELECT COUNT(*) as count FROM messages')
-        .get();
+        .get()
 
       // 最近N天的消息数
       const recentMessages = db
         .prepare('SELECT COUNT(*) as count FROM messages WHERE created_at >= ?')
-        .get(sinceTimestamp);
+        .get(sinceTimestamp)
 
       // 按角色统计消息
       const messagesByRole = db
@@ -445,7 +441,7 @@ export class ConversationSearchServer {
         GROUP BY role
       `,
         )
-        .all(sinceTimestamp);
+        .all(sinceTimestamp)
 
       // 最活跃的对话（按消息数量）
       const activeConversations = db
@@ -464,7 +460,7 @@ export class ConversationSearchServer {
         LIMIT 10
       `,
         )
-        .all(sinceTimestamp);
+        .all(sinceTimestamp)
 
       return {
         period: `${days} days`,
@@ -477,8 +473,8 @@ export class ConversationSearchServer {
           messages: recentMessages.count,
         },
         messagesByRole: messagesByRole.reduce((acc: any, item: any) => {
-          acc[item.role] = item.count;
-          return acc;
+          acc[item.role] = item.count
+          return acc
         }, {}),
         activeConversations: activeConversations.map((conv: any) => ({
           id: conv.id,
@@ -486,12 +482,12 @@ export class ConversationSearchServer {
           messageCount: conv.messageCount,
           lastActivity: new Date(conv.lastActivity).toISOString(),
         })),
-      };
+      }
     } catch (error) {
-      console.error('Error getting conversation statistics:', error);
+      console.error('❌Error getting conversation statistics:', error)
       throw new Error(
         `Failed to get conversation statistics: ${error instanceof Error ? error.message : String(error)}`,
-      );
+      )
     }
   }
 
@@ -501,28 +497,28 @@ export class ConversationSearchServer {
     query: string,
     maxLength: number = 200,
   ): string {
-    const lowerContent = content.toLowerCase();
-    const lowerQuery = query.toLowerCase();
-    const index = lowerContent.indexOf(lowerQuery);
+    const lowerContent = content.toLowerCase()
+    const lowerQuery = query.toLowerCase()
+    const index = lowerContent.indexOf(lowerQuery)
 
     if (index === -1) {
       return content.length > maxLength
         ? content.substring(0, maxLength) + '...'
-        : content;
+        : content
     }
 
-    const start = Math.max(0, index - 50);
-    const end = Math.min(content.length, index + query.length + 50);
-    let snippet = content.substring(start, end);
+    const start = Math.max(0, index - 50)
+    const end = Math.min(content.length, index + query.length + 50)
+    let snippet = content.substring(start, end)
 
-    if (start > 0) snippet = '...' + snippet;
-    if (end < content.length) snippet = snippet + '...';
+    if (start > 0) snippet = '...' + snippet
+    if (end < content.length) snippet = snippet + '...'
 
     // 高亮关键词
-    const regex = new RegExp(`(${query})`, 'gi');
-    snippet = snippet.replace(regex, '**$1**');
+    const regex = new RegExp(`(${query})`, 'gi')
+    snippet = snippet.replace(regex, '**$1**')
 
-    return snippet;
+    return snippet
   }
 
   // 设置请求处理器
@@ -561,19 +557,19 @@ export class ConversationSearchServer {
             inputSchema: zodToJsonSchema(CreateNewTabArgsSchema),
           },
         ],
-      };
-    });
+      }
+    })
 
     // 调用工具
     this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
-      const { name, arguments: args } = request.params;
+      const { name, arguments: args } = request.params
 
       try {
         switch (name) {
           case 'search_conversations': {
             const { query, limit, offset } =
-              SearchConversationsArgsSchema.parse(args);
-            const result = await this.searchConversations(query, limit, offset);
+              SearchConversationsArgsSchema.parse(args)
+            const result = await this.searchConversations(query, limit, offset)
 
             return {
               content: [
@@ -582,19 +578,19 @@ export class ConversationSearchServer {
                   text: JSON.stringify(result, null, 2),
                 },
               ],
-            };
+            }
           }
 
           case 'search_messages': {
             const { query, conversationId, role, limit, offset } =
-              SearchMessagesArgsSchema.parse(args);
+              SearchMessagesArgsSchema.parse(args)
             const result = await this.searchMessages(
               query,
               conversationId,
               role,
               limit,
               offset,
-            );
+            )
 
             return {
               content: [
@@ -603,16 +599,16 @@ export class ConversationSearchServer {
                   text: JSON.stringify(result, null, 2),
                 },
               ],
-            };
+            }
           }
 
           case 'get_conversation_history': {
             const { conversationId, includeSystem } =
-              GetConversationHistoryArgsSchema.parse(args);
+              GetConversationHistoryArgsSchema.parse(args)
             const result = await this.getConversationHistory(
               conversationId,
               includeSystem,
-            );
+            )
 
             return {
               content: [
@@ -621,12 +617,12 @@ export class ConversationSearchServer {
                   text: JSON.stringify(result, null, 2),
                 },
               ],
-            };
+            }
           }
 
           case 'get_conversation_stats': {
-            const { days } = GetConversationStatsArgsSchema.parse(args);
-            const result = await this.getConversationStats(days);
+            const { days } = GetConversationStatsArgsSchema.parse(args)
+            const result = await this.getConversationStats(days)
 
             return {
               content: [
@@ -635,18 +631,18 @@ export class ConversationSearchServer {
                   text: JSON.stringify(result, null, 2),
                 },
               ],
-            };
+            }
           }
           case 'create_new_tab': {
             // 解析参数，url默认值 'local://chat'
             const { url, active, position, userInput } =
-              CreateNewTabArgsSchema.parse(args);
+              CreateNewTabArgsSchema.parse(args)
 
-            const mainWindowId = presenter.windowPresenter.mainWindow?.id;
+            const mainWindowId = presenter.windowPresenter.mainWindow?.id
             if (!mainWindowId) {
               throw new Error(
                 'Main application window not found to create a new tab.',
-              );
+              )
             }
 
             // 步骤 1: 创建 Tab，并获取 tabId
@@ -657,10 +653,10 @@ export class ConversationSearchServer {
                 active,
                 position,
               },
-            );
+            )
 
             if (!newTabId) {
-              throw new Error('Failed to create new tab.');
+              throw new Error('Failed to create new tab.')
             }
 
             // 如果没有 userInput，流程结束
@@ -669,24 +665,24 @@ export class ConversationSearchServer {
                 content: [
                   { type: 'text', text: JSON.stringify({ tabId: newTabId }) },
                 ],
-              };
+              }
             }
 
             // 等待 Tab 加载完成
-            const newTabView = await presenter.tabPresenter.getTab(newTabId);
+            const newTabView = await presenter.tabPresenter.getTab(newTabId)
             if (!newTabView) {
-              throw new Error(`Could not find view for new tab ${newTabId}`);
+              throw new Error(`Could not find view for new tab ${newTabId}`)
             }
 
             // ★ 等待渲染进程中的 Vue/Pinia 应用初始化完成
-            const newWebContentsId = newTabView.webContents.id;
+            const newWebContentsId = newTabView.webContents.id
             try {
-              await awaitTabReady(newWebContentsId);
+              await awaitTabReady(newWebContentsId)
             } catch (error) {
-              console.error(error);
+              console.error(error)
               throw new Error(
                 "Failed to communicate with the new tab's renderer process.",
-              );
+              )
             }
 
             // 步骤 2: 主进程创建会话。此操作会触发 CONVERSATION_EVENTS.ACTIVATED 事件，必须在 Vue/Pinia 就绪后执行
@@ -695,27 +691,27 @@ export class ConversationSearchServer {
                 'New Chat', // 临时标题
                 {}, // 默认设置
                 newTabId,
-              );
+              )
 
             if (!newThreadId) {
-              throw new Error('Failed to create a new conversation thread.');
+              throw new Error('Failed to create a new conversation thread.')
             }
 
             // ★ 等待渲染进程确认会话已激活
             try {
-              await awaitTabActivated(newThreadId);
+              await awaitTabActivated(newThreadId)
             } catch (error) {
-              console.error(error);
+              console.error(error)
               // 即使超时也尝试继续，但记录警告
               console.warn(
                 `Continuing despite activation confirmation timeout for thread ${newThreadId}`,
-              );
+              )
             }
 
             // 步骤 3: 发送指令给渲染进程，让它来发送消息，必须页面Activated之后才能发送
             newTabView.webContents.send('command:send-initial-message', {
               userInput: userInput,
-            });
+            })
 
             return {
               content: [
@@ -727,13 +723,13 @@ export class ConversationSearchServer {
                   }),
                 },
               ],
-            };
+            }
           }
           default:
-            throw new Error(`Unknown tool: ${name}`);
+            throw new Error(`Unknown tool: ${name}`)
         }
       } catch (error) {
-        console.error(`Error executing tool ${name}:`, error);
+        console.error(`Error executing tool ${name}:`, error)
         return {
           content: [
             {
@@ -742,8 +738,8 @@ export class ConversationSearchServer {
             },
           ],
           isError: true,
-        };
+        }
       }
-    });
+    })
   }
 }

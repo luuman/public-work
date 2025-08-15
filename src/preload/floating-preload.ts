@@ -2,7 +2,7 @@ import { contextBridge, ipcRenderer } from 'electron'
 
 // 直接定义事件常量，避免路径解析问题
 const FLOATING_BUTTON_EVENTS = {
-  CLICKED: 'floating-button:clicked'
+  CLICKED: 'floating-button:clicked',
 } as const
 
 // 定义悬浮按钮的 API
@@ -12,7 +12,7 @@ const floatingButtonAPI = {
     try {
       ipcRenderer.send(FLOATING_BUTTON_EVENTS.CLICKED)
     } catch (error) {
-      console.error('FloatingPreload: Error sending IPC message:', error)
+      console.error('❌FloatingPreload: Error sending IPC message:', error)
     }
   },
 
@@ -27,7 +27,7 @@ const floatingButtonAPI = {
   removeAllListeners: () => {
     console.log('FloatingPreload: Removing all listeners')
     ipcRenderer.removeAllListeners('floating-button-config-update')
-  }
+  },
 }
 
 // 尝试不同的方式暴露API
@@ -35,12 +35,18 @@ if (process.contextIsolated) {
   try {
     contextBridge.exposeInMainWorld('floatingButtonAPI', floatingButtonAPI)
   } catch (error) {
-    console.error('=== FloatingPreload: Error exposing API via contextBridge ===:', error)
+    console.error(
+      '❌=== FloatingPreload: Error exposing API via contextBridge ===:',
+      error,
+    )
   }
 } else {
   try {
     ;(window as any).floatingButtonAPI = floatingButtonAPI
   } catch (error) {
-    console.error('=== FloatingPreload: Error attaching API to window ===:', error)
+    console.error(
+      '❌=== FloatingPreload: Error attaching API to window ===:',
+      error,
+    )
   }
 }
