@@ -13,7 +13,7 @@ import { TrayPresenter } from './trayPresenter'
 import { ShortcutPresenter } from './shortcutPresenter'
 // import { NotificationPresenter } from './notifactionPresenter'
 // import { FilePresenter } from './filePresenter/FilePresenter'
-// import { TabPresenter } from './tabPresenter'
+import { TabPresenter } from './tabPresenter'
 // import { LlamaCppPresenter } from './llamaCppPresenter'
 // import { SQLitePresenter } from './sqlitePresenter';
 // import { LLMProviderPresenter } from './llmProviderPresenter';
@@ -53,7 +53,7 @@ export class Presenter implements IPresenter {
   floatingButtonPresenter: FloatingButtonPresenter
   // logPresenter: LogPresenter
   // upgradePresenter: UpgradePresenter
-  // tabPresenter: TabPresenter
+  tabPresenter: TabPresenter
   // syncPresenter: SyncPresenter
   // threadPresenter: ThreadPresenter
   // oauthPresenter: OAuthPresenter
@@ -69,7 +69,7 @@ export class Presenter implements IPresenter {
     // 初始化各个 Presenter 实例及其依赖
     this.configPresenter = new ConfigPresenter()
     this.windowPresenter = new WindowPresenter(this.configPresenter)
-    // this.tabPresenter = new TabPresenter(this.windowPresenter)
+    this.tabPresenter = new TabPresenter(this.windowPresenter)
     this.devicePresenter = new DevicePresenter()
 
     // 初始化 SQLite 数据库路径
