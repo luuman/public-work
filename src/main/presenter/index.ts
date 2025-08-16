@@ -1,18 +1,19 @@
+console.log('😊 Presenter')
 import path from 'path'
 import { IPresenter } from '@shared/presenter'
 import { ipcMain, IpcMainInvokeEvent, app } from 'electron'
 import { eventBus } from '@/events/eventbus'
 import { CONFIG_EVENTS, WINDOW_EVENTS } from '@/events/events'
-import { DialogPresenter } from './dialogPresenter/index'
-import { WindowPresenter } from './windowPresenter'
-import { ShortcutPresenter } from './shortcutPresenter'
-import { TrayPresenter } from './trayPresenter'
-import { NotificationPresenter } from './notifactionPresenter'
 import { DevicePresenter } from './devicePresenter'
+// import { LogPresenter } from './logPresenter'
 import { ConfigPresenter } from './configPresenter'
-import { FilePresenter } from './filePresenter/FilePresenter'
-import { TabPresenter } from './tabPresenter'
-import { LogPresenter } from './logPresenter'
+import { WindowPresenter } from './windowPresenter'
+import { TrayPresenter } from './trayPresenter'
+// import { DialogPresenter } from './dialogPresenter/index'
+import { ShortcutPresenter } from './shortcutPresenter'
+// import { NotificationPresenter } from './notifactionPresenter'
+// import { FilePresenter } from './filePresenter/FilePresenter'
+// import { TabPresenter } from './tabPresenter'
 // import { LlamaCppPresenter } from './llamaCppPresenter'
 // import { SQLitePresenter } from './sqlitePresenter';
 // import { LLMProviderPresenter } from './llmProviderPresenter';
@@ -50,9 +51,9 @@ export class Presenter implements IPresenter {
   trayPresenter: TrayPresenter
   dialogPresenter: DialogPresenter
   floatingButtonPresenter: FloatingButtonPresenter
-  logPresenter: LogPresenter
+  // logPresenter: LogPresenter
   // upgradePresenter: UpgradePresenter
-  tabPresenter: TabPresenter
+  // tabPresenter: TabPresenter
   // syncPresenter: SyncPresenter
   // threadPresenter: ThreadPresenter
   // oauthPresenter: OAuthPresenter
@@ -68,7 +69,7 @@ export class Presenter implements IPresenter {
     // 初始化各个 Presenter 实例及其依赖
     this.configPresenter = new ConfigPresenter()
     this.windowPresenter = new WindowPresenter(this.configPresenter)
-    this.tabPresenter = new TabPresenter(this.windowPresenter)
+    // this.tabPresenter = new TabPresenter(this.windowPresenter)
     this.devicePresenter = new DevicePresenter()
 
     // 初始化 SQLite 数据库路径
@@ -85,7 +86,7 @@ export class Presenter implements IPresenter {
 
     // this.llmproviderPresenter = new LLMProviderPresenter(this.configPresenter);
     // this.mcpPresenter = new McpPresenter(this.configPresenter);
-    this.filePresenter = new FilePresenter()
+    // this.filePresenter = new FilePresenter()
     // this.syncPresenter = new SyncPresenter(
     //   this.configPresenter,
     //   this.sqlitePresenter,
@@ -97,10 +98,10 @@ export class Presenter implements IPresenter {
       this.configPresenter,
     )
     // (this.upgradePresenter = new UpgradePresenter()));
-    this.dialogPresenter = new DialogPresenter()
-    this.logPresenter = new LogPresenter()
+    // this.dialogPresenter = new DialogPresenter()
+    // this.logPresenter = new LogPresenter()
     this.trayPresenter = new TrayPresenter()
-    this.notificationPresenter = new NotificationPresenter()
+    // this.notificationPresenter = new NotificationPresenter()
     this.shortcutPresenter = new ShortcutPresenter(this.configPresenter)
 
     // this.knowledgePresenter = new KnowledgePresenter(
@@ -114,11 +115,11 @@ export class Presenter implements IPresenter {
     this.setupEventBus()
 
     // console.log('Presenter initialized', this.logPresenter)
-    this.logPresenter.log(
-      'screenshot',
-      'info',
-      `[TestLog] index= 🚀message=测试日志写入`,
-    )
+    // this.logPresenter.log(
+    //   'screenshot',
+    //   'info',
+    //   `[TestLog] index= 🚀message=测试日志写入`,
+    // )
   }
 
   // 设置事件总线监听和转发
@@ -206,7 +207,7 @@ export class Presenter implements IPresenter {
     // this.knowledgePresenter.destroy(); // 释放所有数据库连接
     // 注意: trayPresenter.destroy() 在 main/index.ts 的 will-quit 事件中处理
     // 此处不销毁 trayPresenter，其生命周期由 main/index.ts 管理
-    this.logPresenter.destroy() // 销毁快捷键监听
+    // this.logPresenter.destroy() // 销毁快捷键监听
   }
 }
 

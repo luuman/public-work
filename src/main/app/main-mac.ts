@@ -6,10 +6,10 @@ export function setupMacArgs(appInstance: Electron.App) {
   )
 }
 
-export async function setupMacStartup(appInstance: Electron.App, presenter) {
+export async function setupMacStartup(appInstance: Electron.App) {
   // 处理应用激活事件 (如 macOS 点击 Dock 图标)
-  appInstance.on('activate', function () {
-    console.log('                  🤔app activate')
+  appInstance.on('activate', async function () {
+    const { presenter } = await import('@/presenter')
     // 在 macOS 上，点击 Dock 图标时重新创建窗口很常见
     // 同时处理已隐藏窗口的显示
     const allWindows = presenter.windowPresenter.getAllWindows()

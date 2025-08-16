@@ -1,3 +1,4 @@
+console.log('😊 ShortcutPresenter')
 import { app, globalShortcut, dialog } from 'electron'
 import { presenter } from '.'
 import { SHORTCUT_EVENTS, TRAY_EVENTS } from '@/events/events'
@@ -9,7 +10,7 @@ import {
 } from './configPresenter/shortcutKeySettings'
 import { ConfigPresenter } from './configPresenter'
 
-console.log('🥢Registering shortcuts defaultShortcutKey', defaultShortcutKey)
+// console.log('🥢Registering shortcuts defaultShortcutKey', defaultShortcutKey)
 
 type ShortcutHandler = () => void
 

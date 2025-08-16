@@ -4,7 +4,7 @@ import {
   TRAY_EVENTS,
   FLOATING_BUTTON_EVENTS,
 } from '@/events/events'
-import { presenter } from '@/presenter'
+// import { presenter } from '@/presenter'
 import { handleShowHiddenWindow } from '@/utils'
 
 export function appFocus() {
@@ -19,6 +19,8 @@ export function enabledChanged() {
     FLOATING_BUTTON_EVENTS.ENABLED_CHANGED,
     async (enabled: boolean) => {
       try {
+        const { presenter } = await import('@/presenter')
+
         await presenter.floatingButtonPresenter.setEnabled(enabled)
       } catch (error) {
         console.error('❌Failed to set floating button enabled state:', error)
@@ -28,7 +30,8 @@ export function enabledChanged() {
 }
 export function checkForUpdates() {
   // 托盘 检测更新
-  eventBus.on(TRAY_EVENTS.CHECK_FOR_UPDATES, () => {
+  eventBus.on(TRAY_EVENTS.CHECK_FOR_UPDATES, async () => {
+    const { presenter } = await import('@/presenter')
     const allWindows = presenter.windowPresenter.getAllWindows()
 
     // 查找目标窗口 (焦点窗口或第一个窗口)

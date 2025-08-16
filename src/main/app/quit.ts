@@ -1,4 +1,5 @@
-import { presenter } from '@/presenter'
+console.log('😊 willQuit')
+// import { presenter } from '@/presenter'
 
 /**
  * 在应用即将退出时触发，适合进行最终的资源清理 (如销毁托盘)

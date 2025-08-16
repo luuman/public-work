@@ -1,9 +1,10 @@
+console.log('😊 EventBus')
 import { IWindowPresenter, ITabPresenter } from '@shared/presenter'
 import EventEmitter from 'events'
 
 export enum SendTarget {
   ALL_WINDOWS = 'all_windows',
-  DEFAULT_TAB = 'default_tab'
+  DEFAULT_TAB = 'default_tab',
 }
 
 export class EventBus extends EventEmitter {
@@ -61,7 +62,11 @@ export class EventBus extends EventEmitter {
    * @param target 发送目标
    * @param args 事件参数
    */
-  send(eventName: string, target: SendTarget = SendTarget.ALL_WINDOWS, ...args: unknown[]) {
+  send(
+    eventName: string,
+    target: SendTarget = SendTarget.ALL_WINDOWS,
+    ...args: unknown[]
+  ) {
     // 发送到主进程
     this.sendToMain(eventName, ...args)
 
@@ -102,11 +107,16 @@ export class EventBus extends EventEmitter {
         if (tabView && !tabView.webContents.isDestroyed()) {
           tabView.webContents.send(eventName, ...args)
         } else {
-          console.warn(`Tab ${tabId} not found or destroyed, cannot send event ${eventName}`)
+          console.warn(
+            `Tab ${tabId} not found or destroyed, cannot send event ${eventName}`,
+          )
         }
       })
       .catch((error) => {
-        console.error(`Error sending event ${eventName} to tab ${tabId}:`, error)
+        console.error(
+          `Error sending event ${eventName} to tab ${tabId}:`,
+          error,
+        )
       })
   }
 

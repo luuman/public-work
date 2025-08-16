@@ -1,3 +1,4 @@
+console.log('😊 NotificationPresenter')
 import {
   nativeImage,
   Notification,

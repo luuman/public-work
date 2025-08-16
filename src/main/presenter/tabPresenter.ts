@@ -1,3 +1,4 @@
+console.log('😊 TabPresenter')
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { eventBus } from '@/events/eventbus'
 import {
