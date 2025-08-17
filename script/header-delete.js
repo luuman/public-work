@@ -2,10 +2,7 @@ const fs = require('fs/promises')
 const path = require('path')
 const { glob } = require('glob')
 const { CODE_TO_EMJIO } = require('./config')
-
-// Configuration
-const TARGET_DIR = './src/main' // Directory to scan
-const FILE_PATTERN = '**/*.ts' // Pattern to match TS files
+const { TARGET_DIR, FILE_PATTERN } = require('./config')
 
 async function processFiles() {
   try {

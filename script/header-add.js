@@ -1,11 +1,15 @@
 const fs = require('fs/promises')
 const path = require('path')
 const { glob } = require('glob')
-const { CODE_TO_ADD } = require('./config')
+const { CODE_TO_ADD, TARGET_DIR, FILE_PATTERN } = require('./config')
 
-// Configuration
-const TARGET_DIR = './src/main' // Directory to scan
-const FILE_PATTERN = '**/*.ts' // Pattern to match TS files
+// 获取显示名称（返回相对于TARGET_DIR的路径，不带扩展名）
+function getDisplayName(filePath) {
+  const relativePath = path.relative(TARGET_DIR, filePath)
+  const withoutExt = relativePath.replace(/\.ts$/, '')
+  // console.log(relativePath, withoutExt)
+  return withoutExt
+}
 
 async function processFiles() {
   try {
@@ -23,26 +27,24 @@ async function processFiles() {
         // Read original content
         const originalContent = await fs.readFile(filePath, 'utf-8')
 
-        // const fileName = path.basename(filePath, '.ts')
-        // const parentDir = path.basename(path.dirname(filePath))
-
-        // const displayName = fileName === 'index' ? parentDir : fileName
+        const displayName = getDisplayName(filePath)
 
         // Skip if already has our header
-        if (originalContent.startsWith(CODE_TO_ADD(filePath).trim())) {
-          console.log(
-            `Skipping ${path.relative(TARGET_DIR, filePath)} - already processed`,
-          )
+        const name = CODE_TO_ADD(displayName)
+        if (originalContent.startsWith(name.trim())) {
+          // console.log(
+          //   `Skipping ${path.relative(TARGET_DIR, filePath)} - already processed`,
+          // )
           continue
         }
 
         // Prepend new code
-        const newContent = CODE_TO_ADD + originalContent
-        console.log(`🚀 ${newContent}`)
+        const newContent = name + originalContent
+        // console.log(`🚀 ${newContent}`)
 
         // // Write back to file
         await fs.writeFile(filePath, newContent, 'utf-8')
-        console.log(`Updated ${path.relative(TARGET_DIR, filePath)}`)
+        // console.log(`Updated ${path.relative(TARGET_DIR, filePath)}`)
       } catch (error) {
         console.error(`Error processing ${filePath}:`, error)
       }
