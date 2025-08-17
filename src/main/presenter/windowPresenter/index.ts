@@ -12,7 +12,7 @@ import { presenter } from '../' // 全局 presenter 注册中心
 import windowStateManager from 'electron-window-state' // 窗口状态管理器
 import { SHORTCUT_EVENTS } from '@/events/events' // 快捷键事件常量
 // TrayPresenter 在 main/index.ts 中全局管理，本 Presenter 不负责其生命周期
-import { TabPresenter } from '../tabPresenter' // TabPresenter 类型
+// import { TabPresenter } from '../tabPresenter' // TabPresenter 类型
 import { appLog } from '@/presenter/logPresenter'
 
 /**
@@ -68,67 +68,67 @@ export class WindowPresenter implements IWindowPresenter {
     })
 
     // 监听快捷键事件：创建新标签页
-    eventBus.on(SHORTCUT_EVENTS.CREATE_NEW_TAB, async (windowId: number) => {
-      console.log(`Creating new tab via shortcut for window ${windowId}.`)
-      const window = this.windows.get(windowId)
-      if (window && !window.isDestroyed()) {
-        await (presenter.tabPresenter as TabPresenter).createTab(
-          windowId,
-          'local://chat',
-          {
-            active: true,
-          },
-        )
-      } else {
-        console.warn(
-          `Cannot create new tab for window ${windowId}, window does not exist or is destroyed.`,
-        )
-      }
-    })
+    // eventBus.on(SHORTCUT_EVENTS.CREATE_NEW_TAB, async (windowId: number) => {
+    //   console.log(`Creating new tab via shortcut for window ${windowId}.`)
+    //   const window = this.windows.get(windowId)
+    //   if (window && !window.isDestroyed()) {
+    //     await (presenter.tabPresenter as TabPresenter).createTab(
+    //       windowId,
+    //       'local://chat',
+    //       {
+    //         active: true,
+    //       },
+    //     )
+    //   } else {
+    //     console.warn(
+    //       `Cannot create new tab for window ${windowId}, window does not exist or is destroyed.`,
+    //     )
+    //   }
+    // })
 
     // 监听快捷键事件：关闭当前标签页
-    eventBus.on(SHORTCUT_EVENTS.CLOSE_CURRENT_TAB, async (windowId: number) => {
-      console.log(`Received CLOSE_CURRENT_TAB for window ${windowId}.`)
-      const window = this.windows.get(windowId)
-      if (!window || window.isDestroyed()) {
-        console.warn(
-          `Cannot handle close tab request, window ${windowId} does not exist or is destroyed.`,
-        )
-        return
-      }
+    // eventBus.on(SHORTCUT_EVENTS.CLOSE_CURRENT_TAB, async (windowId: number) => {
+    //   console.log(`Received CLOSE_CURRENT_TAB for window ${windowId}.`)
+    //   const window = this.windows.get(windowId)
+    //   if (!window || window.isDestroyed()) {
+    //     console.warn(
+    //       `Cannot handle close tab request, window ${windowId} does not exist or is destroyed.`,
+    //     )
+    //     return
+    //   }
 
-      const tabPresenterInstance = presenter.tabPresenter as TabPresenter
-      const tabsData = await tabPresenterInstance.getWindowTabsData(windowId)
-      const activeTab = tabsData.find((tab) => tab.isActive)
+    //   const tabPresenterInstance = presenter.tabPresenter as TabPresenter
+    //   const tabsData = await tabPresenterInstance.getWindowTabsData(windowId)
+    //   const activeTab = tabsData.find((tab) => tab.isActive)
 
-      if (activeTab) {
-        if (tabsData.length === 1) {
-          // 窗口内只有最后一个标签页
-          const allWindows = this.getAllWindows()
-          if (allWindows.length === 1) {
-            // 是最后一个窗口的最后一个标签页，隐藏窗口
-            console.log(
-              `Window ${windowId} is the last window's last tab, hiding window.`,
-            )
-            this.hide(windowId) // 调用 hide() 会触发 hide 逻辑
-          } else {
-            // 不是最后一个窗口的最后一个标签页，关闭窗口
-            console.log(
-              `Window ${windowId} has other windows, closing this window.`,
-            )
-            this.close(windowId) // 调用 close() 会触发 'close' 事件处理器
-          }
-        } else {
-          // 窗口内不止一个标签页，直接关闭当前标签页
-          console.log(
-            `Window ${windowId} has multiple tabs, closing active tab ${activeTab.id}.`,
-          )
-          await tabPresenterInstance.closeTab(activeTab.id)
-        }
-      } else {
-        console.warn(`No active tab found in window ${windowId} to close.`)
-      }
-    })
+    //   if (activeTab) {
+    //     if (tabsData.length === 1) {
+    //       // 窗口内只有最后一个标签页
+    //       const allWindows = this.getAllWindows()
+    //       if (allWindows.length === 1) {
+    //         // 是最后一个窗口的最后一个标签页，隐藏窗口
+    //         console.log(
+    //           `Window ${windowId} is the last window's last tab, hiding window.`,
+    //         )
+    //         this.hide(windowId) // 调用 hide() 会触发 hide 逻辑
+    //       } else {
+    //         // 不是最后一个窗口的最后一个标签页，关闭窗口
+    //         console.log(
+    //           `Window ${windowId} has other windows, closing this window.`,
+    //         )
+    //         this.close(windowId) // 调用 close() 会触发 'close' 事件处理器
+    //       }
+    //     } else {
+    //       // 窗口内不止一个标签页，直接关闭当前标签页
+    //       console.log(
+    //         `Window ${windowId} has multiple tabs, closing active tab ${activeTab.id}.`,
+    //       )
+    //       await tabPresenterInstance.closeTab(activeTab.id)
+    //     }
+    //   } else {
+    //     console.warn(`No active tab found in window ${windowId} to close.`)
+    //   }
+    // })
 
     // 监听系统主题更新事件，通知所有窗口 Renderer
     eventBus.on(SYSTEM_EVENTS.SYSTEM_THEME_UPDATED, (isDark: boolean) => {
@@ -891,71 +891,9 @@ export class WindowPresenter implements IWindowPresenter {
       shellWindow.loadFile(join(__dirname, '../renderer/index.html'))
     }
 
-    // --- 处理初始标签页创建或激活 ---
-
-    // 如果提供了 options?.initialTab，等待窗口加载完成，然后创建新标签页
-    if (options?.initialTab) {
-      shellWindow.webContents.once('did-finish-load', async () => {
-        console.log(
-          `Window ${windowId} did-finish-load, checking for initial tab creation.`,
-        )
-        if (shellWindow.isDestroyed()) {
-          console.warn(
-            `Window ${windowId} was destroyed before did-finish-load callback, cannot create initial tab.`,
-          )
-          return
-        }
-        shellWindow.focus() // 窗口加载完成后聚焦
-        try {
-          console.log(`Creating initial tab, URL: ${options.initialTab!.url}`)
-          const tabId = await (
-            presenter.tabPresenter as TabPresenter
-          ).createTab(windowId, options.initialTab!.url, { active: true })
-          if (tabId === null) {
-            console.error(
-              `Failed to create initial tab in new window ${windowId}.`,
-            )
-          } else {
-            console.log(`Created initial tab ${tabId} in window ${windowId}.`)
-          }
-        } catch (error) {
-          console.error(`Error creating initial tab:`, error)
-        }
-      })
-    }
-
-    // 如果提供了 activateTabId，表示一个现有标签页 (WebContentsView) 将被 TabPresenter 关联到此新窗口
-    // 激活逻辑 (设置可见性、bounds) 在 tabPresenter.attachTab / switchTab 中处理
-    if (options?.activateTabId !== undefined) {
-      // 等待窗口加载完成，然后尝试激活指定标签页
-      shellWindow.webContents.once('did-finish-load', async () => {
-        console.log(
-          `Window ${windowId} did-finish-load, attempting to activate tab ${options.activateTabId}.`,
-        )
-        if (shellWindow.isDestroyed()) {
-          console.warn(
-            `Window ${windowId} was destroyed before did-finish-load callback, cannot activate tab ${options.activateTabId}.`,
-          )
-          return
-        }
-        try {
-          // 切换到指定标签页，这将处理视图的关联和显示
-          await (presenter.tabPresenter as TabPresenter).switchTab(
-            options.activateTabId as number,
-          )
-          console.log(`Requested to switch to tab ${options.activateTabId}.`)
-        } catch (error) {
-          console.error(
-            `Failed to activate tab ${options.activateTabId} after window ${windowId} load:`,
-            error,
-          )
-        }
-      })
-    }
-
     // 开发模式下可选开启 DevTools
     if (is.dev) {
-      // shellWindow.webContents.openDevTools({ mode: 'detach' });
+      shellWindow.webContents.openDevTools({ mode: 'detach' })
     }
 
     console.log(`Shell window ${windowId} created successfully.`)

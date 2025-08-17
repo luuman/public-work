@@ -4,12 +4,10 @@ import {
   TRAY_EVENTS,
   FLOATING_BUTTON_EVENTS,
 } from '@/events/events'
-// import { presenter } from '@/presenter'
 import { handleShowHiddenWindow } from '@/utils'
 
 export function appFocus() {
   // 当任何窗口获得焦点时，注册快捷键
-  // presenter.shortcutPresenter.registerShortcuts()
   eventBus.sendToMain(WINDOW_EVENTS.APP_FOCUS)
 }
 

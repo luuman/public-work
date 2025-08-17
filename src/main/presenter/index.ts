@@ -3,16 +3,16 @@ import { IPresenter } from '@shared/presenter'
 import { ipcMain, IpcMainInvokeEvent, app } from 'electron'
 import { eventBus } from '@/events/eventbus'
 import { CONFIG_EVENTS, WINDOW_EVENTS } from '@/events/events'
-import { DevicePresenter } from './devicePresenter'
+// import { DevicePresenter } from './devicePresenter'
 // import { LogPresenter } from './logPresenter'
 import { ConfigPresenter } from './configPresenter'
 import { WindowPresenter } from './windowPresenter'
-import { TrayPresenter } from './trayPresenter'
+// import { TrayPresenter } from './trayPresenter'
 // import { DialogPresenter } from './dialogPresenter/index'
 import { ShortcutPresenter } from './shortcutPresenter'
 // import { NotificationPresenter } from './notifactionPresenter'
 // import { FilePresenter } from './filePresenter/FilePresenter'
-import { TabPresenter } from './tabPresenter'
+// import { TabPresenter } from './tabPresenter'
 // import { LlamaCppPresenter } from './llamaCppPresenter'
 // import { SQLitePresenter } from './sqlitePresenter';
 // import { LLMProviderPresenter } from './llmProviderPresenter';
@@ -43,16 +43,16 @@ interface IPCCallContext {
 export class Presenter implements IPresenter {
   configPresenter: ConfigPresenter
   windowPresenter: WindowPresenter
-  devicePresenter: DevicePresenter
-  shortcutPresenter: ShortcutPresenter
-  filePresenter: FilePresenter
-  notificationPresenter: NotificationPresenter
-  trayPresenter: TrayPresenter
-  dialogPresenter: DialogPresenter
-  floatingButtonPresenter: FloatingButtonPresenter
+  // devicePresenter: DevicePresenter
+  // shortcutPresenter: ShortcutPresenter
+  // filePresenter: FilePresenter
+  // notificationPresenter: NotificationPresenter
+  // trayPresenter: TrayPresenter
+  // dialogPresenter: DialogPresenter
+  // floatingButtonPresenter: FloatingButtonPresenter
   // logPresenter: LogPresenter
   // upgradePresenter: UpgradePresenter
-  tabPresenter: TabPresenter
+  // tabPresenter: TabPresenter
   // syncPresenter: SyncPresenter
   // threadPresenter: ThreadPresenter
   // oauthPresenter: OAuthPresenter
@@ -68,8 +68,8 @@ export class Presenter implements IPresenter {
     // 初始化各个 Presenter 实例及其依赖
     this.configPresenter = new ConfigPresenter()
     this.windowPresenter = new WindowPresenter(this.configPresenter)
-    this.tabPresenter = new TabPresenter(this.windowPresenter)
-    this.devicePresenter = new DevicePresenter()
+    // this.tabPresenter = new TabPresenter(this.windowPresenter)
+    // this.devicePresenter = new DevicePresenter()
 
     // 初始化 SQLite 数据库路径
     const dbDir = path.join(app.getPath('userData'), 'app_db')
@@ -93,15 +93,15 @@ export class Presenter implements IPresenter {
     // this.deeplinkPresenter = new DeeplinkPresenter()
     // this.oauthPresenter = new OAuthPresenter()
 
-    this.floatingButtonPresenter = new FloatingButtonPresenter(
-      this.configPresenter,
-    )
-    // (this.upgradePresenter = new UpgradePresenter()));
-    // this.dialogPresenter = new DialogPresenter()
-    // this.logPresenter = new LogPresenter()
-    this.trayPresenter = new TrayPresenter()
-    // this.notificationPresenter = new NotificationPresenter()
-    this.shortcutPresenter = new ShortcutPresenter(this.configPresenter)
+    // this.floatingButtonPresenter = new FloatingButtonPresenter(
+    //   this.configPresenter,
+    // )
+    // // (this.upgradePresenter = new UpgradePresenter()));
+    // // this.dialogPresenter = new DialogPresenter()
+    // // this.logPresenter = new LogPresenter()
+    // this.trayPresenter = new TrayPresenter()
+    // // this.notificationPresenter = new NotificationPresenter()
+    // this.shortcutPresenter = new ShortcutPresenter(this.configPresenter)
 
     // this.knowledgePresenter = new KnowledgePresenter(
     //   this.configPresenter,
