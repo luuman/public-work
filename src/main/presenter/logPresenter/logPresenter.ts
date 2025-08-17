@@ -10,6 +10,15 @@ export class LogPresenter {
   private loggers: Record<string, CategoryLogger> = {}
 
   constructor() {
+    const originalConsole = { ...console }
+
+    ;['log', 'warn', 'error', 'debug', 'info'].forEach((method) => {
+      console[method] = (...args) => {
+        const timestamp = new Date().toISOString()
+        originalConsole[method](`[${timestamp}]`, ...args)
+      }
+    })
+
     const workerPath = path.resolve(__dirname, './worker/log4jsWorker.js')
     // const workerPath = path.resolve(__dirname, './worker/logWorker.js')
 
