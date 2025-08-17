@@ -1,15 +1,15 @@
 import path from 'path'
-import { IPresenter } from '@shared/presenter'
 import { ipcMain, IpcMainInvokeEvent, app } from 'electron'
 import { eventBus } from '@/events/eventbus'
-import { CONFIG_EVENTS, WINDOW_EVENTS } from '@/events/events'
+// import { CONFIG_EVENTS, WINDOW_EVENTS } from '@/events/events'
+import { IPresenter } from '@shared/presenter'
+import { WindowPresenter } from './windowPresenter'
 // import { DevicePresenter } from './devicePresenter'
 // import { LogPresenter } from './logPresenter'
-import { ConfigPresenter } from './configPresenter'
-import { WindowPresenter } from './windowPresenter'
+// import { ConfigPresenter } from './configPresenter'
 // import { TrayPresenter } from './trayPresenter'
 // import { DialogPresenter } from './dialogPresenter/index'
-import { ShortcutPresenter } from './shortcutPresenter'
+// import { ShortcutPresenter } from './shortcutPresenter'
 // import { NotificationPresenter } from './notifactionPresenter'
 // import { FilePresenter } from './filePresenter/FilePresenter'
 // import { TabPresenter } from './tabPresenter'
@@ -22,7 +22,7 @@ import { ShortcutPresenter } from './shortcutPresenter'
 // import { SyncPresenter } from './syncPresenter'
 // import { DeeplinkPresenter } from './deeplinkPresenter'
 // import { OAuthPresenter } from './oauthPresenter'
-import { FloatingButtonPresenter } from './floatingButtonPresenter'
+// import { FloatingButtonPresenter } from './floatingButtonPresenter'
 // import { KnowledgePresenter } from './knowledgePresenter';
 
 // IPC调用上下文接口
@@ -41,7 +41,7 @@ interface IPCCallContext {
 
 // 主 Presenter 类，负责协调其他 Presenter 并处理 IPC 通信
 export class Presenter implements IPresenter {
-  configPresenter: ConfigPresenter
+  // configPresenter: ConfigPresenter
   windowPresenter: WindowPresenter
   // devicePresenter: DevicePresenter
   // shortcutPresenter: ShortcutPresenter
@@ -66,8 +66,8 @@ export class Presenter implements IPresenter {
     console.log('MIPresenter')
 
     // 初始化各个 Presenter 实例及其依赖
-    this.configPresenter = new ConfigPresenter()
-    this.windowPresenter = new WindowPresenter(this.configPresenter)
+    // this.configPresenter = new ConfigPresenter()
+    this.windowPresenter = new WindowPresenter()
     // this.tabPresenter = new TabPresenter(this.windowPresenter)
     // this.devicePresenter = new DevicePresenter()
 
@@ -122,7 +122,7 @@ export class Presenter implements IPresenter {
   }
 
   // 设置事件总线监听和转发
-  setupEventBus() {
+  async setupEventBus() {
     // 设置 WindowPresenter 和 TabPresenter 到 EventBus
     eventBus.setWindowPresenter(this.windowPresenter)
     eventBus.setTabPresenter(this.tabPresenter)
@@ -131,15 +131,21 @@ export class Presenter implements IPresenter {
     this.setupSpecialEventHandlers()
 
     // 应用主窗口准备就绪时触发初始化
-    eventBus.on(WINDOW_EVENTS.READY_TO_SHOW, () => {
+    const {
+      WINDOW_EVENTS: { READY_TO_SHOW },
+    } = await import('@/events/events')
+    eventBus.on(READY_TO_SHOW, () => {
       this.init()
     })
   }
 
   // 设置需要特殊处理的事件
-  private setupSpecialEventHandlers() {
+  private async setupSpecialEventHandlers() {
     // CONFIG_EVENTS.PROVIDER_CHANGED 需要更新 providers（已在 configPresenter 中处理发送到渲染进程）
-    eventBus.on(CONFIG_EVENTS.PROVIDER_CHANGED, () => {
+    const {
+      CONFIG_EVENTS: { PROVIDER_CHANGED },
+    } = await import('@/events/events')
+    eventBus.on(PROVIDER_CHANGED, () => {
       const providers = this.configPresenter.getProviders()
       // this.llmproviderPresenter.setProviders(providers);
     })

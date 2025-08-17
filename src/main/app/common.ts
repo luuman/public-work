@@ -1,4 +1,4 @@
-import { WINDOW_EVENTS } from '@/events/events'
+// import { WINDOW_EVENTS } from '@/events/events'
 import { msgAllLog } from '@/presenter/logPresenter'
 import { presenter } from '@/presenter'
 
@@ -82,9 +82,12 @@ export async function setupCommon(appInstance: Electron.App) {
 
 export function browserWindowFocus(appInstance: Electron.App) {
   // 监听浏览器窗口获得焦点事件
-  appInstance.on('browser-window-focus', () => {
+  appInstance.on('browser-window-focus', async () => {
     // 当任何窗口获得焦点时
-    eventBus.sendToMain(WINDOW_EVENTS.APP_FOCUS)
+    const {
+      WINDOW_EVENTS: { APP_FOCUS },
+    } = await import('@/events/events')
+    eventBus.sendToMain(APP_FOCUS)
   })
 }
 
@@ -96,13 +99,16 @@ export function browserWindowBlur(
   appInstance.on('browser-window-blur', () => {
     // 检查是否所有窗口都已失去焦点，如果是则注销快捷键
     // 使用短延迟以处理窗口间焦点切换
-    setTimeout(() => {
+    setTimeout(async () => {
       const allWindows = presenterInstance.windowPresenter.getAllWindows()
       const isAnyWindowFocused = allWindows.some(
         (win) => !win.isDestroyed() && win.isFocused(),
       )
       if (!isAnyWindowFocused) {
-        eventBus.sendToMain(WINDOW_EVENTS.APP_BLUR)
+        const {
+          WINDOW_EVENTS: { APP_BLUR },
+        } = await import('@/events/events')
+        eventBus.sendToMain(APP_BLUR)
       }
     }, 50) // 50毫秒延迟
   })

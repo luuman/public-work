@@ -152,6 +152,7 @@ export class WindowPresenter implements IWindowPresenter {
     })
 
     // 监听内容保护设置变更事件，更新所有窗口并重启应用
+
     eventBus.on(
       CONFIG_EVENTS.CONTENT_PROTECTION_CHANGED,
       (enabled: boolean) => {
@@ -173,6 +174,320 @@ export class WindowPresenter implements IWindowPresenter {
         }, 1000)
       },
     )
+  }
+
+  /**
+   * 创建一个新的外壳窗口。
+   * @param options 窗口配置选项，包括初始标签页或激活现有标签页。
+   * @returns 创建的窗口 ID，如果创建失败则返回 null。
+   */
+  async createShellWindow(options?: {
+    activateTabId?: number // 要关联并激活的现有标签页 ID
+    initialTab?: {
+      // 窗口创建时要创建的新标签页选项
+      url: string
+      icon?: string
+    }
+    x?: number // 初始 X 坐标
+    y?: number // 初始 Y 坐标
+  }): Promise<number | null> {
+    console.log('Creating new shell window.')
+
+    // 根据平台选择图标
+    const iconFile = nativeImage.createFromPath(
+      process.platform === 'win32' ? iconWin : icon,
+    )
+
+    // 使用窗口状态管理器恢复位置和尺寸
+    const shellWindowState = windowStateManager({
+      defaultWidth: 800,
+      defaultHeight: 620,
+    })
+
+    // 计算初始位置，确保 Y 坐标不为负数
+    const initialX = options?.x !== undefined ? options.x : shellWindowState.x
+    let initialY = options?.y !== undefined ? options?.y : shellWindowState.y
+    initialY = Math.max(0, initialY || 0)
+
+    const shellWindow = new BrowserWindow({
+      width: shellWindowState.width,
+      height: shellWindowState.height,
+      x: initialX,
+      y: initialY,
+      show: false, // 先隐藏窗口，等待 ready-to-show 以避免白屏
+      autoHideMenuBar: true, // 隐藏菜单栏
+      icon: iconFile, // 设置图标
+      titleBarStyle: 'hiddenInset', // macOS 风格标题栏
+      transparent: process.platform === 'darwin', // macOS 标题栏透明
+      vibrancy: process.platform === 'darwin' ? 'under-window' : undefined, // macOS 磨砂效果
+      backgroundColor: '#00000000', // 透明背景色
+      maximizable: true, // 允许最大化
+      frame: process.platform === 'darwin', // macOS 无边框
+      hasShadow: true, // macOS 阴影
+      trafficLightPosition:
+        process.platform === 'darwin' ? { x: 12, y: 12 } : undefined, // macOS 红绿灯按钮位置
+      webPreferences: {
+        preload: join(__dirname, '../preload/index.js'), // Preload 脚本路径
+        sandbox: false, // 禁用沙箱，允许 preload 访问 Node.js API
+        devTools: is.dev, // 开发模式下启用 DevTools
+      },
+      roundedCorners: true, // Windows 11 圆角
+    })
+
+    if (!shellWindow) {
+      console.error('❌Failed to create shell window.')
+      return null
+    }
+
+    const windowId = shellWindow.id
+    this.windows.set(windowId, shellWindow) // 将窗口实例存入 Map
+
+    this.windowFocusStates.set(windowId, {
+      lastFocusTime: 0,
+      shouldFocus: true,
+      isNewWindow: true,
+      hasInitialFocus: false,
+    })
+
+    shellWindowState.manage(shellWindow) // 管理窗口状态
+
+    // 应用内容保护设置
+    // const contentProtectionEnabled =
+    //   this.configPresenter.getContentProtectionEnabled()
+    // this.updateContentProtection(shellWindow, contentProtectionEnabled)
+
+    // --- 窗口事件监听 ---
+
+    // 窗口准备就绪时显示
+    shellWindow.on('ready-to-show', () => {
+      appLog.info('ready-to-show')
+      console.log(`Window ${windowId} is ready to show.`)
+      if (!shellWindow.isDestroyed()) {
+        shellWindow.show() // 显示窗口避免白屏
+        eventBus.sendToMain(WINDOW_EVENTS.WINDOW_CREATED, windowId)
+      } else {
+        console.warn(`Window ${windowId} was destroyed before ready-to-show.`)
+      }
+    })
+
+    // 窗口获得焦点
+    shellWindow.on('focus', () => {
+      console.log(`Window ${windowId} gained focus.`)
+      this.focusedWindowId = windowId
+      eventBus.sendToMain(WINDOW_EVENTS.WINDOW_FOCUSED, windowId)
+      if (!shellWindow.isDestroyed()) {
+        shellWindow.webContents.send('window-focused', windowId)
+      }
+      this.focusActiveTab(windowId, 'focus')
+    })
+
+    // 窗口失去焦点
+    shellWindow.on('blur', () => {
+      console.log(`Window ${windowId} lost focus.`)
+      if (this.focusedWindowId === windowId) {
+        this.focusedWindowId = null // 仅当失去焦点的窗口是当前记录的焦点窗口时才清空
+      }
+      eventBus.sendToMain(WINDOW_EVENTS.WINDOW_BLURRED, windowId)
+      if (!shellWindow.isDestroyed()) {
+        shellWindow.webContents.send('window-blurred', windowId)
+      }
+    })
+
+    // 窗口最大化
+    shellWindow.on('maximize', () => {
+      console.log(`Window ${windowId} maximized.`)
+      if (!shellWindow.isDestroyed()) {
+        eventBus.sendToMain(WINDOW_EVENTS.WINDOW_MAXIMIZED, windowId)
+        // 触发恢复逻辑更新标签页 bounds
+        this.handleWindowRestore(windowId).catch((error) => {
+          console.error(
+            `Error handling restore logic after maximizing window ${windowId}:`,
+            error,
+          )
+        })
+      }
+    })
+
+    // 窗口取消最大化
+    shellWindow.on('unmaximize', () => {
+      console.log(`Window ${windowId} unmaximized.`)
+      if (!shellWindow.isDestroyed()) {
+        eventBus.sendToMain(WINDOW_EVENTS.WINDOW_UNMAXIMIZED, windowId)
+        // 触发恢复逻辑更新标签页 bounds
+        this.handleWindowRestore(windowId).catch((error) => {
+          console.error(
+            `Error handling restore logic after unmaximizing window ${windowId}:`,
+            error,
+          )
+        })
+      }
+    })
+
+    // 窗口从最小化恢复 (或通过 show 显式显示)
+    const handleRestore = async () => {
+      console.log(`Window ${windowId} restored.`)
+      this.handleWindowRestore(windowId).catch((error) => {
+        console.error(
+          `Error handling restore logic for window ${windowId}:`,
+          error,
+        )
+      })
+      this.focusActiveTab(windowId, 'restore')
+      eventBus.sendToMain(WINDOW_EVENTS.WINDOW_RESTORED, windowId)
+    }
+    shellWindow.on('restore', handleRestore)
+
+    // 窗口进入全屏
+    shellWindow.on('enter-full-screen', () => {
+      console.log(`Window ${windowId} entered fullscreen.`)
+      if (!shellWindow.isDestroyed()) {
+        eventBus.sendToMain(WINDOW_EVENTS.WINDOW_ENTER_FULL_SCREEN, windowId)
+        // 触发恢复逻辑更新标签页 bounds
+        this.handleWindowRestore(windowId).catch((error) => {
+          console.error(
+            `Error handling restore logic after entering fullscreen for window ${windowId}:`,
+            error,
+          )
+        })
+      }
+    })
+
+    // 窗口退出全屏
+    shellWindow.on('leave-full-screen', () => {
+      console.log(`Window ${windowId} left fullscreen.`)
+      if (!shellWindow.isDestroyed()) {
+        eventBus.sendToMain(WINDOW_EVENTS.WINDOW_LEAVE_FULL_SCREEN, windowId)
+        // 触发恢复逻辑更新标签页 bounds
+        this.handleWindowRestore(windowId).catch((error) => {
+          console.error(
+            `Error handling restore logic after leaving fullscreen for window ${windowId}:`,
+            error,
+          )
+        })
+      }
+    })
+
+    // 窗口尺寸改变，通知 TabPresenter 更新所有视图 bounds
+    shellWindow.on('resize', () => {
+      eventBus.sendToMain(WINDOW_EVENTS.WINDOW_RESIZE, windowId)
+    })
+
+    // 'close' 事件：用户尝试关闭窗口 (点击关闭按钮等)。
+    // 此处理程序决定是隐藏窗口还是允许其关闭/销毁。
+    shellWindow.on('close', (event) => {
+      console.log(
+        `Window ${windowId} close event. isQuitting: ${this.isQuitting}, Platform: ${process.platform}.`,
+      )
+
+      // 如果应用不是正在退出过程中...
+      if (!this.isQuitting) {
+        // 实现隐藏到托盘逻辑：
+        // 1. 如果是其他窗口，直接关闭
+        // 2. 如果是主窗口，判断配置是否允许关闭
+        // shouldPreventDefault: true隐藏, false关闭
+        const shouldQuitOnClose = this.configPresenter.getCloseToQuit()
+        const shouldPreventDefault =
+          windowId === this.mainWindowId && !shouldQuitOnClose
+
+        if (shouldPreventDefault) {
+          console.log(
+            `Window ${windowId}: Preventing default close behavior, hiding instead.`,
+          )
+          event.preventDefault() // 阻止默认窗口关闭行为
+
+          // 处理全屏窗口隐藏时的黑屏问题 (同 hide 方法)
+          if (shellWindow.isFullScreen()) {
+            console.log(
+              `Window ${windowId} is fullscreen, exiting fullscreen before hiding (close event).`,
+            )
+            shellWindow.once('leave-full-screen', () => {
+              console.log(
+                `Window ${windowId} left fullscreen, proceeding with hide (close event).`,
+              )
+              if (!shellWindow.isDestroyed()) {
+                shellWindow.hide()
+              } else {
+                console.warn(
+                  `Window ${windowId} was destroyed after leaving fullscreen, cannot hide (close event).`,
+                )
+              }
+            })
+            shellWindow.setFullScreen(false)
+          } else {
+            console.log(
+              `Window ${windowId} is not fullscreen, hiding directly (close event).`,
+            )
+            shellWindow.hide()
+          }
+        } else {
+          // 允许默认关闭行为。这将触发 'closed' 事件。
+          console.log(
+            `Window ${windowId}: Allowing default close behavior (app is quitting or macOS last window configured to quit).`,
+          )
+        }
+      } else {
+        // 如果 isQuitting 为 true，表示应用正在主动退出，允许窗口正常关闭
+        console.log(
+          `Window ${windowId}: isQuitting is true, allowing default close behavior.`,
+        )
+      }
+    })
+
+    // 'closed' 事件：窗口实际关闭并销毁时触发 (在 'close' 事件之后，如果未阻止默认行为)
+    shellWindow.on('closed', () => {
+      console.log(
+        `Window ${windowId} closed event triggered. isQuitting: ${this.isQuitting}, Map size BEFORE delete: ${this.windows.size}`,
+      )
+      const windowIdBeingClosed = windowId // 捕获 ID
+
+      // 移除 restore 事件监听器，防止内存泄漏 (其他事件的清理根据需要添加)
+      shellWindow.removeListener('restore', handleRestore)
+
+      this.windows.delete(windowIdBeingClosed) // 从 Map 中移除
+      this.windowFocusStates.delete(windowIdBeingClosed)
+      shellWindowState.unmanage() // 停止管理窗口状态
+      eventBus.sendToMain(WINDOW_EVENTS.WINDOW_CLOSED, windowIdBeingClosed)
+      console.log(
+        `Window ${windowIdBeingClosed} closed event handled. Map size AFTER delete: ${this.windows.size}`,
+      )
+
+      // 如果在非 macOS 平台，且关闭的是最后一个窗口，如果应用并非正在退出，则发出警告。
+      // 在隐藏到托盘逻辑下，'closed' 事件仅应在 isQuitting 为 true 时触发。
+      if (this.windows.size === 0 && process.platform !== 'darwin') {
+        console.log(`Last window closed on non-macOS platform.`)
+        if (!this.isQuitting) {
+          console.warn(
+            `Warning: Last window on non-macOS platform triggered closed event, but app is not marked as quitting. This might indicate window destruction instead of hiding.`,
+          )
+        }
+      }
+    })
+
+    // --- 加载 Renderer HTML 文件 ---
+    if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
+      console.log(
+        `Loading renderer URL in dev mode: ${process.env['ELECTRON_RENDERER_URL']}/index.html`,
+      )
+      shellWindow.loadURL(process.env['ELECTRON_RENDERER_URL'] + '/index.html')
+    } else {
+      // 生产模式下加载打包后的 HTML 文件
+      console.log(
+        `Loading packaged renderer file: ${join(__dirname, '../renderer/index.html')}`,
+      )
+      shellWindow.loadFile(join(__dirname, '../renderer/index.html'))
+    }
+
+    // 开发模式下可选开启 DevTools
+    if (is.dev) {
+      shellWindow.webContents.openDevTools({ mode: 'detach' })
+    }
+
+    console.log(`Shell window ${windowId} created successfully.`)
+
+    if (this.mainWindowId == null) {
+      this.mainWindowId = windowId // 如果这是第一个窗口，设置为主窗口 ID
+    }
+    return windowId // 返回新创建窗口的 ID
   }
 
   /**
@@ -507,466 +822,152 @@ export class WindowPresenter implements IWindowPresenter {
     }
   }
 
-  /**
-   * 向所有有效窗口的主 WebContents 和所有标签页的 WebContents 发送消息。
-   * @param channel IPC 通道名。
-   * @param args 消息参数。
-   */
-  async sendToAllWindows(channel: string, ...args: unknown[]): Promise<void> {
-    // 遍历 Map 的值副本，避免迭代过程中 Map 被修改
-    for (const window of Array.from(this.windows.values())) {
-      if (!window.isDestroyed()) {
-        // 向窗口主 WebContents 发送
-        window.webContents.send(channel, ...args)
+  // /**
+  //  * 向所有有效窗口的主 WebContents 和所有标签页的 WebContents 发送消息。
+  //  * @param channel IPC 通道名。
+  //  * @param args 消息参数。
+  //  */
+  // async sendToAllWindows(channel: string, ...args: unknown[]): Promise<void> {
+  //   // 遍历 Map 的值副本，避免迭代过程中 Map 被修改
+  //   for (const window of Array.from(this.windows.values())) {
+  //     if (!window.isDestroyed()) {
+  //       // 向窗口主 WebContents 发送
+  //       window.webContents.send(channel, ...args)
 
-        // 向窗口内所有标签页的 WebContents 发送 (异步执行)
-        try {
-          const tabPresenterInstance = presenter.tabPresenter as TabPresenter
-          const tabsData = await tabPresenterInstance.getWindowTabsData(
-            window.id,
-          )
-          if (tabsData && tabsData.length > 0) {
-            for (const tabData of tabsData) {
-              const tab = await tabPresenterInstance.getTab(tabData.id)
-              if (tab && !tab.webContents.isDestroyed()) {
-                tab.webContents.send(channel, ...args)
-              }
-            }
-          }
-        } catch (error) {
-          console.error(
-            `Error sending message "${channel}" to tabs of window ${window.id}:`,
-            error,
-          )
-        }
-      } else {
-        console.warn(
-          `Skipping sending message "${channel}" to destroyed window ${window.id}.`,
-        )
-      }
-    }
-  }
+  //       // 向窗口内所有标签页的 WebContents 发送 (异步执行)
+  //       try {
+  //         const tabPresenterInstance = presenter.tabPresenter as TabPresenter
+  //         const tabsData = await tabPresenterInstance.getWindowTabsData(
+  //           window.id,
+  //         )
+  //         if (tabsData && tabsData.length > 0) {
+  //           for (const tabData of tabsData) {
+  //             const tab = await tabPresenterInstance.getTab(tabData.id)
+  //             if (tab && !tab.webContents.isDestroyed()) {
+  //               tab.webContents.send(channel, ...args)
+  //             }
+  //           }
+  //         }
+  //       } catch (error) {
+  //         console.error(
+  //           `Error sending message "${channel}" to tabs of window ${window.id}:`,
+  //           error,
+  //         )
+  //       }
+  //     } else {
+  //       console.warn(
+  //         `Skipping sending message "${channel}" to destroyed window ${window.id}.`,
+  //       )
+  //     }
+  //   }
+  // }
 
-  /**
-   * 向指定 ID 的窗口的主 WebContents 和其所有标签页的 WebContents 发送消息。
-   * @param windowId 目标窗口 ID。
-   * @param channel IPC 通道名。
-   * @param args 消息参数。
-   * @returns 如果消息已尝试发送，返回 true，否则返回 false。
-   */
-  sendToWindow(windowId: number, channel: string, ...args: unknown[]): boolean {
-    console.log(`Sending message "${channel}" to window ${windowId}.`)
-    const window = this.windows.get(windowId)
-    if (window && !window.isDestroyed()) {
-      // 向窗口主 WebContents 发送
-      window.webContents.send(channel, ...args)
+  // /**
+  //  * 向指定 ID 的窗口的主 WebContents 和其所有标签页的 WebContents 发送消息。
+  //  * @param windowId 目标窗口 ID。
+  //  * @param channel IPC 通道名。
+  //  * @param args 消息参数。
+  //  * @returns 如果消息已尝试发送，返回 true，否则返回 false。
+  //  */
+  // sendToWindow(windowId: number, channel: string, ...args: unknown[]): boolean {
+  //   console.log(`Sending message "${channel}" to window ${windowId}.`)
+  //   const window = this.windows.get(windowId)
+  //   if (window && !window.isDestroyed()) {
+  //     // 向窗口主 WebContents 发送
+  //     window.webContents.send(channel, ...args)
 
-      // 向窗口内所有标签页的 WebContents 发送 (异步执行)
-      const tabPresenterInstance = presenter.tabPresenter as TabPresenter
-      tabPresenterInstance
-        .getWindowTabsData(windowId)
-        .then((tabsData) => {
-          if (tabsData && tabsData.length > 0) {
-            tabsData.forEach(async (tabData) => {
-              const tab = await tabPresenterInstance.getTab(tabData.id)
-              if (tab && !tab.webContents.isDestroyed()) {
-                tab.webContents.send(channel, ...args)
-              }
-            })
-          }
-        })
-        .catch((error) => {
-          console.error(
-            `Error sending message "${channel}" to tabs of window ${windowId}:`,
-            error,
-          )
-        })
-      return true
-    } else {
-      console.warn(
-        `Failed to send message "${channel}" to window ${windowId}, window does not exist or is destroyed.`,
-      )
-    }
-    return false
-  }
+  //     // 向窗口内所有标签页的 WebContents 发送 (异步执行)
+  //     const tabPresenterInstance = presenter.tabPresenter as TabPresenter
+  //     tabPresenterInstance
+  //       .getWindowTabsData(windowId)
+  //       .then((tabsData) => {
+  //         if (tabsData && tabsData.length > 0) {
+  //           tabsData.forEach(async (tabData) => {
+  //             const tab = await tabPresenterInstance.getTab(tabData.id)
+  //             if (tab && !tab.webContents.isDestroyed()) {
+  //               tab.webContents.send(channel, ...args)
+  //             }
+  //           })
+  //         }
+  //       })
+  //       .catch((error) => {
+  //         console.error(
+  //           `Error sending message "${channel}" to tabs of window ${windowId}:`,
+  //           error,
+  //         )
+  //       })
+  //     return true
+  //   } else {
+  //     console.warn(
+  //       `Failed to send message "${channel}" to window ${windowId}, window does not exist or is destroyed.`,
+  //     )
+  //   }
+  //   return false
+  // }
 
-  /**
-   * 创建一个新的外壳窗口。
-   * @param options 窗口配置选项，包括初始标签页或激活现有标签页。
-   * @returns 创建的窗口 ID，如果创建失败则返回 null。
-   */
-  async createShellWindow(options?: {
-    activateTabId?: number // 要关联并激活的现有标签页 ID
-    initialTab?: {
-      // 窗口创建时要创建的新标签页选项
-      url: string
-      icon?: string
-    }
-    x?: number // 初始 X 坐标
-    y?: number // 初始 Y 坐标
-  }): Promise<number | null> {
-    console.log('Creating new shell window.')
+  // /**
+  //  * 更新指定窗口的内容保护设置。
+  //  * @param window BrowserWindow 实例。
+  //  * @param enabled 是否启用内容保护。
+  //  */
+  // private updateContentProtection(
+  //   window: BrowserWindow,
+  //   enabled: boolean,
+  // ): void {
+  //   if (window.isDestroyed()) {
+  //     console.warn(
+  //       `Attempted to update content protection settings on a destroyed window.`,
+  //     )
+  //     return
+  //   }
+  //   console.log(
+  //     `Updating content protection for window ${window.id}: ${enabled}`,
+  //   )
 
-    // 根据平台选择图标
-    const iconFile = nativeImage.createFromPath(
-      process.platform === 'win32' ? iconWin : icon,
-    )
+  //   // setContentProtection 阻止截图/屏幕录制
+  //   window.setContentProtection(enabled)
 
-    // 使用窗口状态管理器恢复位置和尺寸
-    const shellWindowState = windowStateManager({
-      defaultWidth: 800,
-      defaultHeight: 620,
-    })
+  //   // setBackgroundThrottling 限制非活动窗口的帧率。
+  //   // 启用内容保护时禁用节流，确保即使窗口非活动也能保持保护。
+  //   window.webContents.setBackgroundThrottling(!enabled) // 启用保护时禁用节流
+  //   window.webContents.setFrameRate(60) // 设置帧率
+  //   window.setBackgroundColor('#00000000') // 设置背景色为透明
 
-    // 计算初始位置，确保 Y 坐标不为负数
-    const initialX = options?.x !== undefined ? options.x : shellWindowState.x
-    let initialY = options?.y !== undefined ? options?.y : shellWindowState.y
-    initialY = Math.max(0, initialY || 0)
+  //   // macOS 特定的隐藏功能 (用于内容保护)
+  //   if (process.platform === 'darwin') {
+  //     window.setHiddenInMissionControl(enabled) // 在 Mission Control 中隐藏
+  //     window.setSkipTaskbar(enabled) // 在 Dock 和 Mission Control 切换器中隐藏
+  //   }
+  // }
 
-    const shellWindow = new BrowserWindow({
-      width: shellWindowState.width,
-      height: shellWindowState.height,
-      x: initialX,
-      y: initialY,
-      show: false, // 先隐藏窗口，等待 ready-to-show 以避免白屏
-      autoHideMenuBar: true, // 隐藏菜单栏
-      icon: iconFile, // 设置图标
-      titleBarStyle: 'hiddenInset', // macOS 风格标题栏
-      transparent: process.platform === 'darwin', // macOS 标题栏透明
-      vibrancy: process.platform === 'darwin' ? 'under-window' : undefined, // macOS 磨砂效果
-      backgroundColor: '#00000000', // 透明背景色
-      maximizable: true, // 允许最大化
-      frame: process.platform === 'darwin', // macOS 无边框
-      hasShadow: true, // macOS 阴影
-      trafficLightPosition:
-        process.platform === 'darwin' ? { x: 12, y: 12 } : undefined, // macOS 红绿灯按钮位置
-      webPreferences: {
-        preload: join(__dirname, '../preload/index.js'), // Preload 脚本路径
-        sandbox: false, // 禁用沙箱，允许 preload 访问 Node.js API
-        devTools: is.dev, // 开发模式下启用 DevTools
-      },
-      roundedCorners: true, // Windows 11 圆角
-    })
+  // /**
+  //  * 获取当前获得焦点的 BrowserWindow 实例 (由 Electron 报告并经内部 Map 验证)。
+  //  * @returns 获得焦点的 BrowserWindow 实例，如果无焦点窗口或窗口无效则返回 undefined。
+  //  */
+  // getFocusedWindow(): BrowserWindow | undefined {
+  //   const electronFocusedWindow = BrowserWindow.getFocusedWindow()
 
-    if (!shellWindow) {
-      console.error('❌Failed to create shell window.')
-      return null
-    }
+  //   if (electronFocusedWindow) {
+  //     const windowId = electronFocusedWindow.id
+  //     const ourWindow = this.windows.get(windowId)
 
-    const windowId = shellWindow.id
-    this.windows.set(windowId, shellWindow) // 将窗口实例存入 Map
-
-    this.windowFocusStates.set(windowId, {
-      lastFocusTime: 0,
-      shouldFocus: true,
-      isNewWindow: true,
-      hasInitialFocus: false,
-    })
-
-    shellWindowState.manage(shellWindow) // 管理窗口状态
-
-    // 应用内容保护设置
-    const contentProtectionEnabled =
-      this.configPresenter.getContentProtectionEnabled()
-    this.updateContentProtection(shellWindow, contentProtectionEnabled)
-
-    // --- 窗口事件监听 ---
-
-    // 窗口准备就绪时显示
-    shellWindow.on('ready-to-show', () => {
-      appLog.info('ready-to-show')
-      console.log(`Window ${windowId} is ready to show.`)
-      if (!shellWindow.isDestroyed()) {
-        shellWindow.show() // 显示窗口避免白屏
-        eventBus.sendToMain(WINDOW_EVENTS.WINDOW_CREATED, windowId)
-      } else {
-        console.warn(`Window ${windowId} was destroyed before ready-to-show.`)
-      }
-    })
-
-    // 窗口获得焦点
-    shellWindow.on('focus', () => {
-      console.log(`Window ${windowId} gained focus.`)
-      this.focusedWindowId = windowId
-      eventBus.sendToMain(WINDOW_EVENTS.WINDOW_FOCUSED, windowId)
-      if (!shellWindow.isDestroyed()) {
-        shellWindow.webContents.send('window-focused', windowId)
-      }
-      this.focusActiveTab(windowId, 'focus')
-    })
-
-    // 窗口失去焦点
-    shellWindow.on('blur', () => {
-      console.log(`Window ${windowId} lost focus.`)
-      if (this.focusedWindowId === windowId) {
-        this.focusedWindowId = null // 仅当失去焦点的窗口是当前记录的焦点窗口时才清空
-      }
-      eventBus.sendToMain(WINDOW_EVENTS.WINDOW_BLURRED, windowId)
-      if (!shellWindow.isDestroyed()) {
-        shellWindow.webContents.send('window-blurred', windowId)
-      }
-    })
-
-    // 窗口最大化
-    shellWindow.on('maximize', () => {
-      console.log(`Window ${windowId} maximized.`)
-      if (!shellWindow.isDestroyed()) {
-        eventBus.sendToMain(WINDOW_EVENTS.WINDOW_MAXIMIZED, windowId)
-        // 触发恢复逻辑更新标签页 bounds
-        this.handleWindowRestore(windowId).catch((error) => {
-          console.error(
-            `Error handling restore logic after maximizing window ${windowId}:`,
-            error,
-          )
-        })
-      }
-    })
-
-    // 窗口取消最大化
-    shellWindow.on('unmaximize', () => {
-      console.log(`Window ${windowId} unmaximized.`)
-      if (!shellWindow.isDestroyed()) {
-        eventBus.sendToMain(WINDOW_EVENTS.WINDOW_UNMAXIMIZED, windowId)
-        // 触发恢复逻辑更新标签页 bounds
-        this.handleWindowRestore(windowId).catch((error) => {
-          console.error(
-            `Error handling restore logic after unmaximizing window ${windowId}:`,
-            error,
-          )
-        })
-      }
-    })
-
-    // 窗口从最小化恢复 (或通过 show 显式显示)
-    const handleRestore = async () => {
-      console.log(`Window ${windowId} restored.`)
-      this.handleWindowRestore(windowId).catch((error) => {
-        console.error(
-          `Error handling restore logic for window ${windowId}:`,
-          error,
-        )
-      })
-      this.focusActiveTab(windowId, 'restore')
-      eventBus.sendToMain(WINDOW_EVENTS.WINDOW_RESTORED, windowId)
-    }
-    shellWindow.on('restore', handleRestore)
-
-    // 窗口进入全屏
-    shellWindow.on('enter-full-screen', () => {
-      console.log(`Window ${windowId} entered fullscreen.`)
-      if (!shellWindow.isDestroyed()) {
-        eventBus.sendToMain(WINDOW_EVENTS.WINDOW_ENTER_FULL_SCREEN, windowId)
-        // 触发恢复逻辑更新标签页 bounds
-        this.handleWindowRestore(windowId).catch((error) => {
-          console.error(
-            `Error handling restore logic after entering fullscreen for window ${windowId}:`,
-            error,
-          )
-        })
-      }
-    })
-
-    // 窗口退出全屏
-    shellWindow.on('leave-full-screen', () => {
-      console.log(`Window ${windowId} left fullscreen.`)
-      if (!shellWindow.isDestroyed()) {
-        eventBus.sendToMain(WINDOW_EVENTS.WINDOW_LEAVE_FULL_SCREEN, windowId)
-        // 触发恢复逻辑更新标签页 bounds
-        this.handleWindowRestore(windowId).catch((error) => {
-          console.error(
-            `Error handling restore logic after leaving fullscreen for window ${windowId}:`,
-            error,
-          )
-        })
-      }
-    })
-
-    // 窗口尺寸改变，通知 TabPresenter 更新所有视图 bounds
-    shellWindow.on('resize', () => {
-      eventBus.sendToMain(WINDOW_EVENTS.WINDOW_RESIZE, windowId)
-    })
-
-    // 'close' 事件：用户尝试关闭窗口 (点击关闭按钮等)。
-    // 此处理程序决定是隐藏窗口还是允许其关闭/销毁。
-    shellWindow.on('close', (event) => {
-      console.log(
-        `Window ${windowId} close event. isQuitting: ${this.isQuitting}, Platform: ${process.platform}.`,
-      )
-
-      // 如果应用不是正在退出过程中...
-      if (!this.isQuitting) {
-        // 实现隐藏到托盘逻辑：
-        // 1. 如果是其他窗口，直接关闭
-        // 2. 如果是主窗口，判断配置是否允许关闭
-        // shouldPreventDefault: true隐藏, false关闭
-        const shouldQuitOnClose = this.configPresenter.getCloseToQuit()
-        const shouldPreventDefault =
-          windowId === this.mainWindowId && !shouldQuitOnClose
-
-        if (shouldPreventDefault) {
-          console.log(
-            `Window ${windowId}: Preventing default close behavior, hiding instead.`,
-          )
-          event.preventDefault() // 阻止默认窗口关闭行为
-
-          // 处理全屏窗口隐藏时的黑屏问题 (同 hide 方法)
-          if (shellWindow.isFullScreen()) {
-            console.log(
-              `Window ${windowId} is fullscreen, exiting fullscreen before hiding (close event).`,
-            )
-            shellWindow.once('leave-full-screen', () => {
-              console.log(
-                `Window ${windowId} left fullscreen, proceeding with hide (close event).`,
-              )
-              if (!shellWindow.isDestroyed()) {
-                shellWindow.hide()
-              } else {
-                console.warn(
-                  `Window ${windowId} was destroyed after leaving fullscreen, cannot hide (close event).`,
-                )
-              }
-            })
-            shellWindow.setFullScreen(false)
-          } else {
-            console.log(
-              `Window ${windowId} is not fullscreen, hiding directly (close event).`,
-            )
-            shellWindow.hide()
-          }
-        } else {
-          // 允许默认关闭行为。这将触发 'closed' 事件。
-          console.log(
-            `Window ${windowId}: Allowing default close behavior (app is quitting or macOS last window configured to quit).`,
-          )
-        }
-      } else {
-        // 如果 isQuitting 为 true，表示应用正在主动退出，允许窗口正常关闭
-        console.log(
-          `Window ${windowId}: isQuitting is true, allowing default close behavior.`,
-        )
-      }
-    })
-
-    // 'closed' 事件：窗口实际关闭并销毁时触发 (在 'close' 事件之后，如果未阻止默认行为)
-    shellWindow.on('closed', () => {
-      console.log(
-        `Window ${windowId} closed event triggered. isQuitting: ${this.isQuitting}, Map size BEFORE delete: ${this.windows.size}`,
-      )
-      const windowIdBeingClosed = windowId // 捕获 ID
-
-      // 移除 restore 事件监听器，防止内存泄漏 (其他事件的清理根据需要添加)
-      shellWindow.removeListener('restore', handleRestore)
-
-      this.windows.delete(windowIdBeingClosed) // 从 Map 中移除
-      this.windowFocusStates.delete(windowIdBeingClosed)
-      shellWindowState.unmanage() // 停止管理窗口状态
-      eventBus.sendToMain(WINDOW_EVENTS.WINDOW_CLOSED, windowIdBeingClosed)
-      console.log(
-        `Window ${windowIdBeingClosed} closed event handled. Map size AFTER delete: ${this.windows.size}`,
-      )
-
-      // 如果在非 macOS 平台，且关闭的是最后一个窗口，如果应用并非正在退出，则发出警告。
-      // 在隐藏到托盘逻辑下，'closed' 事件仅应在 isQuitting 为 true 时触发。
-      if (this.windows.size === 0 && process.platform !== 'darwin') {
-        console.log(`Last window closed on non-macOS platform.`)
-        if (!this.isQuitting) {
-          console.warn(
-            `Warning: Last window on non-macOS platform triggered closed event, but app is not marked as quitting. This might indicate window destruction instead of hiding.`,
-          )
-        }
-      }
-    })
-
-    // --- 加载 Renderer HTML 文件 ---
-    if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
-      console.log(
-        `Loading renderer URL in dev mode: ${process.env['ELECTRON_RENDERER_URL']}/index.html`,
-      )
-      shellWindow.loadURL(process.env['ELECTRON_RENDERER_URL'] + '/index.html')
-    } else {
-      // 生产模式下加载打包后的 HTML 文件
-      console.log(
-        `Loading packaged renderer file: ${join(__dirname, '../renderer/index.html')}`,
-      )
-      shellWindow.loadFile(join(__dirname, '../renderer/index.html'))
-    }
-
-    // 开发模式下可选开启 DevTools
-    if (is.dev) {
-      shellWindow.webContents.openDevTools({ mode: 'detach' })
-    }
-
-    console.log(`Shell window ${windowId} created successfully.`)
-
-    if (this.mainWindowId == null) {
-      this.mainWindowId = windowId // 如果这是第一个窗口，设置为主窗口 ID
-    }
-    return windowId // 返回新创建窗口的 ID
-  }
-
-  /**
-   * 更新指定窗口的内容保护设置。
-   * @param window BrowserWindow 实例。
-   * @param enabled 是否启用内容保护。
-   */
-  private updateContentProtection(
-    window: BrowserWindow,
-    enabled: boolean,
-  ): void {
-    if (window.isDestroyed()) {
-      console.warn(
-        `Attempted to update content protection settings on a destroyed window.`,
-      )
-      return
-    }
-    console.log(
-      `Updating content protection for window ${window.id}: ${enabled}`,
-    )
-
-    // setContentProtection 阻止截图/屏幕录制
-    window.setContentProtection(enabled)
-
-    // setBackgroundThrottling 限制非活动窗口的帧率。
-    // 启用内容保护时禁用节流，确保即使窗口非活动也能保持保护。
-    window.webContents.setBackgroundThrottling(!enabled) // 启用保护时禁用节流
-    window.webContents.setFrameRate(60) // 设置帧率
-    window.setBackgroundColor('#00000000') // 设置背景色为透明
-
-    // macOS 特定的隐藏功能 (用于内容保护)
-    if (process.platform === 'darwin') {
-      window.setHiddenInMissionControl(enabled) // 在 Mission Control 中隐藏
-      window.setSkipTaskbar(enabled) // 在 Dock 和 Mission Control 切换器中隐藏
-    }
-  }
-
-  /**
-   * 获取当前获得焦点的 BrowserWindow 实例 (由 Electron 报告并经内部 Map 验证)。
-   * @returns 获得焦点的 BrowserWindow 实例，如果无焦点窗口或窗口无效则返回 undefined。
-   */
-  getFocusedWindow(): BrowserWindow | undefined {
-    const electronFocusedWindow = BrowserWindow.getFocusedWindow()
-
-    if (electronFocusedWindow) {
-      const windowId = electronFocusedWindow.id
-      const ourWindow = this.windows.get(windowId)
-
-      // 验证 Electron 报告的窗口是否在我们管理范围内且有效
-      if (ourWindow && !ourWindow.isDestroyed()) {
-        this.focusedWindowId = windowId // 更新内部记录
-        return ourWindow
-      } else {
-        // Electron 报告的窗口不在 Map 中或已销毁
-        console.warn(
-          `Electron reported window ${windowId} focused, but it is not managed or is destroyed.`,
-        )
-        this.focusedWindowId = null
-        return undefined
-      }
-    } else {
-      this.focusedWindowId = null // 清空内部记录
-      return undefined
-    }
-  }
+  //     // 验证 Electron 报告的窗口是否在我们管理范围内且有效
+  //     if (ourWindow && !ourWindow.isDestroyed()) {
+  //       this.focusedWindowId = windowId // 更新内部记录
+  //       return ourWindow
+  //     } else {
+  //       // Electron 报告的窗口不在 Map 中或已销毁
+  //       console.warn(
+  //         `Electron reported window ${windowId} focused, but it is not managed or is destroyed.`,
+  //       )
+  //       this.focusedWindowId = null
+  //       return undefined
+  //     }
+  //   } else {
+  //     this.focusedWindowId = null // 清空内部记录
+  //     return undefined
+  //   }
+  // }
 
   /**
    * 获取所有有效 (未销毁) 的 BrowserWindow 实例数组。
@@ -978,150 +979,150 @@ export class WindowPresenter implements IWindowPresenter {
     )
   }
 
-  /**
-   * 获取指定窗口的活动标签页 ID。
-   * @param windowId 窗口 ID。
-   * @returns 活动标签页 ID，如果窗口无效或无活动标签页则返回 undefined。
-   */
-  async getActiveTabId(windowId: number): Promise<number | undefined> {
-    const window = this.windows.get(windowId)
-    if (!window || window.isDestroyed()) {
-      console.warn(
-        `Cannot get active tab ID for window ${windowId}, window does not exist or is destroyed.`,
-      )
-      return undefined
-    }
-    const tabPresenterInstance = presenter.tabPresenter as TabPresenter
-    const tabsData = await tabPresenterInstance.getWindowTabsData(windowId)
-    const activeTab = tabsData.find((tab) => tab.isActive)
-    return activeTab?.id
-  }
+  // /**
+  //  * 获取指定窗口的活动标签页 ID。
+  //  * @param windowId 窗口 ID。
+  //  * @returns 活动标签页 ID，如果窗口无效或无活动标签页则返回 undefined。
+  //  */
+  // async getActiveTabId(windowId: number): Promise<number | undefined> {
+  //   const window = this.windows.get(windowId)
+  //   if (!window || window.isDestroyed()) {
+  //     console.warn(
+  //       `Cannot get active tab ID for window ${windowId}, window does not exist or is destroyed.`,
+  //     )
+  //     return undefined
+  //   }
+  //   const tabPresenterInstance = presenter.tabPresenter as TabPresenter
+  //   const tabsData = await tabPresenterInstance.getWindowTabsData(windowId)
+  //   const activeTab = tabsData.find((tab) => tab.isActive)
+  //   return activeTab?.id
+  // }
+
+  // /**
+  //  * 向指定窗口的活动标签页发送一个事件。
+  //  * @param windowId 目标窗口 ID。
+  //  * @param channel 事件通道。
+  //  * @param args 事件参数。
+  //  * @returns 如果事件已发送到有效活动标签页，返回 true，否则返回 false。
+  //  */
+  // async sendToActiveTab(
+  //   windowId: number,
+  //   channel: string,
+  //   ...args: unknown[]
+  // ): Promise<boolean> {
+  //   console.log(
+  //     `Sending event "${channel}" to active tab of window ${windowId}.`,
+  //   )
+  //   const tabPresenterInstance = presenter.tabPresenter as TabPresenter
+  //   const activeTabId = await tabPresenterInstance.getActiveTabId(windowId)
+  //   if (activeTabId) {
+  //     const tab = await tabPresenterInstance.getTab(activeTabId)
+  //     if (tab && !tab.webContents.isDestroyed()) {
+  //       tab.webContents.send(channel, ...args)
+  //       console.log(`  - Event sent to tab ${activeTabId}.`)
+  //       return true
+  //     } else {
+  //       console.warn(
+  //         `  - Active tab ${activeTabId} does not exist or is destroyed, cannot send event.`,
+  //       )
+  //     }
+  //   } else {
+  //     console.warn(
+  //       `No active tab found in window ${windowId}, cannot send event "${channel}".`,
+  //     )
+  //   }
+  //   return false
+  // }
 
   /**
-   * 向指定窗口的活动标签页发送一个事件。
-   * @param windowId 目标窗口 ID。
-   * @param channel 事件通道。
-   * @param args 事件参数。
-   * @returns 如果事件已发送到有效活动标签页，返回 true，否则返回 false。
-   */
-  async sendToActiveTab(
-    windowId: number,
-    channel: string,
-    ...args: unknown[]
-  ): Promise<boolean> {
-    console.log(
-      `Sending event "${channel}" to active tab of window ${windowId}.`,
-    )
-    const tabPresenterInstance = presenter.tabPresenter as TabPresenter
-    const activeTabId = await tabPresenterInstance.getActiveTabId(windowId)
-    if (activeTabId) {
-      const tab = await tabPresenterInstance.getTab(activeTabId)
-      if (tab && !tab.webContents.isDestroyed()) {
-        tab.webContents.send(channel, ...args)
-        console.log(`  - Event sent to tab ${activeTabId}.`)
-        return true
-      } else {
-        console.warn(
-          `  - Active tab ${activeTabId} does not exist or is destroyed, cannot send event.`,
-        )
-      }
-    } else {
-      console.warn(
-        `No active tab found in window ${windowId}, cannot send event "${channel}".`,
-      )
-    }
-    return false
-  }
+  //  * 向“默认”标签页发送消息。
+  //  * 优先级：焦点窗口的活动标签页 > 第一个窗口的活动标签页 > 第一个窗口的第一个标签页。
+  //  * @param channel 消息通道。
+  //  * @param switchToTarget 发送消息后是否切换到目标窗口和标签页。默认为 false。
+  //  * @param args 消息参数。
+  //  * @returns 如果消息已发送，返回 true，否则返回 false。
+  //  */
+  // async sendToDefaultTab(
+  //   channel: string,
+  //   switchToTarget: boolean = false,
+  //   ...args: unknown[]
+  // ): Promise<boolean> {
+  //   console.log(
+  //     `Sending message "${channel}" to default tab. Switch to target: ${switchToTarget}.`,
+  //   )
+  //   try {
+  //     // 优先使用当前获得焦点的窗口
+  //     let targetWindow = this.getFocusedWindow()
+  //     let windowId: number | undefined
 
-  /**
-   * 向“默认”标签页发送消息。
-   * 优先级：焦点窗口的活动标签页 > 第一个窗口的活动标签页 > 第一个窗口的第一个标签页。
-   * @param channel 消息通道。
-   * @param switchToTarget 发送消息后是否切换到目标窗口和标签页。默认为 false。
-   * @param args 消息参数。
-   * @returns 如果消息已发送，返回 true，否则返回 false。
-   */
-  async sendToDefaultTab(
-    channel: string,
-    switchToTarget: boolean = false,
-    ...args: unknown[]
-  ): Promise<boolean> {
-    console.log(
-      `Sending message "${channel}" to default tab. Switch to target: ${switchToTarget}.`,
-    )
-    try {
-      // 优先使用当前获得焦点的窗口
-      let targetWindow = this.getFocusedWindow()
-      let windowId: number | undefined
+  //     if (targetWindow) {
+  //       windowId = targetWindow.id
+  //       console.log(`  - Using focused window ${windowId}`)
+  //     } else {
+  //       // 如果没有焦点窗口，使用第一个有效窗口
+  //       const windows = this.getAllWindows()
+  //       if (windows.length === 0) {
+  //         console.warn('No window found to send message to.')
+  //         return false
+  //       }
+  //       targetWindow = windows[0]
+  //       windowId = targetWindow.id
+  //       console.log(`  - No focused window, using first window ${windowId}`)
+  //     }
 
-      if (targetWindow) {
-        windowId = targetWindow.id
-        console.log(`  - Using focused window ${windowId}`)
-      } else {
-        // 如果没有焦点窗口，使用第一个有效窗口
-        const windows = this.getAllWindows()
-        if (windows.length === 0) {
-          console.warn('No window found to send message to.')
-          return false
-        }
-        targetWindow = windows[0]
-        windowId = targetWindow.id
-        console.log(`  - No focused window, using first window ${windowId}`)
-      }
+  //     // 获取目标窗口的所有标签页
+  //     const tabPresenterInstance = presenter.tabPresenter as TabPresenter
+  //     const tabsData = await tabPresenterInstance.getWindowTabsData(windowId)
+  //     if (tabsData.length === 0) {
+  //       console.warn(
+  //         `Window ${windowId} has no tabs, cannot send message to default tab.`,
+  //       )
+  //       return false
+  //     }
 
-      // 获取目标窗口的所有标签页
-      const tabPresenterInstance = presenter.tabPresenter as TabPresenter
-      const tabsData = await tabPresenterInstance.getWindowTabsData(windowId)
-      if (tabsData.length === 0) {
-        console.warn(
-          `Window ${windowId} has no tabs, cannot send message to default tab.`,
-        )
-        return false
-      }
+  //     // 获取活动标签页，如果没有则取第一个标签页
+  //     const targetTabData = tabsData.find((tab) => tab.isActive) || tabsData[0]
+  //     const targetTab = await tabPresenterInstance.getTab(targetTabData.id)
 
-      // 获取活动标签页，如果没有则取第一个标签页
-      const targetTabData = tabsData.find((tab) => tab.isActive) || tabsData[0]
-      const targetTab = await tabPresenterInstance.getTab(targetTabData.id)
+  //     if (targetTab && !targetTab.webContents.isDestroyed()) {
+  //       // 向目标标签页发送消息
+  //       targetTab.webContents.send(channel, ...args)
+  //       console.log(
+  //         `  - Message sent to tab ${targetTabData.id} in window ${windowId}.`,
+  //       )
 
-      if (targetTab && !targetTab.webContents.isDestroyed()) {
-        // 向目标标签页发送消息
-        targetTab.webContents.send(channel, ...args)
-        console.log(
-          `  - Message sent to tab ${targetTabData.id} in window ${windowId}.`,
-        )
+  //       // 如果需要，切换到目标窗口和标签页
+  //       if (switchToTarget) {
+  //         try {
+  //           // 激活目标窗口
+  //           if (targetWindow && !targetWindow.isDestroyed()) {
+  //             console.log(`  - Switching to window ${windowId}`)
+  //             targetWindow.show() // 确保窗口可见
+  //             targetWindow.focus() // 将窗口带到前台
+  //           }
 
-        // 如果需要，切换到目标窗口和标签页
-        if (switchToTarget) {
-          try {
-            // 激活目标窗口
-            if (targetWindow && !targetWindow.isDestroyed()) {
-              console.log(`  - Switching to window ${windowId}`)
-              targetWindow.show() // 确保窗口可见
-              targetWindow.focus() // 将窗口带到前台
-            }
+  //           // 如果目标标签页不是活动标签页，则切换
+  //           if (!targetTabData.isActive) {
+  //             console.log(`  - Switching to tab ${targetTabData.id}`)
+  //             await tabPresenterInstance.switchTab(targetTabData.id)
+  //           }
+  //           // switchTab 已经会调用 bringViewToFront 来设置焦点，无需额外调用
+  //         } catch (error) {
+  //           console.error('❌Error switching to target window/tab:', error)
+  //           // 继续，因为消息发送成功
+  //         }
+  //       }
 
-            // 如果目标标签页不是活动标签页，则切换
-            if (!targetTabData.isActive) {
-              console.log(`  - Switching to tab ${targetTabData.id}`)
-              await tabPresenterInstance.switchTab(targetTabData.id)
-            }
-            // switchTab 已经会调用 bringViewToFront 来设置焦点，无需额外调用
-          } catch (error) {
-            console.error('❌Error switching to target window/tab:', error)
-            // 继续，因为消息发送成功
-          }
-        }
-
-        return true // 消息发送成功
-      } else {
-        console.warn(
-          `Target tab ${targetTabData.id} in window ${windowId} is unavailable or destroyed.`,
-        )
-        return false // 目标标签页无效
-      }
-    } catch (error) {
-      console.error('❌Error sending message to default tab:', error)
-      return false // 过程中发生错误
-    }
-  }
+  //       return true // 消息发送成功
+  //     } else {
+  //       console.warn(
+  //         `Target tab ${targetTabData.id} in window ${windowId} is unavailable or destroyed.`,
+  //       )
+  //       return false // 目标标签页无效
+  //     }
+  //   } catch (error) {
+  //     console.error('❌Error sending message to default tab:', error)
+  //     return false // 过程中发生错误
+  //   }
+  // }
 }
