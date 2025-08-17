@@ -1,4 +1,3 @@
-console.log('😊 logPresenter')
 import { logPresenter } from './logPresenter'
 
 export const screenshot = logPresenter.getLogger('screenshot')

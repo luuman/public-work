@@ -1,4 +1,3 @@
-console.log('😊 Presenter')
 import path from 'path'
 import { IPresenter } from '@shared/presenter'
 import { ipcMain, IpcMainInvokeEvent, app } from 'electron'

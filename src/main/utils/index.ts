@@ -1,5 +1,3 @@
-console.log('😊 Utils')
-
 export async function handleShowHiddenWindow(mustShow: boolean) {
   const { presenter } = await import('@/presenter')
 

@@ -1,4 +1,3 @@
-console.log('😊 TrayPresenter')
 import { Tray, Menu, app, nativeImage, NativeImage } from 'electron'
 import * as path from 'path'
 import { getContextMenuLabels } from '@shared/i18n'

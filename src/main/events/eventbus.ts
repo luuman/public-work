@@ -1,4 +1,3 @@
-console.log('😊 EventBus')
 import { IWindowPresenter, ITabPresenter } from '@shared/presenter'
 import EventEmitter from 'events'
 

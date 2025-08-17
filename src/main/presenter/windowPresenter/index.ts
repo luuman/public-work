@@ -1,5 +1,3 @@
-console.log('😊 windowPresenter')
-console.log('😊 WindowPresenter')
 // src\main\presenter\windowPresenter\index.ts
 import { BrowserWindow, shell, app, nativeImage, ipcMain } from 'electron'
 import { join } from 'path'

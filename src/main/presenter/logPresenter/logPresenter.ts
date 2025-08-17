@@ -1,4 +1,3 @@
-console.log('😊 LogPresenters')
 import path from 'path'
 import { app } from 'electron'
 import { appenderNames, categoryNames } from './config'

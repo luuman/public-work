@@ -1,4 +1,3 @@
-console.log('😊 quit')
 // import { appLog } from '@/presenter/logPresenter'
 
 /**

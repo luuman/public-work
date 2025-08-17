@@ -1,4 +1,3 @@
-console.log('😊 logPresenterconfig')
 // import { name } from 'pkg'
 import { app } from 'electron'
 

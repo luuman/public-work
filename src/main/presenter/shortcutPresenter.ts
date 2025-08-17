@@ -1,4 +1,3 @@
-console.log('😊 ShortcutPresenter')
 import { app, globalShortcut, dialog } from 'electron'
 import { presenter } from '.'
 import { SHORTCUT_EVENTS, TRAY_EVENTS } from '@/events/events'

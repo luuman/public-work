@@ -1,9 +1,10 @@
 const fs = require('fs/promises')
 const path = require('path')
 const { glob } = require('glob')
+const { CODE_TO_ADD } = require('./config')
 
 // Configuration
-const TARGET_DIR = './src' // Directory to scan
+const TARGET_DIR = './src/main' // Directory to scan
 const FILE_PATTERN = '**/*.ts' // Pattern to match TS files
 
 async function processFiles() {
@@ -22,14 +23,13 @@ async function processFiles() {
         // Read original content
         const originalContent = await fs.readFile(filePath, 'utf-8')
 
-        const fileName = path.basename(filePath, '.ts')
-        const parentDir = path.basename(path.dirname(filePath))
+        // const fileName = path.basename(filePath, '.ts')
+        // const parentDir = path.basename(path.dirname(filePath))
 
-        const displayName = fileName === 'index' ? parentDir : fileName
-        const CODE_TO_ADD = `console.log('😊 ${displayName}')\n`
+        // const displayName = fileName === 'index' ? parentDir : fileName
 
         // Skip if already has our header
-        if (originalContent.startsWith(CODE_TO_ADD.trim())) {
+        if (originalContent.startsWith(CODE_TO_ADD(filePath).trim())) {
           console.log(
             `Skipping ${path.relative(TARGET_DIR, filePath)} - already processed`,
           )

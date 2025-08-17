@@ -1,4 +1,3 @@
-console.log('😊 CONFIG_EVENTS')
 /**
  * 事件系统常量定义
  *

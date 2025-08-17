@@ -1,4 +1,3 @@
-console.log('😊 app')
 import { app } from 'electron'
 import { appLog } from '@/presenter/logPresenter'
 

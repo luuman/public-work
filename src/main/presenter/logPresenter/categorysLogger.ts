@@ -1,5 +1,3 @@
-console.log('😊 CategoryLogger')
-
 import { WorkerManager } from '../../lib/workerManager'
 
 type LogLevel = 'info' | 'warn' | 'error'
