@@ -1,7 +1,7 @@
 // utils/globalTime.ts
 const globalTimers = new Map<string, number>()
 
-export function hookConsoleTime() {
+function hookConsoleTime() {
   const originalTime = console.time
   const originalTimeEnd = console.timeEnd
 
@@ -27,3 +27,15 @@ export function hookConsoleTime() {
     originalTimeEnd.call(console, label)
   }
 }
+
+hookConsoleTime()
+
+setTimeout(() => {
+  performance.measure('App Startup Total', 'app-start', 'app-ready')
+  performance.measure('App Common Init', 'app-ready', 'app-common-done')
+
+  const measures = performance.getEntriesByType('measure')
+  measures.forEach((m) => {
+    console.log(`⏱ ${m.name}: ${m.duration.toFixed(2)}ms`)
+  })
+}, 5000)

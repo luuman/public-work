@@ -1,16 +1,10 @@
 import { app } from 'electron'
+import '@/utils/consoleHock'
 import { appLog } from '@/presenter/logPresenter'
-import { join } from 'path'
-
 import { setupCommon } from './app/common'
 import { willQuit, beforeQuit, windowAllClosed } from './app/quit'
-import { hookConsoleTime } from './utils/globalTime'
+// import 'hookConsoleTime'
 
-console.log('🚀AppStartupTime')
-console.time('🚀AppStartupTime')
-
-hookConsoleTime()
-performance.mark('app-start')
 appLog.info('app-start')
 
 app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required') // 允许视频自动播放
@@ -24,29 +18,12 @@ if (process.platform === 'win32') {
 if (process.platform === 'darwin') {
   import('./app/main-mac').then(({ setupMacArgs }) => setupMacArgs(app))
 }
-performance.mark('presenter-init-start')
 
 app.whenReady().then(async () => {
   appLog.info('app-ready')
-  performance.mark('app-ready')
-  // const { setupCommon } = await import('./app/common')
   await setupCommon(app)
-  performance.mark('app-common-done')
-  performance.measure('App Startup Total', 'app-start', 'app-ready')
-  performance.measure('App Common Init', 'app-ready', 'app-common-done')
 })
-console.log(
-  'Creating new shell window.',
-  join(__dirname, '../preload/index.js'),
-)
 
 windowAllClosed(app)
 willQuit(app)
 beforeQuit(app)
-
-setTimeout(() => {
-  const measures = performance.getEntriesByType('measure')
-  measures.forEach((m) => {
-    console.log(`⏱ ${m.name}: ${m.duration.toFixed(2)}ms`)
-  })
-}, 5000)

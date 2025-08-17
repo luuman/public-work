@@ -34,14 +34,6 @@ export class LogPresenter {
         this.logWorker,
       )
     })
-
-    const originalConsole = { ...console }
-    ;['log', 'warn', 'error', 'debug', 'info'].forEach((method) => {
-      console[method] = (...args) => {
-        const timestamp = new Date().toISOString()
-        originalConsole[method](`[${timestamp}]`, ...args)
-      }
-    })
   }
 
   // 通过 category 获取 logger
