@@ -1,5 +1,6 @@
 import { WINDOW_EVENTS } from '@/events/events'
 import { msgAllLog } from '@/presenter/logPresenter'
+import { presenter } from '@/presenter'
 
 let eventBus: (typeof import('@/events/eventbus'))['eventBus']
 
@@ -42,9 +43,11 @@ export async function setupCommon(appInstance: Electron.App) {
 
   // 延迟注册快捷键（等第一个窗口创建）
   appInstance.once('browser-window-created', async () => {
-    const { presenter } = await import('@/presenter')
+    // const { presenter } = await import('@/presenter')
     msgAllLog.info('app-start', presenter.shortcutPresenter)
-    presenter.shortcutPresenter.registerShortcuts()
+    // if (presenter?.shortcutPresenter) {
+    //   presenter.shortcutPresenter.registerShortcuts()
+    // }
   })
 
   const { enabledChanged, checkForUpdates, ShowHiddenWindow } = await import(
@@ -67,10 +70,10 @@ export async function setupCommon(appInstance: Electron.App) {
   // }
 
   setTimeout(async () => {
-    const { presenter } = await import('@/presenter')
+    // const { presenter } = await import('@/presenter')
 
     getAllWindows(presenter)
-    console.timeEnd('MainWindow Delay')
+    // console.timeEnd('MainWindow Delay')
 
     browserWindowFocus(appInstance)
     browserWindowBlur(appInstance, presenter)
@@ -98,7 +101,6 @@ export function browserWindowBlur(
       const isAnyWindowFocused = allWindows.some(
         (win) => !win.isDestroyed() && win.isFocused(),
       )
-
       if (!isAnyWindowFocused) {
         eventBus.sendToMain(WINDOW_EVENTS.APP_BLUR)
       }
@@ -112,11 +114,7 @@ export async function getAllWindows(presenterInstance: any) {
     console.log('Main: Creating initial shell window on app startup')
     try {
       const windowId =
-        await presenterInstance.windowPresenter.createShellWindow({
-          initialTab: {
-            url: 'local://chat',
-          },
-        })
+        await presenterInstance.windowPresenter.createShellWindow()
       if (windowId) {
         console.log(
           `Main: Initial shell window created successfully with ID: ${windowId}`,

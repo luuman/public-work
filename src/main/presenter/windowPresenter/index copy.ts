@@ -880,15 +880,17 @@ export class WindowPresenter implements IWindowPresenter {
     // --- 加载 Renderer HTML 文件 ---
     if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
       console.log(
-        `Loading renderer URL in dev mode: ${process.env['ELECTRON_RENDERER_URL']}/index.html`,
+        `Loading renderer URL in dev mode: ${process.env['ELECTRON_RENDERER_URL']}/shell/index.html`,
       )
-      shellWindow.loadURL(process.env['ELECTRON_RENDERER_URL'] + '/index.html')
+      shellWindow.loadURL(
+        process.env['ELECTRON_RENDERER_URL'] + '/shell/index.html',
+      )
     } else {
       // 生产模式下加载打包后的 HTML 文件
       console.log(
-        `Loading packaged renderer file: ${join(__dirname, '../renderer/index.html')}`,
+        `Loading packaged renderer file: ${join(__dirname, '../renderer/shell/index.html')}`,
       )
-      shellWindow.loadFile(join(__dirname, '../renderer/index.html'))
+      shellWindow.loadFile(join(__dirname, '../renderer/shell/index.html'))
     }
 
     // --- 处理初始标签页创建或激活 ---
