@@ -1,4 +1,4 @@
-console.log('😊 LogPresenter')
+console.log('😊 LogPresenters')
 import path from 'path'
 import { app } from 'electron'
 import { appenderNames, categoryNames } from './config'
@@ -39,7 +39,7 @@ export class LogPresenter {
 
   // 通过 category 获取 logger
   public getLogger(category: string): CategoryLogger {
-    return this.loggers[category]
+    return this.loggers[category || app.getName()]
   }
 
   public destroy() {

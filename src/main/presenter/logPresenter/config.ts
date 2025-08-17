@@ -1,3 +1,4 @@
+console.log('😊 logPresenterconfig')
 // import { name } from 'pkg'
 import { app } from 'electron'
 
@@ -44,5 +45,5 @@ export const appenderNames = [
   //   { appenderName: 'offlineMsg' },
   //   { appenderName: 'msgTask' },
   //   { appenderName: 'e2ee' },
-  { appenderName: app.getName() + '-usage' },
+  { appenderName: app.getName() },
 ]

@@ -1,3 +1,4 @@
+console.log('😊 windowPresenter')
 console.log('😊 WindowPresenter')
 // src\main\presenter\windowPresenter\index.ts
 import { BrowserWindow, shell, app, nativeImage, ipcMain } from 'electron'
@@ -14,6 +15,7 @@ import windowStateManager from 'electron-window-state' // 窗口状态管理器
 import { SHORTCUT_EVENTS } from '@/events/events' // 快捷键事件常量
 // TrayPresenter 在 main/index.ts 中全局管理，本 Presenter 不负责其生命周期
 import { TabPresenter } from '../tabPresenter' // TabPresenter 类型
+import { appLog } from '@/presenter/logPresenter'
 
 /**
  * 窗口 Presenter，负责管理所有 BrowserWindow 实例及其生命周期。
@@ -43,6 +45,7 @@ export class WindowPresenter implements IWindowPresenter {
   constructor(configPresenter: ConfigPresenter) {
     this.windows = new Map()
     this.configPresenter = configPresenter
+    appLog.info('did-finish-load')
 
     // 注册 IPC 处理器，供 Renderer 调用以获取窗口和 WebContents ID
     ipcMain.on('get-window-id', (event) => {
@@ -673,6 +676,7 @@ export class WindowPresenter implements IWindowPresenter {
 
     // 窗口准备就绪时显示
     shellWindow.on('ready-to-show', () => {
+      appLog.info('ready-to-show')
       console.log(`Window ${windowId} is ready to show.`)
       if (!shellWindow.isDestroyed()) {
         shellWindow.show() // 显示窗口避免白屏

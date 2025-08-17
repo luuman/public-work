@@ -1,4 +1,4 @@
-console.log('😊 registerProtocols')
+console.log('😊 protocols')
 import { protocol, app } from 'electron'
 import path from 'path'
 import fs from 'fs'

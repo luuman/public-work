@@ -1,6 +1,6 @@
 console.log('😊 app')
 import { app } from 'electron'
-import { screenshot } from '@/presenter/logPresenter'
+import { appLog } from '@/presenter/logPresenter'
 
 // import { setupCommon } from './app/common'
 // import { willQuit, beforeQuit, windowAllClosed } from './app/quit'
@@ -11,7 +11,7 @@ console.time('🚀AppStartupTime')
 
 hookConsoleTime()
 performance.mark('app-start')
-screenshot.info('app-start', screenshot)
+appLog.info('app-start')
 
 app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required') // 允许视频自动播放
 app.commandLine.appendSwitch('webrtc-max-cpu-consumption-percentage', '100') // 设置 WebRTC 最大 CPU 占用率
@@ -27,6 +27,7 @@ if (process.platform === 'darwin') {
 performance.mark('presenter-init-start')
 
 app.whenReady().then(async () => {
+  appLog.info('app-ready')
   performance.mark('app-ready')
   const { setupCommon } = await import('./app/common')
   await setupCommon(app)

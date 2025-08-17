@@ -1,4 +1,3 @@
-console.log('😊 setupCommon')
 import { WINDOW_EVENTS } from '@/events/events'
 import { msgAllLog } from '@/presenter/logPresenter'
 
