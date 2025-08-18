@@ -1,7 +1,6 @@
 import { WorkerManager } from '../../lib/workerManager'
 
-type LogLevel = 'info' | 'warn' | 'error'
-
+type LogLevel = 'info' | 'warn' | 'error' | 'debug' | 'trace' | 'fatal' | 'log'
 export class CategoryLogger {
   constructor(
     private category: string,
@@ -46,5 +45,29 @@ export class CategoryLogger {
     const message = this.formatMessage(args)
     // console.error(`🚀[${this.category}] [ERROR]`, message)
     this.logToFile('error', message)
+  }
+
+  public debug(...args: any[]) {
+    const message = this.formatMessage(args)
+    // console.debug(`🚀[${this.category}] [DEBUG]`, message)
+    this.logToFile('debug', message)
+  }
+
+  public trace(...args: any[]) {
+    const message = this.formatMessage(args)
+    // console.trace(`🚀[${this.category}] [TRACE]`, message)
+    this.logToFile('trace', message)
+  }
+
+  public fatal(...args: any[]) {
+    const message = this.formatMessage(args)
+    // console.fatal(`🚀[${this.category}] [FATAL]`, message)
+    this.logToFile('fatal', message)
+  }
+
+  public log(...args: any[]) {
+    const message = this.formatMessage(args)
+    // console.log(`🚀[${this.category}] [LOG]`, message)
+    this.logToFile('log', message)
   }
 }

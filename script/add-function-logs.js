@@ -49,6 +49,14 @@ async function processFile(filePath) {
       },
     })
 
+    // 获取显示名称（返回相对于TARGET_DIR的路径，不带扩展名）
+    function getDisplayName(filePath) {
+      const relativePath = path.relative(TARGET_DIR, filePath)
+      const withoutExt = relativePath.replace(/\.ts$/, '')
+      // console.log(relativePath, withoutExt)
+      return withoutExt
+    }
+
     /**
      * 添加函数调用日志
      * @param {Object} path AST节点路径
@@ -58,11 +66,13 @@ async function processFile(filePath) {
       const functionName = getFunctionName(path) // 获取函数名
       if (!functionName) return // 如果没有函数名则跳过
 
+      const displayName = getDisplayName(filePath)
+
       // 创建console.log的AST节点
       const logStatement = t.expressionStatement(
         t.callExpression(
           t.memberExpression(t.identifier('console'), t.identifier('log')),
-          [t.stringLiteral(`\n🚀 调用${filePath}: ${functionName}`)],
+          [t.stringLiteral(`🚀 调用${displayName}: ${functionName}`)],
         ),
       )
 
