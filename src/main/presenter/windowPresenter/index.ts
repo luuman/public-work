@@ -25,8 +25,7 @@ export class WindowPresenter implements IWindowPresenter {
   private _windowEvents: WindowEvents | null = null
   private _windowActions: WindowActions | null = null
   private _windowFocus: WindowFocus | null = null
-  private readonly ipcHandlers: typeof IpcHandlers
-
+  private _ipcHandlers: IpcHandlers | null = null
   private isQuitting: boolean = false
   private readonly configPresenter: ConfigPresenter
 
@@ -42,11 +41,11 @@ export class WindowPresenter implements IWindowPresenter {
     //   this.isQuitting,
     //   this.windowManager.getMainWindowId(),
     // )
-    this.ipcHandlers = IpcHandlers
+    // this.ipcHandlers = IpcHandlers
 
-    this.setupAppEventListeners()
-    this.setupIpcHandlers()
-    this.setupEventBusListeners()
+    // this.setupAppEventListeners()
+    // this.setupIpcHandlers()
+    // this.setupEventBusListeners()
   }
 
   private get windowEvents(): WindowEvents {
@@ -76,6 +75,14 @@ export class WindowPresenter implements IWindowPresenter {
       this._windowFocus = new WindowFocus(this.windowManager)
     }
     return this._windowFocus
+  }
+
+  private get ipcHandlers(): IpcHandlers {
+    if (!this._ipcHandlers) {
+      this._ipcHandlers = IpcHandlers
+    }
+    console.log('this._ipcHandlers', this._ipcHandlers)
+    return this._ipcHandlers
   }
 
   // ========== 公共接口实现 ==========
