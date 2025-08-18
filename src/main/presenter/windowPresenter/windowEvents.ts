@@ -315,10 +315,10 @@ export class WindowEvents {
 
     // 如果应用不是正在退出过程中...
     if (!this.isQuitting) {
-      const shouldQuitOnClose = this.configPresenter.getCloseToQuit()
-      const shouldPreventDefault =
-        windowId === this.mainWindowId && !shouldQuitOnClose
-
+      // const shouldQuitOnClose = this.configPresenter.getCloseToQuit()
+      // const shouldPreventDefault =
+      //   windowId === this.mainWindowId && !shouldQuitOnClose
+      const shouldPreventDefault = windowId === this.mainWindowId
       if (shouldPreventDefault) {
         appLog.info(
           `Window ${windowId}: Preventing default close behavior, hiding instead.`,

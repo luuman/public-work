@@ -22,9 +22,9 @@ import { IWindowPresenter } from './types'
  */
 export class WindowPresenter implements IWindowPresenter {
   private readonly windowManager: WindowManager
-  private readonly windowEvents: WindowEvents
-  private readonly windowActions: WindowActions
-  private readonly windowFocus: WindowFocus
+  private _windowEvents: WindowEvents | null = null
+  private _windowActions: WindowActions | null = null
+  private _windowFocus: WindowFocus | null = null
   private readonly ipcHandlers: typeof IpcHandlers
 
   private isQuitting: boolean = false
@@ -33,20 +33,52 @@ export class WindowPresenter implements IWindowPresenter {
   constructor(configPresenter: ConfigPresenter) {
     this.configPresenter = configPresenter
     this.windowManager = new WindowManager()
-    this.windowFocus = new WindowFocus(this.windowManager)
-    this.windowActions = new WindowActions(this.windowManager, configPresenter)
-    this.windowEvents = new WindowEvents(
-      this.windowManager,
-      configPresenter,
-      this.windowActions,
-      () => this.isQuitting,
-      () => this.windowManager.getMainWindowId(),
-    )
+    // this.windowFocus = new WindowFocus(this.windowManager)
+    // this.windowActions = new WindowActions(this.windowManager, configPresenter)
+    // this.windowEvents = new WindowEvents(
+    //   this.windowManager,
+    //   this.configPresenter,
+    //   this.windowActions,
+    //   this.isQuitting,
+    //   this.windowManager.getMainWindowId(),
+    // )
     this.ipcHandlers = IpcHandlers
 
     this.setupAppEventListeners()
     this.setupIpcHandlers()
     this.setupEventBusListeners()
+  }
+
+  private get windowEvents(): WindowEvents {
+    if (!this._windowEvents) {
+      this._windowEvents = new WindowEvents(
+        this.windowManager,
+        this.configPresenter,
+        this.windowActions,
+        this.isQuitting,
+        this.windowManager.getMainWindowId() ?? -1,
+      )
+    }
+    console.log('this._windowEvents', this._windowEvents)
+    return this._windowEvents
+  }
+
+  private get windowActions(): WindowActions {
+    if (!this._windowActions) {
+      this._windowActions = new WindowActions(
+        this.windowManager,
+        this.configPresenter,
+      )
+    }
+    console.log('this._windowActions', this._windowActions)
+    return this._windowActions
+  }
+  private get windowFocus(): WindowFocus {
+    if (!this._windowFocus) {
+      this._windowFocus = new WindowFocus(this.windowManager)
+    }
+    console.log('this._windowFocus', this._windowFocus)
+    return this._windowFocus
   }
 
   // ========== 公共接口实现 ==========
