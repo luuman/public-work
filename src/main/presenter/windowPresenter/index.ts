@@ -59,7 +59,6 @@ export class WindowPresenter implements IWindowPresenter {
         this.windowManager.getMainWindowId() ?? -1,
       )
     }
-    console.log('this._windowEvents', this._windowEvents)
     return this._windowEvents
   }
 
@@ -70,14 +69,12 @@ export class WindowPresenter implements IWindowPresenter {
         this.configPresenter,
       )
     }
-    console.log('this._windowActions', this._windowActions)
     return this._windowActions
   }
   private get windowFocus(): WindowFocus {
     if (!this._windowFocus) {
       this._windowFocus = new WindowFocus(this.windowManager)
     }
-    console.log('this._windowFocus', this._windowFocus)
     return this._windowFocus
   }
 
