@@ -40,13 +40,13 @@ export interface IWindowPresenter {
   // 发送消息到所有窗口
   sendToAllWindows(channel: string, ...args: unknown[]): void
   // 发送消息到指定窗口
-  sendToWindow(windowId: number, channel: string, ...args: unknown[]): boolean
-  sendToDefaultTab(
-    channel: string,
-    switchToTarget?: boolean,
-    ...args: unknown[]
-    // 发送消息到默认标签页
-  ): Promise<boolean>
+  // sendToWindow(windowId: number, channel: string, ...args: unknown[]): boolean
+  // sendToDefaultTab(
+  //   channel: string,
+  //   switchToTarget?: boolean,
+  //   ...args: unknown[]
+  //   // 发送消息到默认标签页
+  // ): Promise<boolean>
   // 关闭窗口
   closeWindow(windowId: number, forceClose?: boolean): Promise<void>
 }
