@@ -5,6 +5,8 @@ import { presenter } from '@/presenter'
 let eventBus: (typeof import('@/events/eventbus'))['eventBus']
 
 export async function setupCommon(appInstance: Electron.App) {
+  createShellWindow(presenter)
+
   const { electronApp } = await import('@electron-toolkit/utils')
   electronApp.setAppUserModelId('com.yourcompany.yourapp')
 
@@ -44,7 +46,7 @@ export async function setupCommon(appInstance: Electron.App) {
   // 延迟注册快捷键（等第一个窗口创建）
   appInstance.once('browser-window-created', async () => {
     // const { presenter } = await import('@/presenter')
-    msgAllLog.info('app-start', presenter.shortcutPresenter)
+    msgAllLog.info('app-start shortcutPresenter', presenter.shortcutPresenter)
     // if (presenter?.shortcutPresenter) {
     //   presenter.shortcutPresenter.registerShortcuts()
     // }
@@ -72,7 +74,6 @@ export async function setupCommon(appInstance: Electron.App) {
   setTimeout(async () => {
     // const { presenter } = await import('@/presenter')
 
-    getAllWindows(presenter)
     // console.timeEnd('MainWindow Delay')
 
     browserWindowFocus(appInstance)
@@ -114,28 +115,19 @@ export function browserWindowBlur(
   })
 }
 
-export async function getAllWindows(presenterInstance: any) {
-  // 如果没有窗口，创建主窗口 (应用首次启动时)
-  if (presenterInstance.windowPresenter.getAllWindows().length === 0) {
-    console.log('Main: Creating initial shell window on app startup')
-    try {
-      const windowId =
-        await presenterInstance.windowPresenter.createShellWindow()
-      if (windowId) {
-        console.log(
-          `Main: Initial shell window created successfully with ID: ${windowId}`,
-        )
-      } else {
-        console.error(
-          'Main: Failed to create initial shell window - returned null',
-        )
-      }
-    } catch (error) {
-      console.error('❌Main: Error creating initial shell window:', error)
+export async function createShellWindow(presenterInstance: any) {
+  try {
+    const windowId = await presenterInstance.windowPresenter.createShellWindow()
+    if (windowId) {
+      console.log(
+        `Main: Initial shell window created successfully with ID: ${windowId}`,
+      )
+    } else {
+      console.error(
+        'Main: Failed to create initial shell window - returned null',
+      )
     }
-  } else {
-    console.log(
-      'Main: Shell windows already exist, skipping initial window creation',
-    )
+  } catch (error) {
+    console.error('❌Main: Error creating initial shell window:', error)
   }
 }

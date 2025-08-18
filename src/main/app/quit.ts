@@ -1,4 +1,27 @@
-// import { appLog } from '@/presenter/logPresenter'
+import { appLog } from '@/presenter/logPresenter'
+/**
+ * 在应用即将退出时触发，适合进行最终的资源清理 (如销毁托盘)
+ */
+export async function handleSecondInstance(appInstance: Electron.App) {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  appInstance.on('second-instance' as const, (event, argv, cwd) => {
+    appLog.log('main: app second-instance event triggered.')
+    appLog.info('second-instace', argv)
+
+    appLog.log(argv.join(',')) // 应显示string[]
+    appLog.log(cwd.toLowerCase()) // 应显示string
+
+    // const win = BrowserWindow.getAllWindows()[0]
+    // if (win) {
+    //   if (win.isMinimized()) win.restore()
+    //   win.focus()
+
+    //   appLog.info('second-instace', argv)
+    //   const deepLink = argv.find((arg) => arg.startsWith('myapp://'))
+    //   if (deepLink) win.webContents.send('deep-link', deepLink)
+    // }
+  })
+}
 
 /**
  * 在应用即将退出时触发，适合进行最终的资源清理 (如销毁托盘)
@@ -6,20 +29,20 @@
 export async function willQuit(appInstance: Electron.App) {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   appInstance.on('will-quit', async (_event) => {
-    console.log('main: app will-quit event triggered.')
+    appLog.log('main: app will-quit event triggered.')
     const { presenter } = await import('@/presenter')
     // 销毁托盘图标
     if (presenter.trayPresenter) {
-      console.log('main: Destroying tray during will-quit.')
+      appLog.log('main: Destroying tray during will-quit.')
       presenter.trayPresenter.destroy()
     } else {
-      console.warn(
+      appLog.warn(
         'main: TrayPresenter not found in presenter during will-quit.',
       )
     }
 
     if (presenter.destroy) {
-      console.log('main: Calling presenter.destroy() during will-quit.')
+      appLog.log('main: Calling presenter.destroy() during will-quit.')
       presenter.destroy()
     }
   })
@@ -35,7 +58,7 @@ export async function beforeQuit(appInstance: Electron.App) {
       const { presenter } = await import('@/presenter')
       presenter.floatingButtonPresenter.destroy()
     } catch (error) {
-      console.error(
+      appLog.error(
         '❌main: Error destroying floating button during before-quit:',
         error,
       )
@@ -56,12 +79,12 @@ export async function windowAllClosed(appInstance: Electron.App) {
     if (mainWindows.length === 0) {
       // 只有悬浮按钮窗口时，在非 macOS 平台退出应用
       if (process.platform !== 'darwin') {
-        console.log(
+        appLog.log(
           'main: All main windows closed on non-macOS platform, quitting app',
         )
         appInstance.quit()
       } else {
-        console.log(
+        appLog.log(
           'main: All main windows closed on macOS, keeping app running in dock',
         )
       }

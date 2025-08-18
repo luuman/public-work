@@ -10,6 +10,7 @@ export class LogPresenter {
   private loggers: Record<string, CategoryLogger> = {}
 
   constructor() {
+    console.log(`IPC`)
     const workerPath = path.resolve(__dirname, './worker/log4jsWorker.js')
     // const workerPath = path.resolve(__dirname, './worker/logWorker.js')
 

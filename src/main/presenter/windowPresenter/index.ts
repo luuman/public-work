@@ -44,7 +44,7 @@ export class WindowPresenter implements IWindowPresenter {
     // this.ipcHandlers = IpcHandlers
 
     // this.setupAppEventListeners()
-    // this.setupIpcHandlers()
+    this.setupIpcHandlers()
     // this.setupEventBusListeners()
   }
 

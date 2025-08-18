@@ -2,7 +2,12 @@ import { app } from 'electron'
 import '@/utils/consoleHock'
 import { appLog } from '@/presenter/logPresenter'
 import { setupCommon } from './app/common'
-import { willQuit, beforeQuit, windowAllClosed } from './app/quit'
+import {
+  willQuit,
+  beforeQuit,
+  windowAllClosed,
+  handleSecondInstance,
+} from './app/quit'
 // import 'hookConsoleTime'
 
 appLog.info('app-start')
@@ -11,24 +16,33 @@ app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required') // �
 app.commandLine.appendSwitch('webrtc-max-cpu-consumption-percentage', '100') // 设置 WebRTC 最大 CPU 占用率
 app.commandLine.appendSwitch('js-flags', '--max-old-space-size=4096') // 设置 V8 堆内存大小
 app.commandLine.appendSwitch('ignore-certificate-errors') // 忽略证书错误 (开发或特定场景下使用)
-// 启用远程调试端口
-// app.commandLine.appendSwitch('remote-debugging-port', '8315');
+// app.commandLine.appendSwitch('remote-debugging-port', '8315'); // 启用远程调试端口
 
-if (process.platform === 'win32') {
-  import('./app/main-win').then(({ setupWinArgs }) => setupWinArgs(app))
+// 单实例运行
+const gotTheLock = app.requestSingleInstanceLock()
+
+if (!gotTheLock) {
+  // 如果获取锁失败，说明已有实例在运行，直接退出
+  app.quit()
+} else {
+  handleSecondInstance(app)
+
+  app.whenReady().then(async () => {
+    appLog.info('app-ready')
+    await setupCommon(app)
+  })
+
+  if (process.platform === 'win32') {
+    import('./app/main-win').then(({ setupWinArgs }) => setupWinArgs(app))
+  }
+  if (process.platform === 'darwin') {
+    import('./app/main-mac').then(({ setupMacArgs }) => setupMacArgs(app))
+  }
+
+  windowAllClosed(app)
+  willQuit(app)
+  beforeQuit(app)
 }
-if (process.platform === 'darwin') {
-  import('./app/main-mac').then(({ setupMacArgs }) => setupMacArgs(app))
-}
-
-app.whenReady().then(async () => {
-  appLog.info('app-ready')
-  await setupCommon(app)
-})
-
-windowAllClosed(app)
-willQuit(app)
-beforeQuit(app)
 
 // win.webContents.on('dom-ready', () => {
 //   // 延迟加载非关键资源
