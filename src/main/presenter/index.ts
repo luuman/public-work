@@ -63,7 +63,7 @@ export class Presenter implements IPresenter {
   // knowledgePresenter: KnowledgePresenter
   // llamaCppPresenter: LlamaCppPresenter
   constructor() {
-    console.log('MIPresenter')
+    console.log('IPresenter')
 
     // 初始化各个 Presenter 实例及其依赖
     // this.configPresenter = new ConfigPresenter()
