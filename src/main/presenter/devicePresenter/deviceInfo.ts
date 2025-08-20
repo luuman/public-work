@@ -2,12 +2,6 @@ import os from 'os'
 import { exec } from 'child_process'
 import { promisify } from 'util'
 import type { DeviceInfo, MemoryInfo, DiskInfo } from '@shared/presenter'
-import { appLog } from '@/presenter/logPresenter'
-import {
-  formatBytes,
-  formatPercent,
-  getPlatformName,
-} from '@/utils/systemFormatter'
 
 // 将 exec 包装成异步函数
 const execAsync = promisify(exec)
@@ -109,27 +103,3 @@ export async function getDiskSpace(): Promise<DiskInfo> {
     }
   }
 }
-
-async function showDeviceInfo() {
-  const device = await getDeviceInfo()
-  const memory = await getMemoryUsage()
-  const cpuUsage = await getCPUUsage()
-  const disk = await getDiskSpace()
-
-  appLog.info(
-    '操作系统:',
-    getPlatformName(device.platform as NodeJS.Platform),
-    device.osVersion,
-  )
-  appLog.info('CPU 架构:', device.arch)
-  appLog.info('CPU 型号:', device.cpuModel)
-  appLog.info('CPU 使用率:', formatPercent(cpuUsage))
-  appLog.info('总内存:', formatBytes(memory.total))
-  appLog.info('已用内存:', formatBytes(memory.used))
-  appLog.info('可用内存:', formatBytes(memory.free))
-  appLog.info('磁盘总容量:', formatBytes(disk.total))
-  appLog.info('磁盘已用:', formatBytes(disk.used))
-  appLog.info('磁盘可用:', formatBytes(disk.free))
-}
-
-// showDeviceInfo()
