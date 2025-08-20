@@ -134,7 +134,7 @@ export class Presenter implements IPresenter {
   async setupEventBus() {
     // 设置 WindowPresenter 和 TabPresenter 到 EventBus
     eventBus.setWindowPresenter(this.windowPresenter)
-    eventBus.setTabPresenter(this.tabPresenter)
+    // eventBus.setTabPresenter(this.tabPresenter)
 
     // // 设置特殊事件的处理逻辑
     // this.setupSpecialEventHandlers()
@@ -214,7 +214,7 @@ export class Presenter implements IPresenter {
     // this.floatingButtonPresenter.destroy() // 销毁悬浮按钮
     // this.tabPresenter.destroy()
     // this.sqlitePresenter.close(); // 关闭数据库连接
-    // this.shortcutPresenter.destroy() // 销毁快捷键监听
+    this.shortcutPresenter.destroy() // 销毁快捷键监听
     // this.syncPresenter.destroy(); // 销毁同步相关资源
     // this.notificationPresenter.clearAllNotifications() // 清除所有通知
     // this.knowledgePresenter.destroy(); // 释放所有数据库连接

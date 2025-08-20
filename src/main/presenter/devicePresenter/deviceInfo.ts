@@ -132,4 +132,4 @@ async function showDeviceInfo() {
   appLog.info('磁盘可用:', formatBytes(disk.free))
 }
 
-showDeviceInfo()
+// showDeviceInfo()
