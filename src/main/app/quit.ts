@@ -1,39 +1,47 @@
 import { appLog } from '@/presenter/logPresenter'
+import { ON_APP, ON_QUIT } from './appEvent'
+
+const { WINDOW_ALL_CLOSED, SECOND_INSTANCE } = ON_APP
+const { BEFORE_QUIT, WILL_QUIT, QUIT } = ON_QUIT
+
 /**
  * 在应用即将退出时触发，适合进行最终的资源清理 (如销毁托盘)
  */
 export async function handleSecondInstance(appInstance: Electron.App) {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  appInstance.on('second-instance' as const, (event, argv, cwd) => {
-    appLog.log('main: app second-instance event triggered.')
-    appLog.info('second-instace', argv)
+  appLog.info('app handleSecondInstance')
+  appInstance.on(
+    SECOND_INSTANCE,
+    (event: Electron.Event, argv: string[], cwd: string) => {
+      appLog.info('main: app second-instance event triggered.')
+      appLog.info('second-instace', argv)
 
-    appLog.log(argv.join(',')) // 应显示string[]
-    appLog.log(cwd.toLowerCase()) // 应显示string
+      appLog.info(argv.join(',')) // 应显示string[]
+      appLog.info(cwd.toLowerCase()) // 应显示string
 
-    // const win = BrowserWindow.getAllWindows()[0]
-    // if (win) {
-    //   if (win.isMinimized()) win.restore()
-    //   win.focus()
+      // const win = BrowserWindow.getAllWindows()[0]
+      // if (win) {
+      //   if (win.isMinimized()) win.restore()
+      //   win.focus()
 
-    //   appLog.info('second-instace', argv)
-    //   const deepLink = argv.find((arg) => arg.startsWith('myapp://'))
-    //   if (deepLink) win.webContents.send('deep-link', deepLink)
-    // }
-  })
+      //   appLog.info('second-instace', argv)
+      //   const deepLink = argv.find((arg) => arg.startsWith('myapp://'))
+      //   if (deepLink) win.webContents.send('deep-link', deepLink)
+      // }
+    },
+  )
 }
 
 /**
  * 在应用即将退出时触发，适合进行最终的资源清理 (如销毁托盘)
  */
 export async function willQuit(appInstance: Electron.App) {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  appInstance.on('will-quit', async (_event) => {
-    appLog.log('main: app will-quit event triggered.')
+  appLog.info('app willQuit')
+  appInstance.on(WILL_QUIT, async (event: Electron.Event) => {
+    appLog.info('main: app will-quit event triggered.')
     const { presenter } = await import('@/presenter')
     // 销毁托盘图标
     if (presenter.trayPresenter) {
-      appLog.log('main: Destroying tray during will-quit.')
+      appLog.info('main: Destroying tray during will-quit.')
       presenter.trayPresenter.destroy()
     } else {
       appLog.warn(
@@ -42,7 +50,7 @@ export async function willQuit(appInstance: Electron.App) {
     }
 
     if (presenter.destroy) {
-      appLog.log('main: Calling presenter.destroy() during will-quit.')
+      appLog.info('main: Calling presenter.destroy() during will-quit.')
       presenter.destroy()
     }
   })
@@ -53,7 +61,8 @@ export async function willQuit(appInstance: Electron.App) {
  * 在这里销毁悬浮按钮，确保应用能正常退出
  */
 export async function beforeQuit(appInstance: Electron.App) {
-  appInstance.on('before-quit', async () => {
+  appLog.info('app beforeQuit')
+  appInstance.on(BEFORE_QUIT, async () => {
     try {
       const { presenter } = await import('@/presenter')
       presenter.floatingButtonPresenter.destroy()
@@ -71,7 +80,8 @@ export async function beforeQuit(appInstance: Electron.App) {
  * 悬浮按钮窗口不计入主窗口数量
  */
 export async function windowAllClosed(appInstance: Electron.App) {
-  appInstance.on('window-all-closed', async () => {
+  appLog.info('app windowAllClosed')
+  appInstance.on(WINDOW_ALL_CLOSED, async () => {
     const { presenter } = await import('@/presenter')
 
     const mainWindows = presenter.windowPresenter.getAllWindows()
@@ -79,12 +89,12 @@ export async function windowAllClosed(appInstance: Electron.App) {
     if (mainWindows.length === 0) {
       // 只有悬浮按钮窗口时，在非 macOS 平台退出应用
       if (process.platform !== 'darwin') {
-        appLog.log(
+        appLog.info(
           'main: All main windows closed on non-macOS platform, quitting app',
         )
         appInstance.quit()
       } else {
-        appLog.log(
+        appLog.info(
           'main: All main windows closed on macOS, keeping app running in dock',
         )
       }
@@ -92,7 +102,15 @@ export async function windowAllClosed(appInstance: Electron.App) {
   })
 }
 
+export async function appQuit(appInstance: Electron.App) {
+  appLog.info('app appQuit')
+  appInstance.on(QUIT, async (event: Electron.Event) => {
+    appLog.info('main: app quit event triggered.')
+  })
+}
+
 export async function didFinishLoad(appInstance: Electron.App) {
+  appLog.info('app didFinishLoad')
   // appInstance.on('did-finish-load', () => {
   //   appLog.info('did-finish-load')
   // })

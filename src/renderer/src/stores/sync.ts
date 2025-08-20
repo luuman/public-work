@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { usePresenter } from '@/composables/usePresenter'
-import { SYNC_EVENTS } from '@/events'
+import { SYNC_EVENTS } from '@/events/events'
 
 export const useSyncStore = defineStore('sync', () => {
   // 状态

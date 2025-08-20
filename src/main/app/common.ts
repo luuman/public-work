@@ -1,6 +1,9 @@
 // import { WINDOW_EVENTS } from '@/events/events'
 import { msgAllLog } from '@/presenter/logPresenter'
 import { presenter } from '@/presenter'
+import { ON_WINDOW } from './appEvent'
+
+const { FOCUS, BLUR } = ON_WINDOW
 
 let eventBus: (typeof import('@/events/eventbus'))['eventBus']
 
@@ -13,47 +16,29 @@ export async function setupCommon(appInstance: Electron.App) {
   const { eventBus: e } = await import('@/events/eventbus')
   eventBus = e
 
-  //   if (process.env.NODE_ENV === 'development') {
-  //     // 只在开发环境执行的代码
-  //     console.log('开发环境，加载开发辅助模块')
-  //   }
-
-  // 从配置中读取日志设置并应用
-  // const loggingEnabled = presenter.configPresenter.getLoggingEnabled()
-  // setLoggingEnabled(loggingEnabled)
-
   // 初始化托盘图标和菜单，并存储 presenter 实例
-  // presenter.setupTray()
+  presenter.setupTray()
 
   // 立即进行基本初始化，不等待窗口ready-to-show事件
-  // presenter.init()
+  presenter.init()
 
   if (process.env.NODE_ENV === 'development') {
-    import('./main-dev').then(async ({ setupDev }) => {
+    import('./mainDev').then(async ({ setupDev }) => {
       const { optimizer } = await import('@electron-toolkit/utils')
       setupDev(appInstance, optimizer)
     })
   }
 
   if (process.platform === 'darwin') {
-    import('./main-mac').then(({ setupMacStartup }) =>
+    import('./mainMac').then(({ setupMacStartup }) =>
       setupMacStartup(appInstance),
     )
   } else if (process.platform === 'win32') {
-    import('./main-win').then(({ setupWinStartup }) => setupWinStartup)
+    import('./mainWin').then(({ setupWinStartup }) => setupWinStartup)
   }
 
-  // 延迟注册快捷键（等第一个窗口创建）
-  appInstance.once('browser-window-created', async () => {
-    // const { presenter } = await import('@/presenter')
-    msgAllLog.info('app-start shortcutPresenter', presenter.shortcutPresenter)
-    // if (presenter?.shortcutPresenter) {
-    //   presenter.shortcutPresenter.registerShortcuts()
-    // }
-  })
-
   const { enabledChanged, checkForUpdates, ShowHiddenWindow } = await import(
-    './main-event'
+    './mainEvent'
   )
   // timeLogger(enabledChanged)()
   enabledChanged()
@@ -72,18 +57,32 @@ export async function setupCommon(appInstance: Electron.App) {
   // }
 
   setTimeout(async () => {
-    // const { presenter } = await import('@/presenter')
-
-    // console.timeEnd('MainWindow Delay')
-
     browserWindowFocus(appInstance)
     browserWindowBlur(appInstance, presenter)
   }, 100)
+
+  //   if (process.env.NODE_ENV === 'development') {
+  //     // 只在开发环境执行的代码
+  //     console.log('开发环境，加载开发辅助模块')
+  //   }
+
+  // 从配置中读取日志设置并应用
+  // const loggingEnabled = presenter.configPresenter.getLoggingEnabled()
+  // setLoggingEnabled(loggingEnabled)
 }
 
 export function browserWindowFocus(appInstance: Electron.App) {
+  // 延迟注册快捷键（等第一个窗口创建）
+  appInstance.once(FOCUS, async () => {
+    // const { presenter } = await import('@/presenter')
+    msgAllLog.info('app-start shortcutPresenter', presenter.shortcutPresenter)
+    // if (presenter?.shortcutPresenter) {
+    //   presenter.shortcutPresenter.registerShortcuts()
+    // }
+  })
+
   // 监听浏览器窗口获得焦点事件
-  appInstance.on('browser-window-focus', async () => {
+  appInstance.on(FOCUS, async () => {
     // 当任何窗口获得焦点时
     const {
       WINDOW_EVENTS: { APP_FOCUS },
@@ -97,7 +96,7 @@ export function browserWindowBlur(
   presenterInstance: any,
 ) {
   // 监听浏览器窗口失去焦点事件
-  appInstance.on('browser-window-blur', () => {
+  appInstance.on(BLUR, () => {
     // 检查是否所有窗口都已失去焦点，如果是则注销快捷键
     // 使用短延迟以处理窗口间焦点切换
     setTimeout(async () => {

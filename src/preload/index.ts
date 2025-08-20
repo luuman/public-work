@@ -24,20 +24,20 @@ const api = {
   getPathForFile: (file: File) => {
     return webUtils.getPathForFile(file)
   },
-  getWindowId: () => {
-    if (cachedWindowId !== undefined) {
-      return cachedWindowId
-    }
-    cachedWindowId = ipcRenderer.sendSync('get-window-id')
-    return cachedWindowId
-  },
-  getWebContentsId: () => {
-    if (cachedWebContentsId !== undefined) {
-      return cachedWebContentsId
-    }
-    cachedWebContentsId = ipcRenderer.sendSync('get-web-contents-id')
-    return cachedWebContentsId
-  },
+  // getWindowId: () => {
+  //   if (cachedWindowId !== undefined) {
+  //     return cachedWindowId
+  //   }
+  //   cachedWindowId = ipcRenderer.sendSync('get-window-id')
+  //   return cachedWindowId
+  // },
+  // getWebContentsId: () => {
+  //   if (cachedWebContentsId !== undefined) {
+  //     return cachedWebContentsId
+  //   }
+  //   cachedWebContentsId = ipcRenderer.sendSync('get-web-contents-id')
+  //   return cachedWebContentsId
+  // },
 }
 exposeElectronAPI()
 
@@ -55,9 +55,9 @@ if (process.contextIsolated) {
   window.api = api
 }
 window.addEventListener('DOMContentLoaded', () => {
-  cachedWebContentsId = ipcRenderer.sendSync('get-web-contents-id')
-  cachedWindowId = ipcRenderer.sendSync('get-window-id')
-  console.log('cachedWebContentsId', cachedWebContentsId, cachedWindowId)
+  // cachedWebContentsId = ipcRenderer.sendSync('get-web-contents-id')
+  // cachedWindowId = ipcRenderer.sendSync('get-window-id')
+  // console.log('cachedWebContentsId', cachedWebContentsId, cachedWindowId)
   webFrame.setVisualZoomLevelLimits(1, 1) // 禁用 trackpad 缩放
   webFrame.setZoomFactor(1)
 })

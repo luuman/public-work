@@ -1,4 +1,6 @@
+import { appLog } from '@/presenter/logPresenter'
 export async function handleShowHiddenWindow(mustShow: boolean) {
+  appLog.info('utils/index: handleShowHiddenWindow')
   const { presenter } = await import('@/presenter')
 
   const allWindows = presenter.windowPresenter.getAllWindows()
@@ -35,6 +37,7 @@ export async function handleShowHiddenWindow(mustShow: boolean) {
 
 // 异步处理显示或隐藏隐藏窗口的逻辑
 export async function handleShowHiddenWindows(mustShow: boolean) {
+  appLog.info('utils/index: handleShowHiddenWindows')
   // 延迟导入 presenter 模块，避免模块循环依赖或启动时加载过早
   const { presenter } = await import('@/presenter')
 

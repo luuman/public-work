@@ -4,6 +4,7 @@ import { getContextMenuLabels } from '@shared/i18n'
 import { presenter } from '.'
 import { eventBus } from '@/events/eventbus'
 import { TRAY_EVENTS } from '@/events/events'
+import { appLog } from '@/presenter/logPresenter'
 
 const TRAY_ICON_SIZES = {
   darwin: { width: 24, height: 24 },
@@ -62,6 +63,8 @@ export class TrayPresenter {
   private createContextMenu(): Menu {
     const locale = presenter.configPresenter.getLanguage?.() || 'zh-CN'
     const labels = getContextMenuLabels(locale)
+    // console.log('createContextMenu', presenter.configPresenter.getLanguage?.())
+    // console.log('createContextMenu', locale, labels)
 
     return Menu.buildFromTemplate([
       {

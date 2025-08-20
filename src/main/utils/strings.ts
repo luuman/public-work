@@ -1,3 +1,4 @@
+import { appLog } from '@/presenter/logPresenter'
 /**
  * Sanitizes text content for processing in knowledge base systems.
  * Performs the following transformations:
@@ -13,6 +14,7 @@
  * @throws Error if input is not a string
  */
 export function sanitizeText(text: string) {
+  appLog.info('utils/strings: sanitizeText')
   if (typeof text !== 'string') {
     throw new Error('Input must be a string')
   }

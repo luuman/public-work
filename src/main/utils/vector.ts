@@ -1,3 +1,4 @@
+import { appLog } from '@/presenter/logPresenter'
 import { MetricType } from '@shared/presenter'
 
 export const EMBEDDING_TEST_KEY = 'sample'
@@ -8,6 +9,7 @@ export const EMBEDDING_TEST_KEY = 'sample'
  * @returns
  */
 function calcNorm(vector: number[]): number {
+  appLog.info('utils/vector: calcNorm')
   return Math.sqrt(vector.reduce((sum, v) => sum + v * v, 0))
 }
 
@@ -18,6 +20,7 @@ function calcNorm(vector: number[]): number {
  * @returns true 表示已 normalized
  */
 export function isNormalized(vector: number[], tolerance = 1e-3): boolean {
+  appLog.info('utils/vector: isNormalized')
   if (!vector || !Array.isArray(vector) || vector.length === 0) return false
   if (tolerance < 0) throw new Error('Tolerance must be non-negative')
   if (vector.some((v) => typeof v !== 'number' || !isFinite(v))) return false
@@ -31,6 +34,7 @@ export function isNormalized(vector: number[], tolerance = 1e-3): boolean {
  * @returns normalized 向量
  */
 export function normalized(vector: number[]): number[] {
+  appLog.info('utils/vector: normalized')
   if (!vector || !Array.isArray(vector) || vector.length === 0) {
     throw new Error('Vector cannot be empty')
   }
@@ -48,6 +52,7 @@ export function normalized(vector: number[]): number[] {
  * @description 由于向量长度在多模态应用（或部分RAG应用）中有含义，因此未强制对embedding结果进行向量化，如有需要请自行调用
  */
 export function ensureNormalized(vector: number[], tolerance = 1e-3): number[] {
+  appLog.info('utils/vector: ensureNormalized')
   if (!vector || !Array.isArray(vector) || vector.length === 0) {
     throw new Error('Vector cannot be empty')
   }
@@ -68,7 +73,11 @@ export function ensureNormalized(vector: number[], tolerance = 1e-3): number[] {
  * @param metric 'cosine' | 'ip'
  * @returns 0~1 置信度值
  */
-export function normalizeDistance(distance: number, metric: MetricType): number {
+export function normalizeDistance(
+  distance: number,
+  metric: MetricType,
+): number {
+  appLog.info('utils/vector: normalizeDistance')
   if (metric === 'cosine') {
     // cosine distance ∈ [0,1]，0 越相似，1 越不相似
     // confidence = 1 - distance
@@ -85,7 +94,8 @@ export function normalizeDistance(distance: number, metric: MetricType): number 
     // k = 0.1 sigmoid 更平滑
     // k = 0.5 sigmoid 更陡峭
     const k = 0.04
-    const sigmoid = 1 / (1 + Math.exp(Math.sign(distance) * Math.pow(distance, 2) * k))
+    const sigmoid =
+      1 / (1 + Math.exp(Math.sign(distance) * Math.pow(distance, 2) * k))
     return sigmoid
   } else {
     throw new Error(`Unsupported metric: ${metric}`)
@@ -98,5 +108,6 @@ export function normalizeDistance(distance: number, metric: MetricType): number 
  * @returns 相似度度量方式
  */
 export function getMetric(normalized: boolean): MetricType {
+  appLog.info('utils/vector: getMetric')
   return normalized ? 'cosine' : 'ip'
 }

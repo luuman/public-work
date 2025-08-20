@@ -1,74 +1,64 @@
-import { eventBus, SendTarget } from '@/events/eventbus'
-import {
-  IConfigPresenter,
-  LLM_PROVIDER,
-  MODEL_META,
-  ModelConfig,
-  RENDERER_MODEL_META,
-  MCPServerConfig,
-  Prompt,
-  IModelConfig,
-  BuiltinKnowledgeConfig,
-} from '@shared/presenter'
-// import { SearchEngineTemplate } from '@shared/chat'
-// import { ModelType } from '@shared/model'
 import ElectronStore from 'electron-store'
-import { DEFAULT_PROVIDERS } from './providers'
+import { eventBus, SendTarget } from '@/events/eventbus'
 import path from 'path'
 import { app, nativeTheme, shell } from 'electron'
 import fs from 'fs'
-// import {
-//   CONFIG_EVENTS,
-//   SYSTEM_EVENTS,
-//   FLOATING_BUTTON_EVENTS,
-// } from '@/events/events'
-// import { McpConfHelper, SYSTEM_INMEM_MCP_SERVERS } from './mcpConfHelper'
-// import { presenter } from '@/presenter'
-// import { compare } from 'compare-versions'
+import {
+  CONFIG_EVENTS,
+  SYSTEM_EVENTS,
+  FLOATING_BUTTON_EVENTS,
+} from '@/events/events'
+import { presenter } from '@/presenter'
 import { defaultShortcutKey, ShortcutKeySetting } from './shortcutKeySettings'
+import { IConfigPresenter } from '@shared/presenter'
+// import { McpConfHelper, SYSTEM_INMEM_MCP_SERVERS } from './mcpConfHelper'
+// import { compare } from 'compare-versions'
 // import { ModelConfigHelper } from './modelConfig'
 // import { KnowledgeConfHelper } from './knowledgeConfHelper'
+// import { SearchEngineTemplate } from '@shared/chat'
+// import { ModelType } from '@shared/model'
+// import { DEFAULT_PROVIDERS } from './providers'
 
 // 定义应用设置的接口
 interface IAppSettings {
   // 在这里定义你的配置项，例如：
   language: string
-  providers: LLM_PROVIDER[]
+  // providers: LLM_PROVIDER[]
   closeToQuit: boolean // 是否点击关闭按钮时退出程序
   appVersion?: string // 用于版本检查和数据迁移
-  proxyMode?: string // 代理模式：system, none, custom
-  customProxyUrl?: string // 自定义代理地址
+  // proxyMode?: string // 代理模式：system, none, custom
+  // customProxyUrl?: string // 自定义代理地址
   customShortKey?: ShortcutKeySetting // 自定义快捷键
-  artifactsEffectEnabled?: boolean // artifacts动画效果是否启用
-  searchPreviewEnabled?: boolean // 搜索预览是否启用
-  contentProtectionEnabled?: boolean // 投屏保护是否启用
-  syncEnabled?: boolean // 是否启用同步功能
-  syncFolderPath?: string // 同步文件夹路径
-  lastSyncTime?: number // 上次同步时间
-  customSearchEngines?: string // 自定义搜索引擎JSON字符串
-  soundEnabled?: boolean // 音效是否启用
-  copyWithCotEnabled?: boolean
-  loggingEnabled?: boolean // 日志记录是否启用
-  floatingButtonEnabled?: boolean // 悬浮按钮是否启用
-  default_system_prompt?: string // 默认系统提示词
-  [key: string]: unknown // 允许任意键，使用unknown类型替代any
+  // artifactsEffectEnabled?: boolean // artifacts动画效果是否启用
+  // searchPreviewEnabled?: boolean // 搜索预览是否启用
+  // contentProtectionEnabled?: boolean // 投屏保护是否启用
+  // syncEnabled?: boolean // 是否启用同步功能
+  // syncFolderPath?: string // 同步文件夹路径
+  // lastSyncTime?: number // 上次同步时间
+  // customSearchEngines?: string // 自定义搜索引擎JSON字符串
+  // soundEnabled?: boolean // 音效是否启用
+  // copyWithCotEnabled?: boolean
+  // loggingEnabled?: boolean // 日志记录是否启用
+  // floatingButtonEnabled?: boolean // 悬浮按钮是否启用
+  // default_system_prompt?: string // 默认系统提示词
+  // [key: string]: unknown // 允许任意键，使用unknown类型替代any
 }
 
-// 为模型存储创建接口
-interface IModelStore {
-  models: MODEL_META[]
-  custom_models: MODEL_META[]
-}
+// // 为模型存储创建接口
+// interface IModelStore {
+//   models: MODEL_META[]
+//   custom_models: MODEL_META[]
+// }
 
-const defaultProviders = DEFAULT_PROVIDERS.map((provider) => ({
-  id: provider.id,
-  name: provider.name,
-  apiType: provider.apiType,
-  apiKey: provider.apiKey,
-  baseUrl: provider.baseUrl,
-  enable: provider.enable,
-  websites: provider.websites,
-}))
+// const defaultProviders = DEFAULT_PROVIDERS.map((provider) => ({
+//   id: provider.id,
+//   name: provider.name,
+//   apiType: provider.apiType,
+//   apiKey: provider.apiKey,
+//   baseUrl: provider.baseUrl,
+//   enable: provider.enable,
+//   websites: provider.websites,
+// }))
 
 // // 定义 storeKey 常量
 // const PROVIDERS_STORE_KEY = 'providers'
@@ -97,23 +87,23 @@ export class ConfigPresenter implements IConfigPresenter {
     this.store = new ElectronStore<IAppSettings>({
       name: 'app-settings',
       defaults: {
-        language: 'system',
-        providers: defaultProviders,
+        language: 'en-US',
+        // providers: defaultProviders,
         closeToQuit: false,
         customShortKey: defaultShortcutKey,
-        proxyMode: 'system',
-        customProxyUrl: '',
-        artifactsEffectEnabled: true,
-        searchPreviewEnabled: true,
-        contentProtectionEnabled: false,
-        syncEnabled: false,
-        syncFolderPath: path.join(this.userDataPath, 'sync'),
-        lastSyncTime: 0,
-        soundEnabled: false,
-        copyWithCotEnabled: true,
-        loggingEnabled: false,
-        floatingButtonEnabled: false,
-        default_system_prompt: '',
+        // proxyMode: 'system',
+        // customProxyUrl: '',
+        // artifactsEffectEnabled: true,
+        // searchPreviewEnabled: true,
+        // contentProtectionEnabled: false,
+        // syncEnabled: false,
+        // syncFolderPath: path.join(this.userDataPath, 'sync'),
+        // lastSyncTime: 0,
+        // soundEnabled: false,
+        // copyWithCotEnabled: true,
+        // loggingEnabled: false,
+        // floatingButtonEnabled: false,
+        // default_system_prompt: '',
         appVersion: this.currentAppVersion,
       },
     })
@@ -162,122 +152,82 @@ export class ConfigPresenter implements IConfigPresenter {
     //   this.setProviders([...existingProviders, ...newProviders])
     // }
   }
+  // 获取日志文件夹路径
+  getLoggingFolderPath(): string {
+    return path.join(this.userDataPath, 'logs')
+  }
 
-  // private initProviderModelsDir(): void {
-  //   const modelsDir = path.join(this.userDataPath, PROVIDER_MODELS_DIR)
-  //   if (!fs.existsSync(modelsDir)) {
-  //     fs.mkdirSync(modelsDir, { recursive: true })
-  //   }
-  // }
+  // 打开日志文件夹
+  async openLoggingFolder(): Promise<void> {
+    const loggingFolderPath = this.getLoggingFolderPath()
 
-  // private getProviderModelStore(
-  //   providerId: string,
-  // ): ElectronStore<IModelStore> {
-  //   if (!this.providersModelStores.has(providerId)) {
-  //     const store = new ElectronStore<IModelStore>({
-  //       name: `models_${providerId}`,
-  //       cwd: path.join(this.userDataPath, PROVIDER_MODELS_DIR),
-  //       defaults: {
-  //         models: [],
-  //         custom_models: [],
-  //       },
-  //     })
-  //     this.providersModelStores.set(providerId, store)
-  //   }
-  //   return this.providersModelStores.get(providerId)!
-  // }
+    // 如果文件夹不存在，先创建它
+    if (!fs.existsSync(loggingFolderPath)) {
+      fs.mkdirSync(loggingFolderPath, { recursive: true })
+    }
 
-  // private migrateModelData(oldVersion: string | undefined): void {
-  //   // 0.2.4 版本之前，minimax 的 baseUrl 是错误的，需要修正
-  //   if (oldVersion && compare(oldVersion, '0.2.4', '<')) {
-  //     const providers = this.getProviders()
-  //     for (const provider of providers) {
-  //       if (provider.id === 'minimax') {
-  //         provider.baseUrl = 'https://api.minimax.chat/v1'
-  //         this.setProviderById('minimax', provider)
-  //       }
-  //     }
-  //   }
-  //   // 0.0.10 版本之前，模型数据存储在app-settings.json中
-  //   if (oldVersion && compare(oldVersion, '0.0.10', '<')) {
-  //     // 迁移旧的模型数据
-  //     const providers = this.getProviders()
+    // 打开文件夹
+    await shell.openPath(loggingFolderPath)
+  }
+  async initTheme() {
+    const theme = this.getSetting<string>('appTheme')
+    if (theme) {
+      nativeTheme.themeSource = theme as 'dark' | 'light'
+    }
+    // 监听系统主题变化
+    nativeTheme.on('updated', async () => {
+      // 只有当主题设置为 system 时，才需要通知渲染进程
+      if (nativeTheme.themeSource === 'system') {
+        const {
+          SYSTEM_EVENTS: { SYSTEM_THEME_UPDATED },
+        } = await import('@/events/events')
+        eventBus.sendToMain(
+          SYSTEM_THEME_UPDATED,
+          nativeTheme.shouldUseDarkColors,
+        )
+      }
+    })
+  }
 
-  //     for (const provider of providers) {
-  //       // 检查并修正 ollama 的 baseUrl
-  //       if (provider.id === 'ollama' && provider.baseUrl) {
-  //         if (provider.baseUrl.endsWith('/v1')) {
-  //           provider.baseUrl = provider.baseUrl.replace(/\/v1$/, '')
-  //           // 保存修改后的提供者
-  //           this.setProviderById('ollama', provider)
-  //         }
-  //       }
+  async toggleTheme(theme: 'dark' | 'light' | 'system'): Promise<boolean> {
+    nativeTheme.themeSource = theme
+    this.setSetting('appTheme', theme)
+    return nativeTheme.shouldUseDarkColors
+  }
 
-  //       // 迁移provider模型
-  //       const oldProviderModelsKey = `${provider.id}_models`
-  //       const oldModels =
-  //         this.getSetting<(MODEL_META & { enabled: boolean })[]>(
-  //           oldProviderModelsKey,
-  //         )
+  async getTheme(): Promise<string> {
+    return this.getSetting<string>('appTheme') || 'system'
+  }
 
-  //       if (oldModels && oldModels.length > 0) {
-  //         const store = this.getProviderModelStore(provider.id)
-  //         // 遍历旧模型，保存启用状态
-  //         oldModels.forEach((model) => {
-  //           if (model.enabled) {
-  //             this.setModelStatus(provider.id, model.id, true)
-  //           }
-  //           // @ts-ignore - 需要删除enabled属性以便独立存储状态
-  //           delete model.enabled
-  //         })
-  //         // 保存模型列表到新存储
-  //         store.set('models', oldModels)
-  //         // 清除旧存储
-  //         this.store.delete(oldProviderModelsKey)
-  //       }
+  async getSystemTheme(): Promise<'dark' | 'light'> {
+    return nativeTheme.shouldUseDarkColors ? 'dark' : 'light'
+  }
 
-  //       // 迁移custom模型
-  //       const oldCustomModelsKey = `custom_models_${provider.id}`
-  //       const oldCustomModels =
-  //         this.getSetting<(MODEL_META & { enabled: boolean })[]>(
-  //           oldCustomModelsKey,
-  //         )
+  // 获取默认快捷键
+  getDefaultShortcutKey(): ShortcutKeySetting {
+    return {
+      ...defaultShortcutKey,
+    }
+  }
 
-  //       if (oldCustomModels && oldCustomModels.length > 0) {
-  //         const store = this.getProviderModelStore(provider.id)
-  //         // 遍历旧的自定义模型，保存启用状态
-  //         oldCustomModels.forEach((model) => {
-  //           if (model.enabled) {
-  //             this.setModelStatus(provider.id, model.id, true)
-  //           }
-  //           // @ts-ignore - 需要删除enabled属性以便独立存储状态
-  //           delete model.enabled
-  //         })
-  //         // 保存自定义模型列表到新存储
-  //         store.set('custom_models', oldCustomModels)
-  //         // 清除旧存储
-  //         this.store.delete(oldCustomModelsKey)
-  //       }
-  //     }
-  //   }
+  // 获取快捷键
+  getShortcutKey(): ShortcutKeySetting {
+    return (
+      this.getSetting<ShortcutKeySetting>('shortcutKey') || {
+        ...defaultShortcutKey,
+      }
+    )
+  }
 
-  //   // 0.0.17 版本之前，需要移除 qwenlm 提供商
-  //   if (oldVersion && compare(oldVersion, '0.0.17', '<')) {
-  //     // 获取当前所有提供商
-  //     const providers = this.getProviders()
+  // 设置快捷键
+  setShortcutKey(customShortcutKey: ShortcutKeySetting) {
+    this.setSetting('shortcutKey', customShortcutKey)
+  }
 
-  //     // 过滤掉 qwenlm 提供商
-  //     const filteredProviders = providers.filter(
-  //       (provider) => provider.id !== 'qwenlm',
-  //     )
-
-  //     // 如果过滤后数量不同，说明有移除操作，需要保存更新后的提供商列表
-  //     if (filteredProviders.length !== providers.length) {
-  //       this.setProviders(filteredProviders)
-  //     }
-  //   }
-  // }
-
+  // 重置快捷键
+  resetShortcutKeys() {
+    this.setSetting('shortcutKey', { ...defaultShortcutKey })
+  }
   getSetting<T>(key: string): T | undefined {
     try {
       return this.store.get(key) as T
@@ -287,16 +237,89 @@ export class ConfigPresenter implements IConfigPresenter {
     }
   }
 
-  // setSetting<T>(key: string, value: T): void {
-  //   try {
-  //     this.store.set(key, value)
-  //     // 触发设置变更事件（仅主进程内部使用）
-  //     eventBus.sendToMain(CONFIG_EVENTS.SETTING_CHANGED, key, value)
-  //   } catch (error) {
-  //     console.error(`[Config] Failed to set setting ${key}:`, error)
-  //   }
-  // }
+  setSetting<T>(key: string, value: T): void {
+    try {
+      this.store.set(key, value)
+      // 触发设置变更事件（仅主进程内部使用）
+      eventBus.sendToMain(CONFIG_EVENTS.SETTING_CHANGED, key, value)
+    } catch (error) {
+      console.error(`[Config] Failed to set setting ${key}:`, error)
+    }
+  }
+  getCloseToQuit(): boolean {
+    return this.getSetting<boolean>('closeToQuit') ?? false
+  }
 
+  setCloseToQuit(value: boolean): void {
+    this.setSetting('closeToQuit', value)
+  }
+
+  // 获取应用当前语言，考虑系统语言设置
+  getLanguage(): string {
+    const language = this.getSetting<string>('language') || 'system'
+    // console.log('getLanguage', language)
+
+    if (language !== 'system') {
+      return language
+    }
+    // console.log('getLanguage', this.getSystemLanguage())
+
+    return this.getSystemLanguage()
+  }
+
+  // 设置应用语言
+  setLanguage(language: string): void {
+    this.setSetting('language', language)
+    // 触发语言变更事件（需要通知所有标签页）
+    eventBus.sendToRenderer(
+      CONFIG_EVENTS.LANGUAGE_CHANGED,
+      SendTarget.ALL_WINDOWS,
+      language,
+    )
+  }
+
+  // 获取系统语言并匹配支持的语言列表
+  private getSystemLanguage(): string {
+    const systemLang = app.getLocale()
+    const supportedLanguages = [
+      'zh-CN',
+      'zh-TW',
+      'en-US',
+      'zh-HK',
+      'ko-KR',
+      'ru-RU',
+      'ja-JP',
+      'fr-FR',
+      'fa-IR',
+    ]
+
+    // 完全匹配
+    if (supportedLanguages.includes(systemLang)) {
+      return systemLang
+    }
+
+    // 部分匹配（只匹配语言代码）
+    const langCode = systemLang.split('-')[0]
+    const matchedLang = supportedLanguages.find((lang) =>
+      lang.startsWith(langCode),
+    )
+    if (matchedLang) {
+      return matchedLang
+    }
+
+    // 默认返回英文
+    return 'en-US'
+  }
+  getLoggingEnabled(): boolean {
+    return this.getSetting<boolean>('loggingEnabled') ?? false
+  }
+
+  setLoggingEnabled(enabled: boolean): void {
+    this.setSetting('loggingEnabled', enabled)
+    setTimeout(() => {
+      presenter.devicePresenter.restartApp()
+    }, 1000)
+  }
   // getProviders(): LLM_PROVIDER[] {
   //   const providers = this.getSetting<LLM_PROVIDER[]>(PROVIDERS_STORE_KEY)
   //   if (Array.isArray(providers) && providers.length > 0) {
@@ -622,69 +645,6 @@ export class ConfigPresenter implements IConfigPresenter {
   //   }
   // }
 
-  getCloseToQuit(): boolean {
-    return this.getSetting<boolean>('closeToQuit') ?? false
-  }
-
-  // setCloseToQuit(value: boolean): void {
-  //   this.setSetting('closeToQuit', value)
-  // }
-
-  // // 获取应用当前语言，考虑系统语言设置
-  // getLanguage(): string {
-  //   const language = this.getSetting<string>('language') || 'system'
-
-  //   if (language !== 'system') {
-  //     return language
-  //   }
-
-  //   return this.getSystemLanguage()
-  // }
-
-  // // 设置应用语言
-  // setLanguage(language: string): void {
-  //   this.setSetting('language', language)
-  //   // 触发语言变更事件（需要通知所有标签页）
-  //   eventBus.sendToRenderer(
-  //     CONFIG_EVENTS.LANGUAGE_CHANGED,
-  //     SendTarget.ALL_WINDOWS,
-  //     language,
-  //   )
-  // }
-
-  // // 获取系统语言并匹配支持的语言列表
-  // private getSystemLanguage(): string {
-  //   const systemLang = app.getLocale()
-  //   const supportedLanguages = [
-  //     'zh-CN',
-  //     'zh-TW',
-  //     'en-US',
-  //     'zh-HK',
-  //     'ko-KR',
-  //     'ru-RU',
-  //     'ja-JP',
-  //     'fr-FR',
-  //     'fa-IR',
-  //   ]
-
-  //   // 完全匹配
-  //   if (supportedLanguages.includes(systemLang)) {
-  //     return systemLang
-  //   }
-
-  //   // 部分匹配（只匹配语言代码）
-  //   const langCode = systemLang.split('-')[0]
-  //   const matchedLang = supportedLanguages.find((lang) =>
-  //     lang.startsWith(langCode),
-  //   )
-  //   if (matchedLang) {
-  //     return matchedLang
-  //   }
-
-  //   // 默认返回英文
-  //   return 'en-US'
-  // }
-
   // public getDefaultProviders(): LLM_PROVIDER[] {
   //   return DEFAULT_PROVIDERS
   // }
@@ -714,24 +674,6 @@ export class ConfigPresenter implements IConfigPresenter {
   // // 获取同步功能状态
   // getSyncEnabled(): boolean {
   //   return this.getSetting<boolean>('syncEnabled') || false
-  // }
-
-  // // 获取日志文件夹路径
-  // getLoggingFolderPath(): string {
-  //   return path.join(this.userDataPath, 'logs')
-  // }
-
-  // // 打开日志文件夹
-  // async openLoggingFolder(): Promise<void> {
-  //   const loggingFolderPath = this.getLoggingFolderPath()
-
-  //   // 如果文件夹不存在，先创建它
-  //   if (!fs.existsSync(loggingFolderPath)) {
-  //     fs.mkdirSync(loggingFolderPath, { recursive: true })
-  //   }
-
-  //   // 打开文件夹
-  //   await shell.openPath(loggingFolderPath)
   // }
 
   // // 设置同步功能状态
@@ -822,12 +764,12 @@ export class ConfigPresenter implements IConfigPresenter {
   //   this.setSetting('searchPreviewEnabled', boolValue)
   // }
 
-  // // 获取投屏保护设置状态
-  getContentProtectionEnabled(): boolean {
-    const value = this.getSetting<boolean>('contentProtectionEnabled')
-    // 默认投屏保护关闭
-    return value === undefined || value === null ? false : value
-  }
+  // // // 获取投屏保护设置状态
+  // getContentProtectionEnabled(): boolean {
+  //   const value = this.getSetting<boolean>('contentProtectionEnabled')
+  //   // 默认投屏保护关闭
+  //   return value === undefined || value === null ? false : value
+  // }
 
   // // 设置投屏保护状态
   // setContentProtectionEnabled(enabled: boolean): void {
@@ -837,17 +779,6 @@ export class ConfigPresenter implements IConfigPresenter {
   //     SendTarget.ALL_WINDOWS,
   //     enabled,
   //   )
-  // }
-
-  // getLoggingEnabled(): boolean {
-  //   return this.getSetting<boolean>('loggingEnabled') ?? false
-  // }
-
-  // setLoggingEnabled(enabled: boolean): void {
-  //   this.setSetting('loggingEnabled', enabled)
-  //   setTimeout(() => {
-  //     presenter.devicePresenter.restartApp()
-  //   }, 1000)
   // }
 
   // // 获取音效开关状态
@@ -1093,40 +1024,6 @@ export class ConfigPresenter implements IConfigPresenter {
   //   this.setSetting('notificationsEnabled', enabled)
   // }
 
-  async initTheme() {
-    const theme = this.getSetting<string>('appTheme')
-    if (theme) {
-      nativeTheme.themeSource = theme as 'dark' | 'light'
-    }
-    // 监听系统主题变化
-    nativeTheme.on('updated', async () => {
-      // 只有当主题设置为 system 时，才需要通知渲染进程
-      if (nativeTheme.themeSource === 'system') {
-        const {
-          SYSTEM_EVENTS: { SYSTEM_THEME_UPDATED },
-        } = await import('@/events/events')
-        eventBus.sendToMain(
-          SYSTEM_THEME_UPDATED,
-          nativeTheme.shouldUseDarkColors,
-        )
-      }
-    })
-  }
-
-  // async toggleTheme(theme: 'dark' | 'light' | 'system'): Promise<boolean> {
-  //   nativeTheme.themeSource = theme
-  //   this.setSetting('appTheme', theme)
-  //   return nativeTheme.shouldUseDarkColors
-  // }
-
-  // async getTheme(): Promise<string> {
-  //   return this.getSetting<string>('appTheme') || 'system'
-  // }
-
-  // async getSystemTheme(): Promise<'dark' | 'light'> {
-  //   return nativeTheme.shouldUseDarkColors ? 'dark' : 'light'
-  // }
-
   // // 获取所有自定义 prompts
   // async getCustomPrompts(): Promise<Prompt[]> {
   //   try {
@@ -1182,32 +1079,6 @@ export class ConfigPresenter implements IConfigPresenter {
   // // 设置默认系统提示词
   // async setDefaultSystemPrompt(prompt: string): Promise<void> {
   //   this.setSetting('default_system_prompt', prompt)
-  // }
-
-  // // 获取默认快捷键
-  // getDefaultShortcutKey(): ShortcutKeySetting {
-  //   return {
-  //     ...defaultShortcutKey,
-  //   }
-  // }
-
-  // // 获取快捷键
-  // getShortcutKey(): ShortcutKeySetting {
-  //   return (
-  //     this.getSetting<ShortcutKeySetting>('shortcutKey') || {
-  //       ...defaultShortcutKey,
-  //     }
-  //   )
-  // }
-
-  // // 设置快捷键
-  // setShortcutKey(customShortcutKey: ShortcutKeySetting) {
-  //   this.setSetting('shortcutKey', customShortcutKey)
-  // }
-
-  // // 重置快捷键
-  // resetShortcutKeys() {
-  //   this.setSetting('shortcutKey', { ...defaultShortcutKey })
   // }
 
   // // 获取知识库配置
@@ -1271,6 +1142,121 @@ export class ConfigPresenter implements IConfigPresenter {
   //     this.knowledgeConfHelper.getKnowledgeConfigs(),
   //     newConfigs,
   //   )
+  // }
+
+  // private initProviderModelsDir(): void {
+  //   const modelsDir = path.join(this.userDataPath, PROVIDER_MODELS_DIR)
+  //   if (!fs.existsSync(modelsDir)) {
+  //     fs.mkdirSync(modelsDir, { recursive: true })
+  //   }
+  // }
+
+  // private getProviderModelStore(
+  //   providerId: string,
+  // ): ElectronStore<IModelStore> {
+  //   if (!this.providersModelStores.has(providerId)) {
+  //     const store = new ElectronStore<IModelStore>({
+  //       name: `models_${providerId}`,
+  //       cwd: path.join(this.userDataPath, PROVIDER_MODELS_DIR),
+  //       defaults: {
+  //         models: [],
+  //         custom_models: [],
+  //       },
+  //     })
+  //     this.providersModelStores.set(providerId, store)
+  //   }
+  //   return this.providersModelStores.get(providerId)!
+  // }
+
+  // private migrateModelData(oldVersion: string | undefined): void {
+  //   // 0.2.4 版本之前，minimax 的 baseUrl 是错误的，需要修正
+  //   if (oldVersion && compare(oldVersion, '0.2.4', '<')) {
+  //     const providers = this.getProviders()
+  //     for (const provider of providers) {
+  //       if (provider.id === 'minimax') {
+  //         provider.baseUrl = 'https://api.minimax.chat/v1'
+  //         this.setProviderById('minimax', provider)
+  //       }
+  //     }
+  //   }
+  //   // 0.0.10 版本之前，模型数据存储在app-settings.json中
+  //   if (oldVersion && compare(oldVersion, '0.0.10', '<')) {
+  //     // 迁移旧的模型数据
+  //     const providers = this.getProviders()
+
+  //     for (const provider of providers) {
+  //       // 检查并修正 ollama 的 baseUrl
+  //       if (provider.id === 'ollama' && provider.baseUrl) {
+  //         if (provider.baseUrl.endsWith('/v1')) {
+  //           provider.baseUrl = provider.baseUrl.replace(/\/v1$/, '')
+  //           // 保存修改后的提供者
+  //           this.setProviderById('ollama', provider)
+  //         }
+  //       }
+
+  //       // 迁移provider模型
+  //       const oldProviderModelsKey = `${provider.id}_models`
+  //       const oldModels =
+  //         this.getSetting<(MODEL_META & { enabled: boolean })[]>(
+  //           oldProviderModelsKey,
+  //         )
+
+  //       if (oldModels && oldModels.length > 0) {
+  //         const store = this.getProviderModelStore(provider.id)
+  //         // 遍历旧模型，保存启用状态
+  //         oldModels.forEach((model) => {
+  //           if (model.enabled) {
+  //             this.setModelStatus(provider.id, model.id, true)
+  //           }
+  //           // @ts-ignore - 需要删除enabled属性以便独立存储状态
+  //           delete model.enabled
+  //         })
+  //         // 保存模型列表到新存储
+  //         store.set('models', oldModels)
+  //         // 清除旧存储
+  //         this.store.delete(oldProviderModelsKey)
+  //       }
+
+  //       // 迁移custom模型
+  //       const oldCustomModelsKey = `custom_models_${provider.id}`
+  //       const oldCustomModels =
+  //         this.getSetting<(MODEL_META & { enabled: boolean })[]>(
+  //           oldCustomModelsKey,
+  //         )
+
+  //       if (oldCustomModels && oldCustomModels.length > 0) {
+  //         const store = this.getProviderModelStore(provider.id)
+  //         // 遍历旧的自定义模型，保存启用状态
+  //         oldCustomModels.forEach((model) => {
+  //           if (model.enabled) {
+  //             this.setModelStatus(provider.id, model.id, true)
+  //           }
+  //           // @ts-ignore - 需要删除enabled属性以便独立存储状态
+  //           delete model.enabled
+  //         })
+  //         // 保存自定义模型列表到新存储
+  //         store.set('custom_models', oldCustomModels)
+  //         // 清除旧存储
+  //         this.store.delete(oldCustomModelsKey)
+  //       }
+  //     }
+  //   }
+
+  //   // 0.0.17 版本之前，需要移除 qwenlm 提供商
+  //   if (oldVersion && compare(oldVersion, '0.0.17', '<')) {
+  //     // 获取当前所有提供商
+  //     const providers = this.getProviders()
+
+  //     // 过滤掉 qwenlm 提供商
+  //     const filteredProviders = providers.filter(
+  //       (provider) => provider.id !== 'qwenlm',
+  //     )
+
+  //     // 如果过滤后数量不同，说明有移除操作，需要保存更新后的提供商列表
+  //     if (filteredProviders.length !== providers.length) {
+  //       this.setProviders(filteredProviders)
+  //     }
+  //   }
   // }
 }
 

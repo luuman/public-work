@@ -3,7 +3,7 @@ import { ref, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { usePresenter } from '@/composables/usePresenter'
-import { CONFIG_EVENTS } from '@/events'
+import { CONFIG_EVENTS } from '@/events/events'
 
 const RTL_LIST = ['fa-IR']
 export const useLanguageStore = defineStore('language', () => {

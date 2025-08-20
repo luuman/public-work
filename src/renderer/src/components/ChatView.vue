@@ -26,7 +26,7 @@ import MessageList from './message/MessageList.vue'
 import ChatInput from './ChatInput.vue'
 import { useRoute } from 'vue-router'
 import { UserMessageContent } from '@shared/chat'
-import { STREAM_EVENTS } from '@/events'
+import { STREAM_EVENTS } from '@/events/events'
 import { useSettingsStore } from '@/stores/settings'
 
 const route = useRoute()
@@ -85,7 +85,7 @@ onMounted(async () => {
     const threadId = await chatStore.createThread('新会话', {
       modelId: route.query.modelId as string,
       providerId: route.query.providerId as string,
-      artifacts: settingsStore.artifactsEffectEnabled ? 1 : 0
+      artifacts: settingsStore.artifactsEffectEnabled ? 1 : 0,
     })
     chatStore.setActiveThread(threadId)
   }
@@ -99,11 +99,11 @@ watch(
       const threadId = await chatStore.createThread('新会话', {
         modelId: route.query.modelId as string,
         providerId: route.query.providerId as string,
-        artifacts: settingsStore.artifactsEffectEnabled ? 1 : 0
+        artifacts: settingsStore.artifactsEffectEnabled ? 1 : 0,
       })
       chatStore.setActiveThread(threadId)
     }
-  }
+  },
 )
 
 // 清理事件监听

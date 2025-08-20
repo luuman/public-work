@@ -10,7 +10,7 @@ export class LogPresenter {
   private loggers: Record<string, CategoryLogger> = {}
 
   constructor() {
-    console.log(`IPC`)
+    console.log('LogPresenter')
     const workerPath = path.resolve(__dirname, './worker/log4jsWorker.js')
     // const workerPath = path.resolve(__dirname, './worker/logWorker.js')
 
@@ -39,10 +39,12 @@ export class LogPresenter {
 
   // 通过 category 获取 logger
   public getLogger(category: string): CategoryLogger {
+    console.log('LogPresenter getLogger')
     return this.loggers[category || app.getName()]
   }
 
   public destroy() {
+    console.log('LogPresenter destroy')
     this.logWorker.terminate()
   }
 }

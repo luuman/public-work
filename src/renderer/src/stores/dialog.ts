@@ -1,5 +1,5 @@
 import { usePresenter } from '@/composables/usePresenter'
-import { DIALOG_EVENTS } from '@/events'
+import { DIALOG_EVENTS } from '@/events/events'
 import { DialogRequest, DialogResponse } from '@shared/presenter'
 import { defineStore } from 'pinia'
 import { onMounted, onUnmounted, ref } from 'vue'

@@ -1,5 +1,5 @@
 import { usePresenter } from '@/composables/usePresenter'
-import { CONFIG_EVENTS } from '@/events'
+import { CONFIG_EVENTS } from '@/events/events'
 import { defineStore } from 'pinia'
 import { ref, onMounted } from 'vue'
 

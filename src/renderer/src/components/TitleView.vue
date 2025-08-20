@@ -105,7 +105,7 @@ import { useChatStore } from '@/stores/chat'
 import { usePresenter } from '@/composables/usePresenter'
 import { useThemeStore } from '@/stores/theme'
 import { ModelType } from '@shared/model'
-import { RATE_LIMIT_EVENTS } from '@/events'
+import { RATE_LIMIT_EVENTS } from '@/events/events'
 
 const configPresenter = usePresenter('configPresenter')
 const llmPresenter = usePresenter('llmproviderPresenter')

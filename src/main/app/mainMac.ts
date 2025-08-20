@@ -1,3 +1,7 @@
+import { ON_APP, ON_QUIT } from './appEvent'
+
+const { ACTIVATE } = ON_APP
+
 export function setupMacArgs(appInstance: Electron.App) {
   // macOS 平台特定参数
   appInstance.commandLine.appendSwitch(
@@ -8,7 +12,7 @@ export function setupMacArgs(appInstance: Electron.App) {
 
 export async function setupMacStartup(appInstance: Electron.App) {
   // 处理应用激活事件 (如 macOS 点击 Dock 图标)
-  appInstance.on('activate', async function () {
+  appInstance.on(ACTIVATE, async function () {
     const { presenter } = await import('@/presenter')
     // 在 macOS 上，点击 Dock 图标时重新创建窗口很常见
     // 同时处理已隐藏窗口的显示

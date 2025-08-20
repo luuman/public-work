@@ -1,5 +1,5 @@
 // src/main/presenter/windowPresenter/index.ts
-import { BrowserWindow, shell, app, nativeImage, ipcMain } from 'electron'
+import { BrowserWindow, app, nativeImage } from 'electron'
 import { join } from 'path'
 import icon from '../../../../resources/icon.png?asset'
 import iconWin from '../../../../resources/icon.ico?asset'
@@ -32,60 +32,12 @@ export class WindowPresenter implements IWindowPresenter {
   constructor(configPresenter: ConfigPresenter) {
     this.configPresenter = configPresenter
     this.windowManager = new WindowManager()
-    // this.windowFocus = new WindowFocus(this.windowManager)
-    // this.windowActions = new WindowActions(this.windowManager, configPresenter)
-    // this.windowEvents = new WindowEvents(
-    //   this.windowManager,
-    //   this.configPresenter,
-    //   this.windowActions,
-    //   this.isQuitting,
-    //   this.windowManager.getMainWindowId(),
-    // )
-    // this.ipcHandlers = IpcHandlers
+  }
 
-    // this.setupAppEventListeners()
+  init() {
+    this.createShellWindow()
     this.setupIpcHandlers()
-    // this.setupEventBusListeners()
   }
-
-  private get windowEvents(): WindowEvents {
-    if (!this._windowEvents) {
-      this._windowEvents = new WindowEvents(
-        this.windowManager,
-        this.configPresenter,
-        this.windowActions,
-        this.isQuitting,
-        this.windowManager.getMainWindowId() ?? -1,
-      )
-    }
-    return this._windowEvents
-  }
-
-  private get windowActions(): WindowActions {
-    if (!this._windowActions) {
-      this._windowActions = new WindowActions(
-        this.windowManager,
-        this.configPresenter,
-      )
-    }
-    return this._windowActions
-  }
-  private get windowFocus(): WindowFocus {
-    if (!this._windowFocus) {
-      this._windowFocus = new WindowFocus(this.windowManager)
-    }
-    return this._windowFocus
-  }
-
-  private get ipcHandlers(): IpcHandlers {
-    if (!this._ipcHandlers) {
-      this._ipcHandlers = IpcHandlers
-    }
-    console.log('this._ipcHandlers', this._ipcHandlers)
-    return this._ipcHandlers
-  }
-
-  // ========== 公共接口实现 ==========
 
   async createShellWindow(options?: {
     activateTabId?: number
@@ -214,6 +166,8 @@ export class WindowPresenter implements IWindowPresenter {
     return this.windowManager.getAllWindows()
   }
 
+  async sendToDefaultTab(channel: string, ...args: unknown[]): Promise<void> {}
+
   async sendToAllWindows(channel: string, ...args: unknown[]): Promise<void> {}
 
   sendToWindow(
@@ -222,14 +176,11 @@ export class WindowPresenter implements IWindowPresenter {
     ...args: unknown[]
   ): boolean {}
 
-  // ========== 私有方法 ==========
-
   /**
    * 设置应用级别事件监听
    */
   private setupAppEventListeners(): void {
     app.on('before-quit', () => {
-      appLog.info('App is quitting, setting isQuitting flag')
       this.isQuitting = true
     })
   }
@@ -253,5 +204,41 @@ export class WindowPresenter implements IWindowPresenter {
 
   private removeEventBusListeners(): void {
     this.windowEvents.unregisterAll()
+  }
+
+  private get windowEvents(): WindowEvents {
+    if (!this._windowEvents) {
+      this._windowEvents = new WindowEvents(
+        this.windowManager,
+        this.configPresenter,
+        this.windowActions,
+        this.isQuitting,
+        this.windowManager.getMainWindowId() ?? -1,
+      )
+    }
+    return this._windowEvents
+  }
+
+  private get windowActions(): WindowActions {
+    if (!this._windowActions) {
+      this._windowActions = new WindowActions(
+        this.windowManager,
+        this.configPresenter,
+      )
+    }
+    return this._windowActions
+  }
+  private get windowFocus(): WindowFocus {
+    if (!this._windowFocus) {
+      this._windowFocus = new WindowFocus(this.windowManager)
+    }
+    return this._windowFocus
+  }
+
+  private get ipcHandlers(): IpcHandlers {
+    if (!this._ipcHandlers) {
+      this._ipcHandlers = IpcHandlers
+    }
+    return this._ipcHandlers
   }
 }

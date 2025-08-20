@@ -1,7 +1,9 @@
+import { appLog } from '@/presenter/logPresenter'
 // utils/globalTime.ts
 const globalTimers = new Map<string, number>()
 
 function hookConsoleTime() {
+  appLog.info('utils/globalTime: hookConsoleTime')
   const originalTime = console.time
   const originalTimeEnd = console.timeEnd
 

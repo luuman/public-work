@@ -95,7 +95,7 @@ import { Switch } from '@/components/ui/switch'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { usePresenter } from '@/composables/usePresenter'
-import { RATE_LIMIT_EVENTS } from '@/events'
+import { RATE_LIMIT_EVENTS } from '@/events/events'
 import type { LLM_PROVIDER } from '@shared/presenter'
 import { useToast } from '@/components/ui/toast/use-toast'
 import {

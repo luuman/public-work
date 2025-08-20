@@ -225,7 +225,7 @@ import { Input } from '@/components/ui/input'
 import { usePresenter } from '@/composables/usePresenter'
 import KnowledgeFileItem from './KnowledgeFileItem.vue'
 import { BuiltinKnowledgeConfig, KnowledgeFileMessage } from '@shared/presenter'
-import { RAG_EVENTS } from '@/events'
+import { RAG_EVENTS } from '@/events/events'
 
 const props = defineProps<{
   builtinKnowledgeDetail: BuiltinKnowledgeConfig

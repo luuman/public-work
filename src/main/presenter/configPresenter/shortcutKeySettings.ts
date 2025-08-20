@@ -1,3 +1,10 @@
+export type ShortcutScope = 'renderer' | 'system'
+export interface ShortcutDefinition {
+  value: string
+  scope: ShortcutScope
+  // priority: ShortcutPriority
+}
+
 export const CommandKey = 'CommandOrControl'
 
 const ShiftKey = 'Shift'
@@ -16,8 +23,8 @@ export const rendererShortcutKey = {
   // CleanChatHistory: `${CommandKey}+L`,
   // DeleteConversation: `${CommandKey}+D`,
   // SwitchNextTab: `${CommandKey}+Tab`,
-  // SwitchPrevTab: `${CommandKey}+${ShiftKey}+Tab`,
-  // SwtichToLastTab: `${CommandKey}+9`
+  SwitchPrevTab: `${CommandKey}+${ShiftKey}+Tab`,
+  SwtichToLastTab: `${CommandKey}+9`,
 }
 
 // 系统层面 快捷键
@@ -25,7 +32,12 @@ export const systemShortcutKey = {
   ShowHideWindow: `${CommandKey}+O`,
   Quit: `${CommandKey}+Q`,
 }
-console.log('🥢Registering systemShortcutKey shortcuts')
+
+export type ShortcutKey =
+  | keyof typeof rendererShortcutKey
+  | keyof typeof systemShortcutKey
+
+export type ShortcutKeySetting = Record<ShortcutKey, ShortcutDefinition>
 
 export const defaultShortcutKey = {
   ...Object.fromEntries(
@@ -40,15 +52,4 @@ export const defaultShortcutKey = {
       { scope: 'system', value },
     ]),
   ),
-}
-
-export type ShortcutScope = 'renderer' | 'system'
-export interface ShortcutDefinition {
-  value: string
-  scope: ShortcutScope
-  // priority: ShortcutPriority
-}
-
-export type ShortcutKey = keyof typeof defaultShortcutKey
-
-export type ShortcutKeySetting = Record<ShortcutKey, ShortcutDefinition>
+} as ShortcutKeySetting

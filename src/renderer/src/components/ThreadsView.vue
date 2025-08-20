@@ -153,7 +153,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 // import { useWindowSize } from '@vueuse/core';
-import { SHORTCUT_EVENTS } from '@/events'
+import { SHORTCUT_EVENTS } from '@/events/events'
 import { DynamicScroller, DynamicScrollerItem } from 'vue-virtual-scroller'
 
 const { t } = useI18n()
