@@ -1,3 +1,6 @@
+if (__DEV__) console.log('🫁app:start')
+if (__DEV__) performance.mark('app:start')
+
 import { app } from 'electron'
 import '@/utils/consoleHock'
 import { appLog } from '@/presenter/logPresenter'
@@ -22,7 +25,9 @@ if (!app.requestSingleInstanceLock()) {
   handleSecondInstance(app)
 
   app.whenReady().then(async () => {
+    if (__DEV__) performance.mark('app:ready')
     appLog.info('app-ready')
+
     await setupCommon(app)
 
     windowAllClosed(app)
@@ -36,6 +41,22 @@ if (!app.requestSingleInstanceLock()) {
       import('./app/mainMac').then(({ setupMacArgs }) => setupMacArgs(app))
     }
   })
+}
+
+if (__DEV__) {
+  setTimeout(() => {
+    performance.measure('初始化耗时', 'app:start', 'app:ready')
+    performance.measure('初始化log耗时', 'log:start', 'log:ready')
+    performance.measure('窗口创建耗时', 'app:ready', 'win:create')
+    performance.measure('页面耗时', 'win:load-start', 'win:did-finish-load')
+    performance.measure('冷启动总耗时', 'app:start', 'win:did-finish-load')
+
+    const measures = performance.getEntriesByType('measure')
+    console.log(`🫁⏱ ${measures}`)
+    measures.forEach((m) => {
+      console.log(`🫁⏱ ${m.name}: ${m.duration.toFixed(2)}ms`)
+    })
+  }, 5000)
 }
 
 // win.webContents.on('dom-ready', () => {

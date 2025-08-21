@@ -45,6 +45,8 @@ export class WindowPresenter implements IWindowPresenter {
     x?: number
     y?: number
   }): Promise<number | null> {
+    if (__DEV__) performance.mark('win:create')
+
     const iconFile = nativeImage.createFromPath(
       process.platform === 'win32' ? iconWin : icon,
     )
@@ -93,6 +95,10 @@ export class WindowPresenter implements IWindowPresenter {
     // 管理窗口状态
     shellWindowState.manage(shellWindow)
 
+    shellWindow.webContents.on('did-finish-load', () => {
+      if (__DEV__) performance.mark('win:did-finish-load')
+    })
+
     // 注册窗口事件
     this.windowEvents.setupWindowEvents(shellWindow)
 
@@ -105,6 +111,7 @@ export class WindowPresenter implements IWindowPresenter {
     } else {
       shellWindow.loadFile(join(__dirname, '../renderer/index.html'))
     }
+    if (__DEV__) performance.mark('win:load-start')
 
     // 开发模式打开DevTools
     if (is.dev) {

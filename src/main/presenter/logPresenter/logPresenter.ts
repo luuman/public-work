@@ -10,7 +10,7 @@ export class LogPresenter {
   private loggers: Record<string, CategoryLogger> = {}
 
   constructor() {
-    console.log('LogPresenter')
+    if (__DEV__) performance.mark('log:start')
     const workerPath = path.resolve(__dirname, './worker/log4jsWorker.js')
     // const workerPath = path.resolve(__dirname, './worker/logWorker.js')
 

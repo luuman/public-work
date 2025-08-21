@@ -44,6 +44,7 @@ export class WindowPresenter implements IWindowPresenter {
     this.windows = new Map()
     this.configPresenter = configPresenter
     appLog.info('did-finish-load')
+    if (__DEV__) performance.mark('win:create')
 
     // 注册 IPC 处理器，供 Renderer 调用以获取窗口和 WebContents ID
     ipcMain.on('get-window-id', (event) => {
@@ -268,6 +269,8 @@ export class WindowPresenter implements IWindowPresenter {
       } else {
         console.warn(`Window ${windowId} was destroyed before ready-to-show.`)
       }
+      performance.mark('win:did-finish-load')
+      if (__DEV__) console.log('🫁app:finish')
     })
 
     // 窗口获得焦点
@@ -476,6 +479,8 @@ export class WindowPresenter implements IWindowPresenter {
       )
       shellWindow.loadFile(join(__dirname, '../renderer/index.html'))
     }
+    if (__DEV__) performance.mark('win:load-start')
+    if (__DEV__) console.log('🫁app:load')
 
     // 开发模式下可选开启 DevTools
     if (is.dev) {
