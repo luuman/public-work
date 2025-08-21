@@ -6,15 +6,15 @@
 </template>
 
 <script setup lang="ts">
-import { useAttrs } from 'vue';
+import { useAttrs } from 'vue'
 
 interface Props {
-  name: string;
-  className?: string;
+  name: string
+  className?: string
 }
 
-const props = defineProps<Props>();
-const attrs = useAttrs();
+defineProps<Props>()
+const attrs = useAttrs()
 </script>
 
 <style scoped>
