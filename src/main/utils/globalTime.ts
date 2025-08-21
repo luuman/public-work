@@ -23,7 +23,7 @@ function hookConsoleTime() {
       console.warn(`No such label '${label}' for console.timeEnd()`)
       return
     }
-    const duration = Date.now() - start
+    // const duration = Date.now() - start
     globalTimers.delete(label)
     // console.log(`⏱ ${label}: ${duration}ms`)
     originalTimeEnd.call(console, label)

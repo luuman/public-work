@@ -1,5 +1,5 @@
 // src/main/presenter/windowPresenter/index.ts
-import { BrowserWindow, app, nativeImage } from 'electron'
+import { BrowserWindow, nativeImage } from 'electron'
 import { join } from 'path'
 import icon from '../../../../resources/icon.png?asset'
 import iconWin from '../../../../resources/icon.ico?asset'
@@ -25,7 +25,6 @@ export class WindowPresenter implements IWindowPresenter {
   private _windowEvents: WindowEvents | null = null
   private _windowActions: WindowActions | null = null
   private _windowFocus: WindowFocus | null = null
-  private _ipcHandlers: IpcHandlers | null = null
   private isQuitting: boolean = false
   private readonly configPresenter: ConfigPresenter
 
@@ -46,6 +45,7 @@ export class WindowPresenter implements IWindowPresenter {
     y?: number
   }): Promise<number | null> {
     if (__DEV__) performance.mark('win:create')
+    console.log('🫁 win:create')
 
     const iconFile = nativeImage.createFromPath(
       process.platform === 'win32' ? iconWin : icon,
@@ -97,6 +97,7 @@ export class WindowPresenter implements IWindowPresenter {
 
     shellWindow.webContents.on('did-finish-load', () => {
       if (__DEV__) performance.mark('win:did-finish-load')
+      console.log('🫁 win:did-finish-load')
     })
 
     // 注册窗口事件
@@ -111,7 +112,9 @@ export class WindowPresenter implements IWindowPresenter {
     } else {
       shellWindow.loadFile(join(__dirname, '../renderer/index.html'))
     }
+
     if (__DEV__) performance.mark('win:load-start')
+    console.log('🫁 win:load-start')
 
     // 开发模式打开DevTools
     if (is.dev) {
@@ -129,6 +132,8 @@ export class WindowPresenter implements IWindowPresenter {
     )
   }
 
+  getFocusedWindow(): void {}
+
   minimize(windowId: number): void {
     this.windowActions.minimize(windowId)
   }
@@ -141,10 +146,7 @@ export class WindowPresenter implements IWindowPresenter {
     this.windowActions.close(windowId)
   }
 
-  async closeWindow(
-    windowId: number,
-    forceClose: boolean = false,
-  ): Promise<void> {
+  async closeWindow(windowId: number): Promise<void> {
     this.windowActions.close(windowId)
   }
 
@@ -173,45 +175,52 @@ export class WindowPresenter implements IWindowPresenter {
     return this.windowManager.getAllWindows()
   }
 
-  async sendToDefaultTab(channel: string, ...args: unknown[]): Promise<void> {}
+  async sendToDefaultTab(
+    _channel: string,
+    ..._args: unknown[]
+  ): Promise<void> {}
 
-  async sendToAllWindows(channel: string, ...args: unknown[]): Promise<void> {}
+  async sendToAllWindows(
+    _channel: string,
+    ..._args: unknown[]
+  ): Promise<void> {}
 
-  sendToWindow(
-    windowId: number,
-    channel: string,
-    ...args: unknown[]
-  ): boolean {}
+  // sendToWindow(
+  //   _windowId: number,
+  //   _channel: string,
+  //   ..._args: unknown[]
+  // ): boolean {}
 
   /**
    * 设置应用级别事件监听
    */
-  private setupAppEventListeners(): void {
-    app.on('before-quit', () => {
-      this.isQuitting = true
-    })
-  }
+  // private setupAppEventListeners(): void {
+  //   app.on('before-quit', () => {
+  //     this.isQuitting = true
+  //   })
+  // }
 
   /**
    * 设置IPC通信处理器
    */
   private setupIpcHandlers(): void {
-    this.ipcHandlers.registerAll()
+    IpcHandlers.registerAll()
   }
-  private removeIpcHandlers(): void {
-    this.ipcHandlers.unregisterAll()
-  }
+
+  // private removeIpcHandlers(): void {
+  //   IpcHandlers.unregisterAll()
+  // }
 
   /**
    * 设置事件总线监听
    */
-  private setupEventBusListeners(): void {
-    this.windowEvents.registerAll()
-  }
+  // private setupEventBusListeners(): void {
+  //   this.windowEvents.registerAll()
+  // }
 
-  private removeEventBusListeners(): void {
-    this.windowEvents.unregisterAll()
-  }
+  // private removeEventBusListeners(): void {
+  //   this.windowEvents.unregisterAll()
+  // }
 
   private get windowEvents(): WindowEvents {
     if (!this._windowEvents) {
@@ -228,10 +237,7 @@ export class WindowPresenter implements IWindowPresenter {
 
   private get windowActions(): WindowActions {
     if (!this._windowActions) {
-      this._windowActions = new WindowActions(
-        this.windowManager,
-        this.configPresenter,
-      )
+      this._windowActions = new WindowActions(this.windowManager)
     }
     return this._windowActions
   }
@@ -240,12 +246,5 @@ export class WindowPresenter implements IWindowPresenter {
       this._windowFocus = new WindowFocus(this.windowManager)
     }
     return this._windowFocus
-  }
-
-  private get ipcHandlers(): IpcHandlers {
-    if (!this._ipcHandlers) {
-      this._ipcHandlers = IpcHandlers
-    }
-    return this._ipcHandlers
   }
 }

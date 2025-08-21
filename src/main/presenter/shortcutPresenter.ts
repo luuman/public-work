@@ -1,7 +1,7 @@
-import { app, globalShortcut, dialog } from 'electron'
-import { presenter } from '.'
-import { SHORTCUT_EVENTS, TRAY_EVENTS } from '@/events/events'
-import { eventBus, SendTarget } from '@/events/eventbus'
+import { globalShortcut, dialog } from 'electron'
+// import { presenter } from '.'
+import { TRAY_EVENTS } from '@/events/events'
+import { eventBus } from '@/events/eventbus'
 import {
   defaultShortcutKey,
   ShortcutDefinition,
@@ -47,7 +47,7 @@ export class ShortcutPresenter {
   async registerShortcuts(): Promise<void> {
     if (this.isActive) return
     // 避免重复注册
-    console.log('Registering shortcuts', this.shortcutKeys.NewConversation)
+    // console.log('Registering shortcuts', this.shortcutKeys.NewConversation)
 
     // 合并默认配置和用户自定义配置（后者优先级更高）
     const mergedKeys = {
@@ -100,107 +100,107 @@ export class ShortcutPresenter {
    */
   private getHandlerForKey(key: keyof ShortcutKeySetting): (() => void) | null {
     // 获取当前聚焦窗口（所有需要窗口的快捷键共用此检查）
-    const getFocusedWindowId = (): number | null => {
-      const focusedWindow = presenter.windowPresenter.getFocusedWindow()
-      return focusedWindow?.isFocused() ? focusedWindow.id : null
-    }
+    // const getFocusedWindowId = (): number | null => {
+    //   const focusedWindow = presenter.windowPresenter.getFocusedWindow()
+    //   return focusedWindow?.isFocused() ? focusedWindow.id : null
+    // }
     console.log('Registering getHandlerForKey', key)
 
     // 根据不同的快捷键类型返回对应的处理函数
     switch (key) {
       // === 会话管理 ===
-      case 'NewConversation':
-        return () => {
-          const windowId = getFocusedWindowId()
-          if (windowId) {
-            presenter.windowPresenter.sendToActiveTab(
-              windowId,
-              SHORTCUT_EVENTS.CREATE_NEW_CONVERSATION,
-            )
-          }
-        }
+      // case 'NewConversation':
+      //   return () => {
+      //     const windowId = getFocusedWindowId()
+      //     if (windowId) {
+      //       presenter.windowPresenter.sendToActiveTab(
+      //         windowId,
+      //         SHORTCUT_EVENTS.CREATE_NEW_CONVERSATION,
+      //       )
+      //     }
+      //   }
 
-      case 'NewWindow':
-        return () => eventBus.sendToMain(SHORTCUT_EVENTS.CREATE_NEW_WINDOW)
+      // case 'NewWindow':
+      //   return () => eventBus.sendToMain(SHORTCUT_EVENTS.CREATE_NEW_WINDOW)
 
-      // === 标签页管理 ===
-      case 'NewTab':
-        return () => {
-          const windowId = getFocusedWindowId()
-          if (windowId) {
-            eventBus.sendToMain(SHORTCUT_EVENTS.CREATE_NEW_TAB, windowId)
-          }
-        }
+      // // === 标签页管理 ===
+      // case 'NewTab':
+      //   return () => {
+      //     const windowId = getFocusedWindowId()
+      //     if (windowId) {
+      //       eventBus.sendToMain(SHORTCUT_EVENTS.CREATE_NEW_TAB, windowId)
+      //     }
+      //   }
 
-      case 'CloseTab':
-        return () => {
-          const windowId = getFocusedWindowId()
-          if (windowId) {
-            eventBus.sendToMain(SHORTCUT_EVENTS.CLOSE_CURRENT_TAB, windowId)
-          }
-        }
+      // case 'CloseTab':
+      //   return () => {
+      //     const windowId = getFocusedWindowId()
+      //     if (windowId) {
+      //       eventBus.sendToMain(SHORTCUT_EVENTS.CLOSE_CURRENT_TAB, windowId)
+      //     }
+      //   }
 
-      // === 应用控制 ===
-      case 'Quit':
-        return () => app.quit()
+      // // === 应用控制 ===
+      // case 'Quit':
+      //   return () => app.quit()
 
-      // === 视图控制 ===
-      case 'ZoomIn':
-        return () =>
-          eventBus.send(SHORTCUT_EVENTS.ZOOM_IN, SendTarget.ALL_WINDOWS)
+      // // === 视图控制 ===
+      // case 'ZoomIn':
+      //   return () =>
+      //     eventBus.send(SHORTCUT_EVENTS.ZOOM_IN, SendTarget.ALL_WINDOWS)
 
-      case 'ZoomOut':
-        return () =>
-          eventBus.send(SHORTCUT_EVENTS.ZOOM_OUT, SendTarget.ALL_WINDOWS)
+      // case 'ZoomOut':
+      //   return () =>
+      //     eventBus.send(SHORTCUT_EVENTS.ZOOM_OUT, SendTarget.ALL_WINDOWS)
 
-      // case 'ZoomReset':
-      //     return () => eventBus.send(SHORTCUT_EVENTS.ZOOM_RESET, SendTarget.ALL_WINDOWS);
+      // // case 'ZoomReset':
+      // //     return () => eventBus.send(SHORTCUT_EVENTS.ZOOM_RESET, SendTarget.ALL_WINDOWS);
 
-      // === 导航功能 ===
-      case 'GoSettings':
-        return () => {
-          const windowId = getFocusedWindowId()
-          if (windowId) {
-            presenter.windowPresenter.sendToActiveTab(
-              windowId,
-              SHORTCUT_EVENTS.GO_SETTINGS,
-            )
-          }
-        }
+      // // === 导航功能 ===
+      // case 'GoSettings':
+      //   return () => {
+      //     const windowId = getFocusedWindowId()
+      //     if (windowId) {
+      //       presenter.windowPresenter.sendToActiveTab(
+      //         windowId,
+      //         SHORTCUT_EVENTS.GO_SETTINGS,
+      //       )
+      //     }
+      //   }
 
-      // === 数据管理 ===
-      case 'CleanChatHistory':
-        return () => {
-          const windowId = getFocusedWindowId()
-          if (windowId) {
-            presenter.windowPresenter.sendToActiveTab(
-              windowId,
-              SHORTCUT_EVENTS.CLEAN_CHAT_HISTORY,
-            )
-          }
-        }
+      // // === 数据管理 ===
+      // case 'CleanChatHistory':
+      //   return () => {
+      //     const windowId = getFocusedWindowId()
+      //     if (windowId) {
+      //       presenter.windowPresenter.sendToActiveTab(
+      //         windowId,
+      //         SHORTCUT_EVENTS.CLEAN_CHAT_HISTORY,
+      //       )
+      //     }
+      //   }
 
-      case 'DeleteConversation':
-        return () => {
-          const windowId = getFocusedWindowId()
-          if (windowId) {
-            presenter.windowPresenter.sendToActiveTab(
-              windowId,
-              SHORTCUT_EVENTS.DELETE_CONVERSATION,
-            )
-          }
-        }
-      case 'SwitchNextTab':
-        return () => {
-          const windowId = getFocusedWindowId()
-          if (windowId) this.switchToNextTab(windowId)
-        }
+      // case 'DeleteConversation':
+      //   return () => {
+      //     const windowId = getFocusedWindowId()
+      //     if (windowId) {
+      //       presenter.windowPresenter.sendToActiveTab(
+      //         windowId,
+      //         SHORTCUT_EVENTS.DELETE_CONVERSATION,
+      //       )
+      //     }
+      //   }
+      // case 'SwitchNextTab':
+      //   return () => {
+      //     const windowId = getFocusedWindowId()
+      //     if (windowId) this.switchToNextTab(windowId)
+      //   }
 
-      case 'SwitchPrevTab':
-        return () => {
-          const windowId = getFocusedWindowId()
-          if (windowId) this.switchToPreviousTab(windowId)
-        }
+      // case 'SwitchPrevTab':
+      //   return () => {
+      //     const windowId = getFocusedWindowId()
+      //     if (windowId) this.switchToPreviousTab(windowId)
+      //   }
 
       // case 'SwitchToLastTab':
       //     return () => {
@@ -226,62 +226,62 @@ export class ShortcutPresenter {
     }
   }
 
-  /**
-   * 切换到下一个标签页（循环模式）
-   * @param windowId 目标窗口ID
-   */
-  private async switchToNextTab(windowId: number): Promise<void> {
-    try {
-      const tabsData = await presenter.tabPresenter.getWindowTabsData(windowId)
-      if (!tabsData || tabsData.length <= 1) return
-      // 无标签页或只有一个时不操作
+  // /**
+  //  * 切换到下一个标签页（循环模式）
+  //  * @param windowId 目标窗口ID
+  //  */
+  // private async switchToNextTab(windowId: number): Promise<void> {
+  //   try {
+  //     const tabsData = await presenter.tabPresenter.getWindowTabsData(windowId)
+  //     if (!tabsData || tabsData.length <= 1) return
+  //     // 无标签页或只有一个时不操作
 
-      const activeTabIndex = tabsData.findIndex((tab) => tab.isActive)
-      if (activeTabIndex === -1) return
+  //     const activeTabIndex = tabsData.findIndex((tab) => tab.isActive)
+  //     if (activeTabIndex === -1) return
 
-      const nextTabIndex = (activeTabIndex + 1) % tabsData.length
-      // 循环计算
-      await presenter.tabPresenter.switchTab(tabsData[nextTabIndex].id)
-    } catch (error) {
-      console.error('❌Failed to switch to next tab:', error)
-    }
-  }
+  //     const nextTabIndex = (activeTabIndex + 1) % tabsData.length
+  //     // 循环计算
+  //     await presenter.tabPresenter.switchTab(tabsData[nextTabIndex].id)
+  //   } catch (error) {
+  //     console.error('❌Failed to switch to next tab:', error)
+  //   }
+  // }
 
-  /**
-   * 切换到上一个标签页（循环模式）
-   * @param windowId 目标窗口ID
-   */
-  private async switchToPreviousTab(windowId: number): Promise<void> {
-    try {
-      const tabsData = await presenter.tabPresenter.getWindowTabsData(windowId)
-      if (!tabsData || tabsData.length <= 1) return
+  // /**
+  //  * 切换到上一个标签页（循环模式）
+  //  * @param windowId 目标窗口ID
+  //  */
+  // private async switchToPreviousTab(windowId: number): Promise<void> {
+  //   try {
+  //     const tabsData = await presenter.tabPresenter.getWindowTabsData(windowId)
+  //     if (!tabsData || tabsData.length <= 1) return
 
-      const activeTabIndex = tabsData.findIndex((tab) => tab.isActive)
-      if (activeTabIndex === -1) return
+  //     const activeTabIndex = tabsData.findIndex((tab) => tab.isActive)
+  //     if (activeTabIndex === -1) return
 
-      const previousTabIndex =
-        (activeTabIndex - 1 + tabsData.length) % tabsData.length
-      // 处理负数情况
-      await presenter.tabPresenter.switchTab(tabsData[previousTabIndex].id)
-    } catch (error) {
-      console.error('❌Failed to switch to previous tab:', error)
-    }
-  }
+  //     const previousTabIndex =
+  //       (activeTabIndex - 1 + tabsData.length) % tabsData.length
+  //     // 处理负数情况
+  //     await presenter.tabPresenter.switchTab(tabsData[previousTabIndex].id)
+  //   } catch (error) {
+  //     console.error('❌Failed to switch to previous tab:', error)
+  //   }
+  // }
 
-  /**
-   * 切换到最后一个标签页
-   * @param windowId 目标窗口ID
-   */
-  private async switchToLastTab(windowId: number): Promise<void> {
-    try {
-      const tabsData = await presenter.tabPresenter.getWindowTabsData(windowId)
-      if (!tabsData || tabsData.length === 0) return
+  // /**
+  //  * 切换到最后一个标签页
+  //  * @param windowId 目标窗口ID
+  //  */
+  // private async switchToLastTab(windowId: number): Promise<void> {
+  //   try {
+  //     const tabsData = await presenter.tabPresenter.getWindowTabsData(windowId)
+  //     if (!tabsData || tabsData.length === 0) return
 
-      await presenter.tabPresenter.switchTab(tabsData[tabsData.length - 1].id)
-    } catch (error) {
-      console.error('❌Failed to switch to last tab:', error)
-    }
-  }
+  //     await presenter.tabPresenter.switchTab(tabsData[tabsData.length - 1].id)
+  //   } catch (error) {
+  //     console.error('❌Failed to switch to last tab:', error)
+  //   }
+  // }
 
   /**
    * 安全注册快捷键

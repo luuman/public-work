@@ -3,11 +3,7 @@ import { eventBus, SendTarget } from '@/events/eventbus'
 import path from 'path'
 import { app, nativeTheme, shell } from 'electron'
 import fs from 'fs'
-import {
-  CONFIG_EVENTS,
-  SYSTEM_EVENTS,
-  FLOATING_BUTTON_EVENTS,
-} from '@/events/events'
+import { CONFIG_EVENTS } from '@/events/events'
 import { presenter } from '@/presenter'
 import { defaultShortcutKey, ShortcutKeySetting } from './shortcutKeySettings'
 import { IConfigPresenter } from '@shared/presenter'
@@ -228,24 +224,27 @@ export class ConfigPresenter implements IConfigPresenter {
   resetShortcutKeys() {
     this.setSetting('shortcutKey', { ...defaultShortcutKey })
   }
+
   getSetting<T>(key: string): T | undefined {
     try {
-      return this.store.get(key) as T
+      // 使用类型断言，但会失去类型安全性
+      return this.store.get(key as keyof IAppSettings) as unknown as T
     } catch (error) {
       console.error(`[Config] Failed to get setting ${key}:`, error)
       return undefined
     }
   }
 
-  setSetting<T>(key: string, value: T): void {
-    try {
-      this.store.set(key, value)
-      // 触发设置变更事件（仅主进程内部使用）
-      eventBus.sendToMain(CONFIG_EVENTS.SETTING_CHANGED, key, value)
-    } catch (error) {
-      console.error(`[Config] Failed to set setting ${key}:`, error)
-    }
+  setSetting<T>(_key: string, _value: T): void {
+    // try {
+    //   this.store.set(key, value)
+    //   // 触发设置变更事件（仅主进程内部使用）
+    //   eventBus.sendToMain(CONFIG_EVENTS.SETTING_CHANGED, key, value)
+    // } catch (error) {
+    //   console.error(`[Config] Failed to set setting ${key}:`, error)
+    // }
   }
+
   getCloseToQuit(): boolean {
     return this.getSetting<boolean>('closeToQuit') ?? false
   }

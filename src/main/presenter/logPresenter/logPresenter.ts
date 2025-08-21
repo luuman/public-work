@@ -11,6 +11,8 @@ export class LogPresenter {
 
   constructor() {
     if (__DEV__) performance.mark('log:start')
+    console.log('🫁 log:start')
+
     const workerPath = path.resolve(__dirname, './worker/log4jsWorker.js')
     // const workerPath = path.resolve(__dirname, './worker/logWorker.js')
 

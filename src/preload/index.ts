@@ -4,13 +4,12 @@ import {
   nativeImage,
   webUtils,
   webFrame,
-  ipcRenderer,
 } from 'electron'
 import { exposeElectronAPI } from '@electron-toolkit/preload'
 
 // 缓存变量
-let cachedWindowId: number | undefined = undefined
-let cachedWebContentsId: number | undefined = undefined
+// let cachedWindowId: number | undefined = undefined
+// let cachedWebContentsId: number | undefined = undefined
 
 // Custom APIs for renderer
 const api = {

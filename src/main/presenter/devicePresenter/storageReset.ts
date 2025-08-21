@@ -18,10 +18,10 @@ function removeDirectory(dirPath: string) {
   }
 }
 
-function removeFile(filePath: string) {
-  appLog.info('devicePresenter removeFile')
-  if (fs.existsSync(filePath)) fs.unlinkSync(filePath)
-}
+// function removeFile(filePath: string) {
+//   appLog.info('devicePresenter removeFile')
+//   if (fs.existsSync(filePath)) fs.unlinkSync(filePath)
+// }
 
 export async function resetDataWithConfirm(): Promise<void> {
   appLog.info('devicePresenter resetDataWithConfirm')

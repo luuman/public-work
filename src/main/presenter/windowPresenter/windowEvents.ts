@@ -10,7 +10,7 @@ import {
   CONFIG_EVENTS,
 } from '@/events/events'
 import { presenter } from '../'
-import { TabPresenter } from '../tabPresenter'
+// import { TabPresenter } from '../tabPresenter'
 import { appLog } from '@/presenter/logPresenter'
 
 /**
@@ -49,6 +49,7 @@ export class WindowEvents {
     this.windowActions = windowActions
     this.isQuitting = isQuitting
     this.mainWindowId = mainWindowId
+    console.log('🫁 app:ready', this.configPresenter)
   }
 
   /**
@@ -401,30 +402,30 @@ export class WindowEvents {
       return
     }
 
-    try {
-      const tabPresenterInstance = presenter.tabPresenter as TabPresenter
-      const activeTabId = await tabPresenterInstance.getActiveTabId(windowId)
+    // try {
+    //   const tabPresenterInstance = presenter.tabPresenter as TabPresenter
+    //   const activeTabId = await tabPresenterInstance.getActiveTabId(windowId)
 
-      if (activeTabId) {
-        appLog.info(
-          `Window ${windowId} restored: activating active tab ${activeTabId}.`,
-        )
-        await tabPresenterInstance.switchTab(activeTabId)
-      } else {
-        appLog.warn(`Window ${windowId} restored: no active tab found.`)
-        const tabsInWindow =
-          await tabPresenterInstance.getWindowTabsData(windowId)
-        for (const tabData of tabsInWindow) {
-          const tabView = await tabPresenterInstance.getTab(tabData.id)
-          if (tabView && !tabView.webContents.isDestroyed()) {
-            tabView.setVisible(false)
-          }
-        }
-      }
-    } catch (error) {
-      appLog.error(`Error handling restore for window ${windowId}:`, error)
-      throw error
-    }
+    //   if (activeTabId) {
+    //     appLog.info(
+    //       `Window ${windowId} restored: activating active tab ${activeTabId}.`,
+    //     )
+    //     await tabPresenterInstance.switchTab(activeTabId)
+    //   } else {
+    //     appLog.warn(`Window ${windowId} restored: no active tab found.`)
+    //     const tabsInWindow =
+    //       await tabPresenterInstance.getWindowTabsData(windowId)
+    //     for (const tabData of tabsInWindow) {
+    //       const tabView = await tabPresenterInstance.getTab(tabData.id)
+    //       if (tabView && !tabView.webContents.isDestroyed()) {
+    //         tabView.setVisible(false)
+    //       }
+    //     }
+    //   }
+    // } catch (error) {
+    //   appLog.error(`Error handling restore for window ${windowId}:`, error)
+    //   throw error
+    // }
   }
 
   /**
@@ -439,26 +440,26 @@ export class WindowEvents {
     const state = this.windowManager.getWindowFocusState(windowId)
     if (!state || !this.shouldFocusTab(state, reason)) return
 
-    try {
-      const tabPresenterInstance = presenter.tabPresenter as TabPresenter
-      const tabsData = await tabPresenterInstance.getWindowTabsData(windowId)
-      const activeTab = tabsData.find((tab) => tab.isActive)
+    // try {
+    //   const tabPresenterInstance = presenter.tabPresenter as TabPresenter
+    //   const tabsData = await tabPresenterInstance.getWindowTabsData(windowId)
+    //   const activeTab = tabsData.find((tab) => tab.isActive)
 
-      if (activeTab) {
-        appLog.info(
-          `Focusing active tab ${activeTab.id} in window ${windowId} (reason: ${reason})`,
-        )
-        await tabPresenterInstance.switchTab(activeTab.id)
+    //   if (activeTab) {
+    //     appLog.info(
+    //       `Focusing active tab ${activeTab.id} in window ${windowId} (reason: ${reason})`,
+    //     )
+    //     await tabPresenterInstance.switchTab(activeTab.id)
 
-        // 更新焦点状态
-        state.lastFocusTime = Date.now()
-        if (reason === 'initial') state.hasInitialFocus = true
-        if (reason === 'focus' || reason === 'initial')
-          state.isNewWindow = false
-      }
-    } catch (error) {
-      appLog.error(`Error focusing active tab in window ${windowId}:`, error)
-    }
+    //     // 更新焦点状态
+    //     state.lastFocusTime = Date.now()
+    //     if (reason === 'initial') state.hasInitialFocus = true
+    //     if (reason === 'focus' || reason === 'initial')
+    //       state.isNewWindow = false
+    //   }
+    // } catch (error) {
+    //   appLog.error(`Error focusing active tab in window ${windowId}:`, error)
+    // }
   }
 
   /**
@@ -523,9 +524,9 @@ export class WindowEvents {
   private registerShortcutListeners(): void {
     eventBus.on(SHORTCUT_EVENTS.CREATE_NEW_WINDOW, () => {
       appLog.info('Creating new shell window via shortcut')
-      this.windowActions.createShellWindow({
-        initialTab: { url: 'local://chat' },
-      })
+      // this.windowActions.createShellWindow({
+      //   initialTab: { url: 'local://chat' },
+      // })
     })
   }
 

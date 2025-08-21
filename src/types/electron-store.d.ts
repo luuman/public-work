@@ -1,10 +1,18 @@
 declare module 'electron-store' {
-  import Store from 'electron-store'
-
-  interface Store<T> {
-    get(key: string): T | undefined
-    set(key: string, value: T): void
+  interface Options<T> {
+    defaults?: Partial<T>
+    name?: string
+    // 其他选项...
   }
 
-  export default Store
+  class Store<T extends Record<string, any>> {
+    constructor(options?: Options<T>)
+    get<K extends keyof T>(key: K, defaultValue?: T[K]): T[K]
+    set<K extends keyof T>(key: K, value: T[K]): void
+    has(key: string): boolean
+    delete(key: string): void
+    clear(): void
+  }
+
+  export = Store
 }

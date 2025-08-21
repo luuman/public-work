@@ -1,5 +1,5 @@
 // import { WINDOW_EVENTS } from '@/events/events'
-import { msgAllLog } from '@/presenter/logPresenter'
+// import { msgAllLog } from '@/presenter/logPresenter'
 import { presenter } from '@/presenter'
 import { ON_WINDOW } from './appEvent'
 
@@ -75,7 +75,7 @@ export function browserWindowFocus(appInstance: Electron.App) {
   // 延迟注册快捷键（等第一个窗口创建）
   appInstance.once(FOCUS, async () => {
     // const { presenter } = await import('@/presenter')
-    msgAllLog.info('app-start shortcutPresenter', presenter.shortcutPresenter)
+    // msgAllLog.info('app-start shortcutPresenter', presenter.shortcutPresenter)
     // if (presenter?.shortcutPresenter) {
     //   presenter.shortcutPresenter.registerShortcuts()
     // }

@@ -71,8 +71,10 @@ export class WorkerManager {
    * 如果 Worker 已经结束，则不会重复终止
    */
   public terminate() {
-    if (!this.isTerminated) {
-      return this.worker.terminate()
+    if (!this.isTerminated && this.worker) {
+      this.worker.terminate()
+      return true
     }
+    return false
   }
 }

@@ -5,6 +5,7 @@ import { appLog } from '@/presenter/logPresenter'
 /**
  * IPC 通信处理器 - 负责处理所有与窗口相关的IPC通信
  */
+
 export class IpcHandlers {
   /**
    * 注册所有IPC处理器

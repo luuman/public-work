@@ -1,4 +1,4 @@
-import { ON_APP, ON_QUIT } from './appEvent'
+import { ON_APP } from './appEvent'
 
 const { ACTIVATE } = ON_APP
 
@@ -24,23 +24,23 @@ export async function setupMacStartup(appInstance: Electron.App) {
         },
       })
     } else {
-      // 尝试显示最近焦点的窗口，否则显示第一个窗口
-      const targetWindow =
-        presenter.windowPresenter.getFocusedWindow() || allWindows[0]
-      if (!targetWindow.isDestroyed()) {
-        targetWindow.show()
-        if (process.env.NODE_ENV !== 'development') {
-          targetWindow.focus()
-        }
-      } else {
-        console.warn(
-          'App activated but target window is destroyed, creating new window.',
-        ) // 保持 warn
-        presenter.windowPresenter.createShellWindow({
-          // 如果目标窗口已销毁，创建新窗口
-          initialTab: { url: 'local://chat' },
-        })
-      }
+      // // 尝试显示最近焦点的窗口，否则显示第一个窗口
+      // const targetWindow =
+      //   presenter.windowPresenter.getFocusedWindow() || allWindows[0]
+      // if (!targetWindow.isDestroyed()) {
+      //   targetWindow.show()
+      //   if (process.env.NODE_ENV !== 'development') {
+      //     targetWindow.focus()
+      //   }
+      // } else {
+      //   console.warn(
+      //     'App activated but target window is destroyed, creating new window.',
+      //   ) // 保持 warn
+      //   presenter.windowPresenter.createShellWindow({
+      //     // 如果目标窗口已销毁，创建新窗口
+      //     initialTab: { url: 'local://chat' },
+      //   })
+      // }
     }
   })
 }

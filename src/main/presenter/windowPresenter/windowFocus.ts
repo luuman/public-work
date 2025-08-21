@@ -4,8 +4,8 @@ import { WindowManager } from './windowManager'
 import { eventBus } from '@/events/eventbus'
 import { WINDOW_EVENTS } from '@/events/events'
 import { appLog } from '@/presenter/logPresenter'
-import { presenter } from '../'
-import { TabPresenter } from '../tabPresenter'
+// import { presenter } from '../'
+// import { TabPresenter } from '../tabPresenter'
 
 /**
  * 窗口焦点管理器 - 专门处理窗口焦点相关逻辑
@@ -78,29 +78,27 @@ export class WindowFocus {
 
     // 使用setTimeout确保UI线程就绪
     setTimeout(async () => {
-      try {
-        const tabPresenterInstance = presenter.tabPresenter as TabPresenter
-        const tabsData = await tabPresenterInstance.getWindowTabsData(windowId)
-        const activeTab = tabsData.find((tab) => tab.isActive)
-
-        if (activeTab) {
-          appLog.debug(
-            `Focusing active tab ${activeTab.id} in window ${windowId} (reason: ${reason})`,
-          )
-          await tabPresenterInstance.switchTab(activeTab.id)
-
-          // 更新焦点状态
-          this.windowManager.updateWindowFocusState(windowId, {
-            lastFocusTime: Date.now(),
-            ...(reason === 'initial' && { hasInitialFocus: true }),
-            ...((reason === 'focus' || reason === 'initial') && {
-              isNewWindow: false,
-            }),
-          })
-        }
-      } catch (error) {
-        appLog.error(`Error focusing active tab in window ${windowId}:`, error)
-      }
+      // try {
+      //   const tabPresenterInstance = presenter.tabPresenter as TabPresenter
+      //   const tabsData = await tabPresenterInstance.getWindowTabsData(windowId)
+      //   const activeTab = tabsData.find((tab) => tab.isActive)
+      //   if (activeTab) {
+      //     appLog.debug(
+      //       `Focusing active tab ${activeTab.id} in window ${windowId} (reason: ${reason})`,
+      //     )
+      //     await tabPresenterInstance.switchTab(activeTab.id)
+      //     // 更新焦点状态
+      //     this.windowManager.updateWindowFocusState(windowId, {
+      //       lastFocusTime: Date.now(),
+      //       ...(reason === 'initial' && { hasInitialFocus: true }),
+      //       ...((reason === 'focus' || reason === 'initial') && {
+      //         isNewWindow: false,
+      //       }),
+      //     })
+      //   }
+      // } catch (error) {
+      //   appLog.error(`Error focusing active tab in window ${windowId}:`, error)
+      // }
     }, 50)
   }
 

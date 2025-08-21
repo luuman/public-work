@@ -14,6 +14,7 @@ export async function handleSecondInstance(appInstance: Electron.App) {
     (event: Electron.Event, argv: string[], cwd: string) => {
       appLog.info('main: app second-instance event triggered.')
       appLog.info('second-instace', argv)
+      console.log('ENABLED_CHANGED', event)
 
       appLog.info(argv.join(',')) // 应显示string[]
       appLog.info(cwd.toLowerCase()) // 应显示string
@@ -38,6 +39,8 @@ export async function willQuit(appInstance: Electron.App) {
   appLog.info('app willQuit')
   appInstance.on(WILL_QUIT, async (event: Electron.Event) => {
     appLog.info('main: app will-quit event triggered.')
+    console.log('ENABLED_CHANGED', event)
+
     const { presenter } = await import('@/presenter')
     // 销毁托盘图标
     if (presenter.trayPresenter) {
@@ -64,8 +67,8 @@ export async function beforeQuit(appInstance: Electron.App) {
   appLog.info('app beforeQuit')
   appInstance.on(BEFORE_QUIT, async () => {
     try {
-      const { presenter } = await import('@/presenter')
-      presenter.floatingButtonPresenter.destroy()
+      // const { presenter } = await import('@/presenter')
+      // presenter.floatingButtonPresenter.destroy()
     } catch (error) {
       appLog.error(
         '❌main: Error destroying floating button during before-quit:',
@@ -104,14 +107,14 @@ export async function windowAllClosed(appInstance: Electron.App) {
 
 export async function appQuit(appInstance: Electron.App) {
   appLog.info('app appQuit')
-  appInstance.on(QUIT, async (event: Electron.Event) => {
+  appInstance.on(QUIT, async () => {
     appLog.info('main: app quit event triggered.')
   })
 }
 
 export async function didFinishLoad(appInstance: Electron.App) {
   appLog.info('app didFinishLoad')
-  // appInstance.on('did-finish-load', () => {
-  //   appLog.info('did-finish-load')
-  // })
+  appInstance.on(QUIT, () => {
+    appLog.info('did-finish-load')
+  })
 }

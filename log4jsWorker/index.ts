@@ -55,6 +55,6 @@ interface WorkerMessage {
 }
 
 parentPort.on('message', (data: WorkerMessage) => {
-  const { message, fileName } = data
+  const { level, message, fileName } = data
   bufferedWrite(fileName || 'default', `${message}`)
 })

@@ -1,38 +1,40 @@
-if (__DEV__) console.log('🫁app:start')
-if (__DEV__) performance.mark('app:start')
-
-import { app } from 'electron'
+import './app/appStart'
 import '@/utils/consoleHock'
-import { appLog } from '@/presenter/logPresenter'
+import { app } from 'electron'
+// import { appLog } from '@/presenter/logPresenter'
 import { setupCommon } from './app/common'
-import { appendSwitch } from './app/appendSwitch'
-import {
-  willQuit,
-  beforeQuit,
-  windowAllClosed,
-  handleSecondInstance,
-} from './app/quit'
+// import { appendSwitch } from './app/appendSwitch'
+// import {
+//   willQuit,
+//   beforeQuit,
+//   windowAllClosed,
+//   handleSecondInstance,
+// } from './app/quit'
 // import 'hookConsoleTime'
 
-appendSwitch(app)
+// appendSwitch(app)
 
 // 单实例运行
+if (__DEV__) performance.mark('app:start')
+console.log('🫁 app:start')
 if (!app.requestSingleInstanceLock()) {
-  appLog.info('app-second-instance')
+  // appLog.info('app-second-instance')
   app.quit()
 } else {
-  appLog.info('app-start')
-  handleSecondInstance(app)
+  // appLog.info('app-start')
+  // handleSecondInstance(app)
+  import('./app/appendSwitch').then(({ appendSwitch }) => appendSwitch(app))
 
   app.whenReady().then(async () => {
     if (__DEV__) performance.mark('app:ready')
-    appLog.info('app-ready')
+    console.log('🫁 app:ready')
+    // appLog.info('app-ready')
 
     await setupCommon(app)
 
-    windowAllClosed(app)
-    willQuit(app)
-    beforeQuit(app)
+    // windowAllClosed(app)
+    // willQuit(app)
+    // beforeQuit(app)
 
     if (process.platform === 'win32') {
       import('./app/mainWin').then(({ setupWinArgs }) => setupWinArgs(app))
@@ -40,23 +42,40 @@ if (!app.requestSingleInstanceLock()) {
     if (process.platform === 'darwin') {
       import('./app/mainMac').then(({ setupMacArgs }) => setupMacArgs(app))
     }
+    console.log('🫁 app:ready2')
+
+    console.log('🫁 app:ready3')
   })
 }
 
+console.log('🫁 app:ts')
+
+Promise.all([
+  import('./app/quit').then(
+    ({ windowAllClosed, willQuit, beforeQuit, handleSecondInstance }) => {
+      console.log('🫁 app:quit')
+      windowAllClosed(app)
+      willQuit(app)
+      beforeQuit(app)
+      handleSecondInstance(app)
+    },
+  ),
+])
+
 if (__DEV__) {
   setTimeout(() => {
-    performance.measure('初始化耗时', 'app:start', 'app:ready')
-    performance.measure('初始化log耗时', 'log:start', 'log:ready')
-    performance.measure('窗口创建耗时', 'app:ready', 'win:create')
-    performance.measure('页面耗时', 'win:load-start', 'win:did-finish-load')
-    performance.measure('冷启动总耗时', 'app:start', 'win:did-finish-load')
+    performance.measure('1初始化耗时', 'app:start', 'app:ready')
+    performance.measure('1-2初始化log耗时', 'log:start', 'log:ready')
+    performance.measure('2窗口创建耗时', 'app:ready', 'win:create')
+    performance.measure('3页面耗时', 'win:load-start', 'win:did-finish-load')
+    performance.measure('2-3页面win耗时', 'win:create', 'win:did-finish-load')
+    performance.measure('1-4冷启动总耗时', 'app:start', 'win:did-finish-load')
 
     const measures = performance.getEntriesByType('measure')
-    console.log(`🫁⏱ ${measures}`)
     measures.forEach((m) => {
       console.log(`🫁⏱ ${m.name}: ${m.duration.toFixed(2)}ms`)
     })
-  }, 5000)
+  }, 2000)
 }
 
 // win.webContents.on('dom-ready', () => {

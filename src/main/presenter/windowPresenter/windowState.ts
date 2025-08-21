@@ -104,6 +104,7 @@ export class WindowState {
   ): void {
     const { x, y, width, height } = state
     const displays = require('electron').screen.getAllDisplays()
+    console.log('ENABLED_CHANGED', window)
 
     // 检查窗口是否至少在一个显示器内可见
     const isVisible = displays.some((display: Electron.Display) => {
@@ -117,8 +118,8 @@ export class WindowState {
 
     if (!isVisible) {
       // 如果窗口完全不可见，重置为默认位置
-      state.x = undefined
-      state.y = undefined
+      // state.x = undefined
+      // state.y = undefined
       appLog.warn(`Window is out of bounds, resetting position`)
     }
   }
@@ -128,8 +129,8 @@ export class WindowState {
    */
   public saveAllStates(): void {
     this.windowStates.forEach((state, windowId) => {
-      appLog.debug(`Saving state for window ${windowId}`)
-      state.saveState()
+      appLog.debug(`Saving state for window ${windowId}`, state)
+      // state.saveState()
     })
   }
 

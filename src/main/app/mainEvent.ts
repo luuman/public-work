@@ -21,6 +21,7 @@ export async function enabledChanged() {
   } = await import('@/events/events')
   eventBus.on(ENABLED_CHANGED, async (enabled: boolean) => {
     try {
+      console.log('ENABLED_CHANGED', enabled)
       // const { presenter } = await import('@/presenter')
       // await presenter.floatingButtonPresenter.setEnabled(enabled)
     } catch (error) {
@@ -34,15 +35,13 @@ export async function checkForUpdates() {
     TRAY_EVENTS: { CHECK_FOR_UPDATES },
   } = await import('@/events/events')
   eventBus.on(CHECK_FOR_UPDATES, async () => {
-    const { presenter } = await import('@/presenter')
-    const allWindows = presenter.windowPresenter.getAllWindows()
-
+    // const { presenter } = await import('@/presenter')
+    // const allWindows = presenter.windowPresenter.getAllWindows()
     // 查找目标窗口 (焦点窗口或第一个窗口)
     // const targetWindow =
     //   presenter.windowPresenter.getFocusedWindow() || allWindows![0]
     // presenter.windowPresenter.show(targetWindow.id)
     // targetWindow.focus() // 确保窗口置顶
-
     // 触发更新
     // presenter.upgradePresenter.checkUpdate();
   })

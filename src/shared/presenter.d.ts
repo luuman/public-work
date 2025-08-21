@@ -99,7 +99,7 @@ export interface IWindowPresenter {
   // 发送消息到所有窗口
   sendToAllWindows(channel: string, ...args: unknown[]): void
   // 发送消息到指定窗口
-  sendToWindow(windowId: number, channel: string, ...args: unknown[]): boolean
+  // sendToWindow(windowId: number, channel: string, ...args: unknown[]): boolean
   // sendToDefaultTab(
   //   channel: string,
   //   switchToTarget?: boolean,
@@ -297,4 +297,8 @@ export type DiskInfo = {
   total: number
   free: number
   used: number
+}
+export interface DialogIcon {
+  icon: string
+  class: string
 }

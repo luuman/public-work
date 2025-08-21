@@ -1,6 +1,6 @@
 export function setupWinArgs(appInstance: Electron.App) {
   // Windows 特定参数（暂时注释）
-  // appInstance.commandLine.appendSwitch('in-process-gpu')
+  appInstance.commandLine.appendSwitch('in-process-gpu')
   // appInstance.commandLine.appendSwitch('wm-window-animations-disabled')
 }
 

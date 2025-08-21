@@ -257,7 +257,7 @@ export class WindowUtils {
       // macOS 视觉效果
       switch (effect) {
         case 'blur':
-          window.setVibrancy('light')
+          // window.setVibrancy('light')
           break
         case 'acrylic':
           window.setVibrancy('sidebar')

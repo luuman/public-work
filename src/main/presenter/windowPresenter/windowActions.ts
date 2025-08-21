@@ -1,11 +1,11 @@
 // src/main/presenter/windowPresenter/WindowActions.ts
 import { BrowserWindow, shell } from 'electron'
 import { WindowManager } from './windowManager'
-import { eventBus } from '@/events/eventbus'
-import { WINDOW_EVENTS } from '@/events/events'
+// import { eventBus } from '@/events/eventbus'
+// import { WINDOW_EVENTS } from '@/events/events'
 import { appLog } from '@/presenter/logPresenter'
-import { presenter } from '../'
-import { TabPresenter } from '../tabPresenter'
+// import { presenter } from '../'
+// import { TabPresenter } from '../tabPresenter'
 
 /**
  * 窗口操作类 - 负责执行所有窗口操作命令
@@ -19,10 +19,10 @@ import { TabPresenter } from '../tabPresenter'
 export class WindowActions {
   constructor(
     private windowManager: WindowManager,
-    private configPresenter: {
-      getCloseToQuit: () => boolean
-      getContentProtectionEnabled: () => boolean
-    },
+    // private configPresenter: {
+    //   getCloseToQuit: () => boolean
+    //   getContentProtectionEnabled: () => boolean
+    // },
   ) {}
 
   /**
@@ -40,7 +40,7 @@ export class WindowActions {
 
     appLog.info(`Minimizing window ${windowId}`)
     window.minimize()
-    eventBus.sendToMain(WINDOW_EVENTS.WINDOW_MINIMIZED, windowId)
+    // eventBus.sendToMain(WINDOW_EVENTS.WINDOW_MINIMIZED, windowId)
   }
 
   /**
@@ -203,44 +203,6 @@ export class WindowActions {
   }
 
   /**
-   * 聚焦指定窗口的活动标签页
-   * @param windowId 窗口ID
-   * @param reason 聚焦原因
-   */
-  public focusActiveTab(
-    windowId: number,
-    reason: 'focus' | 'restore' | 'show' | 'initial' = 'focus',
-  ): void {
-    const state = this.windowManager.getWindowFocusState(windowId)
-    if (!state || !this.shouldFocusTab(state, reason)) {
-      return
-    }
-
-    setTimeout(async () => {
-      try {
-        const tabPresenterInstance = presenter.tabPresenter as TabPresenter
-        const tabsData = await tabPresenterInstance.getWindowTabsData(windowId)
-        const activeTab = tabsData.find((tab) => tab.isActive)
-
-        if (activeTab) {
-          appLog.info(
-            `Focusing active tab ${activeTab.id} in window ${windowId} (reason: ${reason})`,
-          )
-          await tabPresenterInstance.switchTab(activeTab.id)
-
-          // 更新焦点状态
-          state.lastFocusTime = Date.now()
-          if (reason === 'initial') state.hasInitialFocus = true
-          if (reason === 'focus' || reason === 'initial')
-            state.isNewWindow = false
-        }
-      } catch (error) {
-        appLog.error(`Error focusing active tab in window ${windowId}:`, error)
-      }
-    }, 50) // 小延迟确保UI就绪
-  }
-
-  /**
    * 预览文件（平台相关实现）
    * @param filePath 文件路径
    */
@@ -309,57 +271,57 @@ export class WindowActions {
       return
     }
 
-    try {
-      const tabPresenterInstance = presenter.tabPresenter as TabPresenter
-      const activeTabId = await tabPresenterInstance.getActiveTabId(windowId)
+    // try {
+    //   const tabPresenterInstance = presenter.tabPresenter as TabPresenter
+    //   const activeTabId = await tabPresenterInstance.getActiveTabId(windowId)
 
-      if (activeTabId) {
-        appLog.debug(
-          `Window ${windowId} restored: activating active tab ${activeTabId}`,
-        )
-        await tabPresenterInstance.switchTab(activeTabId)
-      } else {
-        appLog.warn(`Window ${windowId} restored: no active tab found`)
-        const tabsInWindow =
-          await tabPresenterInstance.getWindowTabsData(windowId)
-        for (const tabData of tabsInWindow) {
-          const tabView = await tabPresenterInstance.getTab(tabData.id)
-          if (tabView && !tabView.webContents.isDestroyed()) {
-            tabView.setVisible(false)
-          }
-        }
-      }
-    } catch (error) {
-      appLog.error(`Error handling restore for window ${windowId}:`, error)
-      throw error
-    }
+    //   if (activeTabId) {
+    //     appLog.debug(
+    //       `Window ${windowId} restored: activating active tab ${activeTabId}`,
+    //     )
+    //     await tabPresenterInstance.switchTab(activeTabId)
+    //   } else {
+    //     appLog.warn(`Window ${windowId} restored: no active tab found`)
+    //     const tabsInWindow =
+    //       await tabPresenterInstance.getWindowTabsData(windowId)
+    //     for (const tabData of tabsInWindow) {
+    //       const tabView = await tabPresenterInstance.getTab(tabData.id)
+    //       if (tabView && !tabView.webContents.isDestroyed()) {
+    //         tabView.setVisible(false)
+    //       }
+    //     }
+    //   }
+    // } catch (error) {
+    //   appLog.error(`Error handling restore for window ${windowId}:`, error)
+    //   throw error
+    // }
   }
 
-  /**
-   * 判断是否应该聚焦标签页
-   * @param state 窗口焦点状态
-   * @param reason 聚焦原因
-   */
-  private shouldFocusTab(
-    state: WindowFocusState,
-    reason: 'focus' | 'restore' | 'show' | 'initial',
-  ): boolean {
-    const now = Date.now()
-    if (now - state.lastFocusTime < 100) {
-      appLog.debug(`Skipping focus for window, too frequent (${reason})`)
-      return false
-    }
+  // /**
+  //  * 判断是否应该聚焦标签页
+  //  * @param state 窗口焦点状态
+  //  * @param reason 聚焦原因
+  //  */
+  // private shouldFocusTab(
+  //   state: WindowFocusState,
+  //   reason: 'focus' | 'restore' | 'show' | 'initial',
+  // ): boolean {
+  //   const now = Date.now()
+  //   if (now - state.lastFocusTime < 100) {
+  //     appLog.debug(`Skipping focus for window, too frequent (${reason})`)
+  //     return false
+  //   }
 
-    switch (reason) {
-      case 'initial':
-        return !state.hasInitialFocus
-      case 'focus':
-        return state.shouldFocus
-      case 'restore':
-      case 'show':
-        return state.isNewWindow || state.shouldFocus
-      default:
-        return false
-    }
-  }
+  //   switch (reason) {
+  //     case 'initial':
+  //       return !state.hasInitialFocus
+  //     case 'focus':
+  //       return state.shouldFocus
+  //     case 'restore':
+  //     case 'show':
+  //       return state.isNewWindow || state.shouldFocus
+  //     default:
+  //       return false
+  //   }
+  // }
 }
