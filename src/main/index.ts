@@ -1,7 +1,7 @@
 import './app/appStart'
 import '@/utils/consoleHock'
 import { app } from 'electron'
-// import { appLog } from '@/presenter/logPresenter'
+import { appLog } from '@/presenter/logPresenter'
 import { setupCommon } from './app/common'
 // import { appendSwitch } from './app/appendSwitch'
 // import {
@@ -18,17 +18,17 @@ import { setupCommon } from './app/common'
 if (__DEV__) performance.mark('app:start')
 console.log('🫁 app:start')
 if (!app.requestSingleInstanceLock()) {
-  // appLog.info('app-second-instance')
+  appLog.info('app-second-instance')
   app.quit()
 } else {
-  // appLog.info('app-start')
+  appLog.info('app-start')
   // handleSecondInstance(app)
   import('./app/appendSwitch').then(({ appendSwitch }) => appendSwitch(app))
 
   app.whenReady().then(async () => {
     if (__DEV__) performance.mark('app:ready')
     console.log('🫁 app:ready')
-    // appLog.info('app-ready')
+    appLog.info('app-ready')
 
     await setupCommon(app)
 
@@ -73,7 +73,7 @@ if (__DEV__) {
 
     const measures = performance.getEntriesByType('measure')
     measures.forEach((m) => {
-      console.log(`🫁⏱ ${m.name}: ${m.duration.toFixed(2)}ms`)
+      appLog.info(`🫁⏱ ${m.name}: ${m.duration.toFixed(2)}ms`)
     })
   }, 2000)
 }
