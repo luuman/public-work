@@ -16,9 +16,6 @@ export async function setupCommon(appInstance: Electron.App) {
   const { eventBus: e } = await import('@/events/eventbus')
   eventBus = e
 
-  // 初始化托盘图标和菜单，并存储 presenter 实例
-  presenter.setupTray()
-
   // 立即进行基本初始化，不等待窗口ready-to-show事件
   presenter.init()
 

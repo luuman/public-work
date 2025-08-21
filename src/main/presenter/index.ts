@@ -15,12 +15,9 @@ export class Presenter implements IPresenter {
 
   constructor() {
     appLog.info('Presenter')
-
-    // ✅ Phase 1: 最小化初始化
     this.configPresenter = new ConfigPresenter()
     this.windowPresenter = new WindowPresenter(this.configPresenter)
 
-    // 延迟初始化的模块
     this.trayPresenter = null
     this.shortcutPresenter = null
     this.devicePresenter = null
@@ -28,7 +25,6 @@ export class Presenter implements IPresenter {
     this.setupEventBus()
   }
 
-  // 设置事件总线监听和转发
   async setupEventBus() {
     eventBus.setWindowPresenter(this.windowPresenter)
 
@@ -61,15 +57,9 @@ export class Presenter implements IPresenter {
   async setupTray() {
     appLog.info('setupTray', !!this.trayPresenter)
     if (!this.trayPresenter) {
-      // 延迟加载托盘模块
       const { TrayPresenter } = await import('./trayPresenters')
       this.trayPresenter = new TrayPresenter()
       this.trayPresenter.init()
-
-      // import('./trayPresenter').then(({ TrayPresenter }) => {
-      //   this.trayPresenter = new TrayPresenter()
-      //   this.trayPresenter.init()
-      // })
     }
   }
 
@@ -80,7 +70,6 @@ export class Presenter implements IPresenter {
     const dbPath = path.join(dbDir, 'chat.db')
     appLog.info('collectSystemInfo', dbPath)
 
-    // 并行化采集系统信息
     await Promise.all([
       this.devicePresenter.getDeviceInfo(),
       this.devicePresenter.getCPUUsage(),
@@ -89,7 +78,6 @@ export class Presenter implements IPresenter {
     ])
   }
 
-  // 在应用退出时进行清理
   destroy() {
     this.shortcutPresenter?.destroy() // 销毁快捷键监听
     this.trayPresenter?.destroy?.() // 销毁托盘（如果需要）

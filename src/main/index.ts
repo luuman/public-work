@@ -1,18 +1,8 @@
 import './app/appStart'
 import '@/utils/consoleHock'
 import { app } from 'electron'
-import { appLog } from '@/presenter/logPresenter'
 import { setupCommon } from './app/common'
-// import { appendSwitch } from './app/appendSwitch'
-// import {
-//   willQuit,
-//   beforeQuit,
-//   windowAllClosed,
-//   handleSecondInstance,
-// } from './app/quit'
-// import 'hookConsoleTime'
-
-// appendSwitch(app)
+import { appLog } from '@/presenter/logPresenter'
 
 // 单实例运行
 if (__DEV__) performance.mark('app:start')
@@ -22,7 +12,6 @@ if (!app.requestSingleInstanceLock()) {
   app.quit()
 } else {
   appLog.info('app-start')
-  // handleSecondInstance(app)
   import('./app/appendSwitch').then(({ appendSwitch }) => appendSwitch(app))
 
   app.whenReady().then(async () => {
@@ -32,19 +21,12 @@ if (!app.requestSingleInstanceLock()) {
 
     await setupCommon(app)
 
-    // windowAllClosed(app)
-    // willQuit(app)
-    // beforeQuit(app)
-
     if (process.platform === 'win32') {
       import('./app/mainWin').then(({ setupWinArgs }) => setupWinArgs(app))
     }
     if (process.platform === 'darwin') {
       import('./app/mainMac').then(({ setupMacArgs }) => setupMacArgs(app))
     }
-    console.log('🫁 app:ready2')
-
-    console.log('🫁 app:ready3')
   })
 }
 
