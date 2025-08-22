@@ -12,6 +12,8 @@ export class WorkerManager {
   private worker: Worker
   // 标记 Worker 是否已终止
   private isTerminated = false
+  private callId = 0
+  private callbacks = new Map<number, (res: any, err?: any) => void>()
 
   /**
    * 创建 WorkerManager 实例
@@ -29,7 +31,17 @@ export class WorkerManager {
 
     // 监听 Worker 发送的消息
     this.worker.on('message', (msg) => {
-      console.log(`🚀[Worker ${this.worker.threadId}] Message:`, msg)
+      const { id, result, error } = msg
+      console.log(`🚀[Worker ${id} ${this.callbacks.has(id)}] Message:`, msg)
+
+      if (id && this.callbacks.has(id)) {
+        const cb = this.callbacks.get(id)!
+        this.callbacks.delete(id)
+        console.log(`🚀[Worker ${id} ${this.callbacks.has(id)}] Message:`, cb)
+        cb(result, error)
+      } else {
+        console.log(`🚀[Worker ${this.worker.threadId}] Message:`, msg)
+      }
     })
 
     // 监听 Worker 内部错误
@@ -51,6 +63,17 @@ export class WorkerManager {
     // 如果 Worker 有 stderr，打印 Worker 错误输出
     this.worker.stderr?.on('data', (chunk) => {
       process.stderr.write(`[Worker ERR] ${chunk}`)
+    })
+  }
+
+  public call(method: string, ...args: any[]): Promise<any> {
+    return new Promise((resolve, reject) => {
+      const id = ++this.callId
+      this.callbacks.set(id, (result, error) => {
+        if (error) reject(new Error(error))
+        else resolve(result)
+      })
+      this.worker.postMessage({ id, method, args })
     })
   }
 

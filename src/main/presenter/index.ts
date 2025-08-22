@@ -75,12 +75,49 @@ export class Presenter implements IPresenter {
       const dbPath = path.join(dbDir, 'chat.db')
       appLog.info('collectSystemInfo', dbPath)
       const workerPath = path.resolve(__dirname, './worker/dbWorker.js')
-      console.log('🤚 collectSystemInfo:dbPath', dbPath)
-      console.log('🤚 collectSystemInfo:dbDir', dbDir)
-      console.log('🤚 collectSystemInfo:workerPath', workerPath)
+      appLog.log('🤚 collectSystemInfo:dbPath', dbPath)
+      appLog.log('🤚 collectSystemInfo:dbDir', dbDir)
+      appLog.log('🤚 collectSystemInfo:workerPath', workerPath)
       const { SQLitePresenter } = await import('./sqlitePresenter')
 
       this.sqlitePresenter = new SQLitePresenter(dbPath, workerPath)
+
+      // 查询对话列表
+
+      this.sqlitePresenter.proxy
+        .getConversationList(1, 20)
+        .then((res) => appLog.info('getConversationList result', res))
+        .catch((err) => appLog.error('getConversationList error', err))
+
+      this.sqlitePresenter.proxy
+        .getConversation('IEaymjw-wQhY8HNVohyc_')
+        .then((res) => appLog.info('getConversationList result', res))
+        .catch((err) => appLog.error('getConversationList error', err))
+
+      // 插入消息
+      // 调用 insertMessage，不用手写包装函数
+      // this.sqlitePresenter.proxy
+      //   .insertMessage(
+      //     'conv1',
+      //     '你好',
+      //     'user',
+      //     '', // parentId
+      //     '{}', // metadata
+      //     1, // orderSeq
+      //     0, // tokenCount
+      //     'pending', // status
+      //     0, // isContextEdge
+      //     0, // isVariant
+      //   )
+      //   .then((messageId) => {
+      //     appLog.log('插入成功，消息ID:', messageId)
+      //   })
+      //   .catch(appLog.error)
+
+      // this.sqlitePresenter.proxy
+      //   .createConversation('多少钱')
+      //   .then(appLog.log)
+      //   .catch(appLog.error)
     } catch (error) {
       appLog.info('collectSystemInfo', error)
     }
