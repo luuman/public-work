@@ -37,6 +37,7 @@ export class ShortcutPresenter {
    * @param configPresenter 配置管理实例，用于获取用户自定义的快捷键设置
    */
   constructor(configPresenter: ConfigPresenter) {
+    console.log('🫁 ShortcutPresenter')
     this.configPresenter = configPresenter
   }
 

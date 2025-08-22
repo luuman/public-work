@@ -14,39 +14,39 @@ export class Presenter implements IPresenter {
   devicePresenter: any
 
   constructor() {
-    appLog.info('Presenter')
+    console.log('🫁 IPresenter')
     this.configPresenter = new ConfigPresenter()
     this.windowPresenter = new WindowPresenter(this.configPresenter)
 
     this.trayPresenter = null
     this.shortcutPresenter = null
     this.devicePresenter = null
-
-    this.setupEventBus()
   }
 
-  async setupEventBus() {
+  setupEventBus() {
     eventBus.setWindowPresenter(this.windowPresenter)
-
-    const {
-      WINDOW_EVENTS: { READY_TO_SHOW },
-    } = await import('@/events/events')
-
-    eventBus.on(READY_TO_SHOW, () => {
-      this.init()
-    })
   }
 
   // Phase 2: 主窗口 Ready 后加载
-  async init() {
+  init() {
     this.setupTray()
+    this.setupEventBus()
 
-    // 动态导入，减少冷启动负担
-    const { ShortcutPresenter } = await import('./shortcutPresenter')
-    this.shortcutPresenter = new ShortcutPresenter(this.configPresenter)
+    Promise.all([
+      import('./shortcutPresenter').then(({ ShortcutPresenter }) => {
+        this.shortcutPresenter = new ShortcutPresenter(this.configPresenter)
+      }),
+      import('./devicePresenter').then(({ DevicePresenter }) => {
+        this.devicePresenter = new DevicePresenter()
+      }),
+    ])
 
-    const { DevicePresenter } = await import('./devicePresenter')
-    this.devicePresenter = new DevicePresenter()
+    // // 动态导入，减少冷启动负担
+    // const { ShortcutPresenter } = await import('./shortcutPresenter')
+    // this.shortcutPresenter = new ShortcutPresenter(this.configPresenter)
+
+    // const { DevicePresenter } = await import('./devicePresenter')
+    // this.devicePresenter = new DevicePresenter()
 
     // ✅ Phase 3: 后台执行耗时任务
     setTimeout(() => {

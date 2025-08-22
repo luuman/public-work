@@ -77,6 +77,7 @@ export class ConfigPresenter implements IConfigPresenter {
   // private modelStatusCache: Map<string, boolean> = new Map()
 
   constructor() {
+    console.log('🫁 IConfigPresenter')
     this.userDataPath = app.getPath('userData')
     this.currentAppVersion = app.getVersion()
     // 初始化应用设置存储

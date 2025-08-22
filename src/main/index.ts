@@ -3,6 +3,10 @@ import '@/utils/consoleHock'
 import { app } from 'electron'
 import { setupCommon } from './app/common'
 import { appLog } from '@/presenter/logPresenter'
+import { ON_APP } from './app/appEvent'
+import { appendSwitch } from './app/appendSwitch'
+
+const { SECOND_INSTANCE } = ON_APP
 
 // 单实例运行
 if (__DEV__) performance.mark('app:start')
@@ -12,7 +16,11 @@ if (!app.requestSingleInstanceLock()) {
   app.quit()
 } else {
   appLog.info('app-start')
-  import('./app/appendSwitch').then(({ appendSwitch }) => appendSwitch(app))
+  appendSwitch(app)
+
+  app.on(SECOND_INSTANCE, (_event, argv: string[], cwd: string) => {
+    appLog.info('second-instance argv:', argv.join(','), 'cwd:', cwd)
+  })
 
   app.whenReady().then(async () => {
     if (__DEV__) performance.mark('app:ready')
@@ -27,38 +35,42 @@ if (!app.requestSingleInstanceLock()) {
     if (process.platform === 'darwin') {
       import('./app/mainMac').then(({ setupMacArgs }) => setupMacArgs(app))
     }
+
+    console.log('🫁 app:ready2')
+    Promise.all([
+      import('./app/appLifecycle').then(({ registerAppListeners }) => {
+        console.log('🫁 app:quit')
+        registerAppListeners(app)
+      }),
+    ])
+    console.log('🫁 app:ready3')
+
+    // 性能分析
+    if (__DEV__) {
+      setTimeout(() => {
+        const measureList: [string, string, string][] = [
+          ['app准备就绪', 'app:start', 'app:ready'],
+          ['log准备就绪', 'log:start', 'log:ready'],
+          ['创建窗口', 'app:ready', 'win:create'],
+          ['页面渲染', 'win:load-start', 'win:did-finish-load'],
+          ['窗口渲染', 'win:create', 'win:did-finish-load'],
+          ['冷启动总耗时', 'app:start', 'win:did-finish-load'],
+        ]
+
+        for (const [name, start, end] of measureList) {
+          performance.measure(name, start, end)
+        }
+
+        const measures = performance.getEntriesByType('measure')
+        measures.forEach((m) => {
+          appLog.info(`🫁⏱ ${m.name}: ${m.duration.toFixed(2)}ms`)
+        })
+      }, 2000)
+    }
+    console.log('🫁 app:readyEnd')
   })
 }
-
-console.log('🫁 app:ts')
-
-Promise.all([
-  import('./app/quit').then(
-    ({ windowAllClosed, willQuit, beforeQuit, handleSecondInstance }) => {
-      console.log('🫁 app:quit')
-      windowAllClosed(app)
-      willQuit(app)
-      beforeQuit(app)
-      handleSecondInstance(app)
-    },
-  ),
-])
-
-if (__DEV__) {
-  setTimeout(() => {
-    performance.measure('1初始化耗时', 'app:start', 'app:ready')
-    performance.measure('1-2初始化log耗时', 'log:start', 'log:ready')
-    performance.measure('2窗口创建耗时', 'app:ready', 'win:create')
-    performance.measure('3页面耗时', 'win:load-start', 'win:did-finish-load')
-    performance.measure('2-3页面win耗时', 'win:create', 'win:did-finish-load')
-    performance.measure('1-4冷启动总耗时', 'app:start', 'win:did-finish-load')
-
-    const measures = performance.getEntriesByType('measure')
-    measures.forEach((m) => {
-      appLog.info(`🫁⏱ ${m.name}: ${m.duration.toFixed(2)}ms`)
-    })
-  }, 2000)
-}
+console.log('🫁 app:startEnd')
 
 // win.webContents.on('dom-ready', () => {
 //   // 延迟加载非关键资源

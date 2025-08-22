@@ -44,12 +44,13 @@ export class WindowEvents {
     isQuitting: boolean,
     mainWindowId: number | null,
   ) {
+    console.log('🫁 WindowEvents')
     this.windowManager = windowManager
     this.configPresenter = configPresenter
     this.windowActions = windowActions
     this.isQuitting = isQuitting
     this.mainWindowId = mainWindowId
-    console.log('🫁 app:ready', this.configPresenter)
+    console.log('🫁 win:event')
   }
 
   /**

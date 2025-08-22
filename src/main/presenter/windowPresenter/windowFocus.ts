@@ -17,7 +17,9 @@ import { appLog } from '@/presenter/logPresenter'
  * 4. 实现焦点防抖和条件判断
  */
 export class WindowFocus {
-  constructor(private windowManager: WindowManager) {}
+  constructor(private windowManager: WindowManager) {
+    console.log('🫁 WindowFocus')
+  }
 
   /**
    * 处理窗口获得焦点事件

@@ -8,6 +8,7 @@ const { FOCUS, BLUR } = ON_WINDOW
 let eventBus: (typeof import('@/events/eventbus'))['eventBus']
 
 export async function setupCommon(appInstance: Electron.App) {
+  console.log('🫁 setupCommon')
   createShellWindow(presenter)
 
   const { electronApp } = await import('@electron-toolkit/utils')
@@ -26,6 +27,24 @@ export async function setupCommon(appInstance: Electron.App) {
     })
   }
 
+  console.log('🫁 mainEvent')
+  Promise.all([
+    import('./mainEvent').then(
+      ({ enabledChanged, checkForUpdates, ShowHiddenWindow }) => {
+        console.log('🫁 mainEvent import')
+        // timeLogger(enabledChanged)()
+        enabledChanged()
+        checkForUpdates()
+        ShowHiddenWindow()
+      },
+    ),
+    // 协议注册
+    import('./protocols').then(({ registerProtocols }) => {
+      console.log('🫁 protocols import')
+      registerProtocols()
+    }),
+  ])
+
   if (process.platform === 'darwin') {
     import('./mainMac').then(({ setupMacStartup }) =>
       setupMacStartup(appInstance),
@@ -33,20 +52,6 @@ export async function setupCommon(appInstance: Electron.App) {
   } else if (process.platform === 'win32') {
     import('./mainWin').then(({ setupWinStartup }) => setupWinStartup)
   }
-
-  const { enabledChanged, checkForUpdates, ShowHiddenWindow } = await import(
-    './mainEvent'
-  )
-  // timeLogger(enabledChanged)()
-  enabledChanged()
-  checkForUpdates()
-  ShowHiddenWindow()
-
-  // 协议注册
-  setImmediate(async () => {
-    const { registerProtocols } = await import('./protocols')
-    registerProtocols()
-  })
 
   // 剥离代码块
   // if (__DEV__) {

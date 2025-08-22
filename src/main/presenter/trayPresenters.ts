@@ -26,6 +26,7 @@ export class TrayPresenter {
   private iconPath: string // 托盘图标存放的目录路径
 
   constructor() {
+    console.log('🫁 TrayPresenter')
     // 初始化时获取应用资源目录路径（存放托盘图标）
     this.iconPath = path.join(app.getAppPath(), 'resources')
   }

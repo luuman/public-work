@@ -29,11 +29,13 @@ export class WindowPresenter implements IWindowPresenter {
   private readonly configPresenter: ConfigPresenter
 
   constructor(configPresenter: ConfigPresenter) {
+    console.log('🫁 IWindowPresenter')
     this.configPresenter = configPresenter
     this.windowManager = new WindowManager()
   }
 
   init() {
+    console.log('🫁 IWindowPresenter init')
     this.createShellWindow()
     this.setupIpcHandlers()
   }
@@ -45,7 +47,7 @@ export class WindowPresenter implements IWindowPresenter {
     y?: number
   }): Promise<number | null> {
     if (__DEV__) performance.mark('win:create')
-    console.log('🫁 win:create')
+    console.log('🫁 IWindowPresenter createShellWindow')
 
     const iconFile = nativeImage.createFromPath(
       process.platform === 'win32' ? iconWin : icon,

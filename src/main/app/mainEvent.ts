@@ -7,6 +7,7 @@ import { eventBus } from '@/events/eventbus'
 import { handleShowHiddenWindow } from '@/utils'
 
 export async function appFocus() {
+  console.log('🫁 appFocus')
   // 当任何窗口获得焦点时，注册快捷键
   const {
     WINDOW_EVENTS: { APP_FOCUS },
@@ -15,6 +16,7 @@ export async function appFocus() {
 }
 
 export async function enabledChanged() {
+  console.log('🫁 enabledChanged')
   // 监听悬浮按钮配置变化事件
   const {
     FLOATING_BUTTON_EVENTS: { ENABLED_CHANGED },
@@ -30,6 +32,7 @@ export async function enabledChanged() {
   })
 }
 export async function checkForUpdates() {
+  console.log('🫁 checkForUpdates')
   // 托盘 检测更新
   const {
     TRAY_EVENTS: { CHECK_FOR_UPDATES },
@@ -48,6 +51,7 @@ export async function checkForUpdates() {
 }
 
 export async function ShowHiddenWindow() {
+  console.log('🫁 ShowHiddenWindow')
   // 监听显示/隐藏窗口事件 (从托盘或快捷键或悬浮窗口触发)
   const {
     TRAY_EVENTS: { SHOW_HIDDEN_WINDOW },
