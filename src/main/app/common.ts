@@ -9,7 +9,7 @@ let eventBus: (typeof import('@/events/eventbus'))['eventBus']
 
 export async function setupCommon(appInstance: Electron.App) {
   console.log('🫁 setupCommon')
-  createShellWindow(presenter)
+  createMainWindow(presenter)
 
   const { electronApp } = await import('@electron-toolkit/utils')
   electronApp.setAppUserModelId('com.yourcompany.yourapp')
@@ -116,9 +116,9 @@ export function browserWindowBlur(
   })
 }
 
-export async function createShellWindow(presenterInstance: any) {
+export async function createMainWindow(presenterInstance: any) {
   try {
-    const windowId = await presenterInstance.windowPresenter.createShellWindow()
+    const windowId = await presenterInstance.windowPresenter.createMainWindow()
     if (windowId) {
       console.log(
         `Main: Initial shell window created successfully with ID: ${windowId}`,

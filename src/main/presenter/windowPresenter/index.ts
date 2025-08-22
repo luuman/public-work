@@ -36,37 +36,37 @@ export class WindowPresenter implements IWindowPresenter {
 
   init() {
     console.log('🫁 IWindowPresenter init')
-    this.createShellWindow()
+    this.createMainWindow()
     this.setupIpcHandlers()
   }
 
-  async createShellWindow(options?: {
+  async createMainWindow(options?: {
     activateTabId?: number
     initialTab?: { url: string; icon?: string }
     x?: number
     y?: number
   }): Promise<number | null> {
     if (__DEV__) performance.mark('win:create')
-    console.log('🫁 IWindowPresenter createShellWindow')
+    console.log('🫁 IWindowPresenter createMainWindow')
 
     const iconFile = nativeImage.createFromPath(
       process.platform === 'win32' ? iconWin : icon,
     )
 
     // 使用窗口状态管理器
-    const shellWindowState = windowStateManager({
+    const mainWindowState = windowStateManager({
       defaultWidth: 800,
       defaultHeight: 620,
     })
 
     // 计算初始位置
-    const initialX = options?.x ?? shellWindowState.x
-    const initialY = Math.max(0, options?.y ?? shellWindowState.y ?? 0)
+    const initialX = options?.x ?? mainWindowState.x
+    const initialY = Math.max(0, options?.y ?? mainWindowState.y ?? 0)
 
     // 创建浏览器窗口
-    const shellWindow = new BrowserWindow({
-      width: shellWindowState.width,
-      height: shellWindowState.height,
+    const mainWindow = new BrowserWindow({
+      width: mainWindowState.width,
+      height: mainWindowState.height,
       x: initialX,
       y: initialY,
       show: false,
@@ -89,30 +89,30 @@ export class WindowPresenter implements IWindowPresenter {
       roundedCorners: true,
     })
 
-    if (!shellWindow) {
+    if (!mainWindow) {
       appLog.error('Failed to create shell window')
       return null
     }
 
     // 管理窗口状态
-    shellWindowState.manage(shellWindow)
+    mainWindowState.manage(mainWindow)
 
-    shellWindow.webContents.on('did-finish-load', () => {
+    mainWindow.webContents.on('did-finish-load', () => {
       if (__DEV__) performance.mark('win:did-finish-load')
       console.log('🫁 win:did-finish-load')
     })
 
     // 注册窗口事件
-    this.windowEvents.setupWindowEvents(shellWindow)
+    this.windowEvents.setupWindowEvents(mainWindow)
 
     // 添加窗口到管理器
-    const windowId = this.windowManager.addWindow(shellWindow)
+    const windowId = this.windowManager.addWindow(mainWindow)
 
     // 加载页面内容
     if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
-      shellWindow.loadURL(process.env['ELECTRON_RENDERER_URL'] + '/index.html')
+      mainWindow.loadURL(process.env['ELECTRON_RENDERER_URL'] + '/index.html')
     } else {
-      shellWindow.loadFile(join(__dirname, '../renderer/index.html'))
+      mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
     }
 
     if (__DEV__) performance.mark('win:load-start')
@@ -120,7 +120,14 @@ export class WindowPresenter implements IWindowPresenter {
 
     // 开发模式打开DevTools
     if (is.dev) {
-      shellWindow.webContents.openDevTools({ mode: 'detach' })
+      mainWindow.webContents.openDevTools({ mode: 'detach' })
+      // mainWindow.webContents.on(
+      //   'console-message',
+      //   (_event, _level, message) => {
+      //     if (message.includes('Autofill')) return
+      //     console.log(message)
+      //   },
+      // )
     }
 
     appLog.info(`Shell window ${windowId} created successfully`)

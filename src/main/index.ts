@@ -16,16 +16,18 @@ if (!app.requestSingleInstanceLock()) {
   app.quit()
 } else {
   appLog.info('app-start')
-  appendSwitch(app)
-
   app.on(SECOND_INSTANCE, (_event, argv: string[], cwd: string) => {
-    appLog.info('second-instance argv:', argv.join(','), 'cwd:', cwd)
+    import('./app/secondInstance').then(({ handleSecondInstance }) =>
+      handleSecondInstance(argv, cwd),
+    )
   })
 
   app.whenReady().then(async () => {
     if (__DEV__) performance.mark('app:ready')
     console.log('🫁 app:ready')
     appLog.info('app-ready')
+
+    appendSwitch(app)
 
     await setupCommon(app)
 

@@ -40,4 +40,8 @@ export async function appendSwitch(appInstance: Electron.App) {
   } catch (e) {
     console.error('getSystemMemoryInfo:', e)
   }
+
+  if (process.platform === 'win32') {
+    appInstance.setAppUserModelId('io.name.www')
+  }
 }

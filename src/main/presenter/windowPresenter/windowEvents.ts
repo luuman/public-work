@@ -525,7 +525,7 @@ export class WindowEvents {
   private registerShortcutListeners(): void {
     eventBus.on(SHORTCUT_EVENTS.CREATE_NEW_WINDOW, () => {
       appLog.info('Creating new shell window via shortcut')
-      // this.windowActions.createShellWindow({
+      // this.windowActions.createMainWindow({
       //   initialTab: { url: 'local://chat' },
       // })
     })

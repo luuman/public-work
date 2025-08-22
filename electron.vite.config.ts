@@ -41,6 +41,7 @@ export default defineConfig({
           index: resolve('src/main/index.ts'),
           fibonacciWorker: resolve('src/main/worker/fibonacciWorker.ts'),
           logWorker: resolve('src/main/worker/logWorker.ts'),
+          dbWorker: resolve('src/main/worker/dbWorker/index.ts'),
           log4jsWorker: resolve('src/main/worker/log4jsWorker/index.ts'),
         },
         output: {
@@ -48,6 +49,7 @@ export default defineConfig({
             if (
               chunk.name === 'fibonacciWorker' ||
               chunk.name === 'logWorker' ||
+              chunk.name === 'dbWorker' ||
               chunk.name === 'log4jsWorker'
             ) {
               return 'worker/[name].js'

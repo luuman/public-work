@@ -5,6 +5,7 @@ import { eventBus } from '@/events/eventbus'
 import { IPresenter } from '@shared/presenter'
 import { ConfigPresenter } from './configPresenter'
 import { WindowPresenter } from './windowPresenter'
+// import { SQLitePresenter } from './sqlitePresenter'
 
 export class Presenter implements IPresenter {
   configPresenter: ConfigPresenter
@@ -21,6 +22,7 @@ export class Presenter implements IPresenter {
     this.trayPresenter = null
     this.shortcutPresenter = null
     this.devicePresenter = null
+    this.sqlitePresenter = null
   }
 
   setupEventBus() {
@@ -39,6 +41,8 @@ export class Presenter implements IPresenter {
       import('./devicePresenter').then(({ DevicePresenter }) => {
         this.devicePresenter = new DevicePresenter()
       }),
+      // import('./sqlitePresenter').then(({ SQLitePresenter }) => {
+      // }),
     ])
 
     // // 动态导入，减少冷启动负担
@@ -66,9 +70,25 @@ export class Presenter implements IPresenter {
   async collectSystemInfo() {
     if (!this.devicePresenter) return
 
-    const dbDir = path.join(app.getPath('userData'), 'app_db')
-    const dbPath = path.join(dbDir, 'chat.db')
-    appLog.info('collectSystemInfo', dbPath)
+    try {
+      const dbDir = path.join(app.getPath('userData'), 'app_db')
+      const dbPath = path.join(dbDir, 'chat.db')
+      appLog.info('collectSystemInfo', dbPath)
+      const workerPath = path.resolve(__dirname, './worker/dbWorker.js')
+      console.log('🤚 collectSystemInfo:dbPath', dbPath)
+      console.log('🤚 collectSystemInfo:dbDir', dbDir)
+      console.log('🤚 collectSystemInfo:workerPath', workerPath)
+      const { SQLitePresenter } = await import('./sqlitePresenter')
+
+      this.sqlitePresenter = new SQLitePresenter(dbPath, workerPath)
+    } catch (error) {
+      appLog.info('collectSystemInfo', error)
+    }
+
+    //   // 初始化 SQLite 数据库路径
+    // const dbDirSQLitePresenter = path.join(app.getPath('userData'), 'app_db')
+    // const dbPath = path.join(dbDir, 'chat.db')
+    // this.sqlitePresenter = new SQLitePresenter(dbPath)
 
     await Promise.all([
       this.devicePresenter.getDeviceInfo(),

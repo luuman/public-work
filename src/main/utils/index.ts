@@ -5,7 +5,7 @@ export async function handleShowHiddenWindow(mustShow: boolean) {
 
   const allWindows = presenter.windowPresenter.getAllWindows()
   if (allWindows.length === 0) {
-    presenter.windowPresenter.createShellWindow({
+    presenter.windowPresenter.createMainWindow({
       initialTab: {
         url: 'local://chat',
       },
@@ -27,7 +27,7 @@ export async function handleShowHiddenWindow(mustShow: boolean) {
     // } else {
     //   console.warn('Target window for SHOW_HIDDEN_WINDOW event is destroyed.') // 保持 warn
     //   // 如果目标窗口已销毁，创建新窗口
-    //   presenter.windowPresenter.createShellWindow({
+    //   presenter.windowPresenter.createMainWindow({
     //     initialTab: {
     //       url: 'local://chat',
     //     },
@@ -48,7 +48,7 @@ export async function handleShowHiddenWindows(mustShow: boolean) {
   if (allWindows.length === 0) {
     // 如果没有任何窗口存在，说明应用可能是首次启动
     // 创建一个新的主窗口 (Shell 窗口)
-    presenter.windowPresenter.createShellWindow({
+    presenter.windowPresenter.createMainWindow({
       initialTab: {
         url: 'local://chat', // 初始页面 URL
       },
@@ -72,7 +72,7 @@ export async function handleShowHiddenWindows(mustShow: boolean) {
     //   // 如果目标窗口已销毁，打印警告
     //   console.warn('Target window for SHOW_HIDDEN_WINDOW event is destroyed.')
     //   // 创建新的主窗口以保证应用界面可用
-    //   presenter.windowPresenter.createShellWindow({
+    //   presenter.windowPresenter.createMainWindow({
     //     initialTab: {
     //       url: 'local://chat',
     //     },

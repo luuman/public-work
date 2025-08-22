@@ -18,7 +18,7 @@ export async function setupMacStartup(appInstance: Electron.App) {
     // 同时处理已隐藏窗口的显示
     const allWindows = presenter.windowPresenter.getAllWindows()
     if (allWindows.length === 0) {
-      presenter.windowPresenter.createShellWindow({
+      presenter.windowPresenter.createMainWindow({
         initialTab: {
           url: 'local://chat',
         },
@@ -36,7 +36,7 @@ export async function setupMacStartup(appInstance: Electron.App) {
       //   console.warn(
       //     'App activated but target window is destroyed, creating new window.',
       //   ) // 保持 warn
-      //   presenter.windowPresenter.createShellWindow({
+      //   presenter.windowPresenter.createMainWindow({
       //     // 如果目标窗口已销毁，创建新窗口
       //     initialTab: { url: 'local://chat' },
       //   })

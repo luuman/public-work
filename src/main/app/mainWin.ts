@@ -7,7 +7,7 @@ export function setupWinArgs(appInstance: Electron.App) {
 export async function setupWinStartup(presenter: any) {
   // Windows 启动时，如果没有窗口，创建主窗口
   if (presenter.windowPresenter.getAllWindows().length === 0) {
-    await presenter.windowPresenter.createShellWindow({
+    await presenter.windowPresenter.createMainWindow({
       initialTab: { url: 'local://chat' },
     })
   }

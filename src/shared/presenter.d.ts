@@ -65,7 +65,7 @@ export interface IPresenter {
 export interface IWindowPresenter {
   // 创建Shell窗口
 
-  createShellWindow(options?: {
+  createMainWindow(options?: {
     // 激活的标签页ID（可选）
     activateTabId?: number
     // 初始标签页（可选）
