@@ -90,7 +90,7 @@ export class Presenter implements IPresenter {
         .catch((err) => appLog.error('getConversationList error', err))
 
       this.sqlitePresenter.proxy
-        .getConversation('IEaymjw-wQhY8HNVohyc_')
+        .getConversation('qe6ih8v-wq4X-tbygftdm')
         .then((res) => appLog.info('getConversationList result', res))
         .catch((err) => appLog.error('getConversationList error', err))
 
@@ -114,10 +114,10 @@ export class Presenter implements IPresenter {
       //   })
       //   .catch(appLog.error)
 
-      // this.sqlitePresenter.proxy
-      //   .createConversation('多少钱')
-      //   .then(appLog.log)
-      //   .catch(appLog.error)
+      this.sqlitePresenter.proxy
+        .createConversation('多少钱')
+        .then((res) => appLog.info('getConversationList result', res))
+        .catch((err) => appLog.error('getConversationList error', err))
     } catch (error) {
       appLog.info('collectSystemInfo', error)
     }

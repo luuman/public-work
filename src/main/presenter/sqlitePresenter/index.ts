@@ -12,7 +12,7 @@ export class SQLitePresenter {
     // console.log('🤚 SQLitePresenter:dbDir', dbDir)
     // console.log('🤚 SQLitePresenter:workerPath', workerPath)
 
-    const dbKey = 'mySecretKey'
+    const dbKey = ''
     const cipherMode = 'aes-256-cbc'
 
     this.dbWorker = new WorkerManager(workerPath, {

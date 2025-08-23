@@ -53,24 +53,22 @@ export class dbWorker {
       // 初始化数据库连接
       this.db = new Database(dbPath)
       console.log('🫁 log:start', this.db)
-      // this.db.pragma('journal_mode = WAL') // 设置写前日志模式
 
-      // 如果传入密码，则启用 SQLCipher 加密
       if (password) {
-        // this.db.pragma(`cipher='sqlcipher'`)
-        // this.db.pragma("cipher='aes-256-cbc'")
-        // this.db.pragma(`key='${password}'`)
-        // this.db.pragma(`cipher='sqlcipher'`)
-        // this.db.pragma("cipher='aes-256-gcm'")
-        // this.db.pragma(`key='${password}'`)
-        // 可以查询表
-        // const rows = this.db.prepare('SELECT * FROM conversations').all()
-        // console.log(rows)
+        console.log('🫁 log:password', password)
+        this.db.pragma(`cipher='sqlcipher'`)
+        this.db.pragma(`legacy=4`)
+        this.db.pragma(`key='${password}'`)
+        try {
+          // 事务日志模式
+          const journalMode = this.db.pragma('journal_mode=WAL', {
+            simple: true,
+          })
+          console.log('journal_mode:', journalMode)
+        } catch (err) {
+          console.error('Failed to enable WAL:', err)
+        }
       }
-      console.log(
-        'cipher_list',
-        this.db.pragma('cipher_list', { simple: true }),
-      )
 
       // 测试数据库是否可用
       this.db.prepare('SELECT 1').get()
@@ -81,6 +79,7 @@ export class dbWorker {
 
       // 执行数据库迁移
       this.migrate()
+      this.getDBInfo()
     } catch (error) {
       console.error('Database initialization failed:', error)
 
@@ -403,5 +402,34 @@ export class dbWorker {
     type: string,
   ): Promise<{ content: string }[]> {
     return this.messageAttachmentsTable.get(messageId, type)
+  }
+
+  private getDBInfo() {
+    const info = [
+      // 查询当前用户版本（user_version）
+      'user_version',
+      // 查询数据库页大小
+      'page_size',
+      // 查询加密算法类型
+      'cipher',
+      // 'cipher_list',
+      'legacy',
+      'legacy_page_size',
+      // 查询 KDF 迭代次数
+      'kdf_iter',
+      'fast_kdf_iter',
+      'hmac_use',
+      'hmac_pgno',
+      'hmac_salt_mask',
+      // 查询 KDF 算法
+      'kdf_algorithm',
+      // 查询 HMAC 算法
+      'hmac_algorithm',
+      'hmac_algorithm_compat',
+      'plaintext_header_size',
+    ]
+    info.forEach((pragma) =>
+      console.log(`${pragma}:`, this.db.pragma(pragma, { simple: true })),
+    )
   }
 }

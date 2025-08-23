@@ -3,8 +3,8 @@ import { parentPort, workerData } from 'worker_threads'
 
 const { dbPath, dbKey } = workerData
 
-// console.log('🫁 dbWorker:dbPath', dbPath)
-// console.log('🫁 dbWorker:dbKey', dbKey)
+console.log('🫁 dbWorker:dbPath', dbPath)
+console.log('🫁 dbWorker:dbKey', dbKey)
 
 const db = new dbWorker(dbPath, dbKey)
 
