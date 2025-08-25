@@ -22,6 +22,7 @@ export class WorkerManager {
    */
   constructor(workerFile: string, workerData: any = {}) {
     // 如果传入的是相对路径，则转换为绝对路径
+    const pathName = path.basename(workerFile)
     const absPath = path.isAbsolute(workerFile)
       ? workerFile
       : path.join(__dirname, workerFile)
@@ -32,37 +33,37 @@ export class WorkerManager {
     // 监听 Worker 发送的消息
     this.worker.on('message', (msg) => {
       const { id, result, error } = msg
-      console.log(`🚀[Worker ${id} ${this.callbacks.has(id)}] Message:`, msg)
+      console.log(`💼[Worker ${id} ${this.callbacks.has(id)}] Message:`, msg)
 
       if (id && this.callbacks.has(id)) {
         const cb = this.callbacks.get(id)!
         this.callbacks.delete(id)
-        console.log(`🚀[Worker ${id} ${this.callbacks.has(id)}] Message:`, cb)
+        console.log(`💼[Worker ${id} ${this.callbacks.has(id)}] Message:`, cb)
         cb(result, error)
       } else {
-        console.log(`🚀[Worker ${this.worker.threadId}] Message:`, msg)
+        console.log(`💼[Worker ${this.worker.threadId}] Message:`, msg)
       }
     })
 
     // 监听 Worker 内部错误
     this.worker.on('error', (err) => {
-      console.error(`🚀[Worker ${this.worker.threadId}] Error:`, err)
+      console.error(`💼[Worker ${this.worker.threadId}] Error:`, err)
     })
 
     // 监听 Worker 退出事件
     this.worker.on('exit', (code) => {
-      console.log(`🚀[Worker ${this.worker.threadId}] Exit code: ${code}`)
+      console.log(`💼[Worker ${this.worker.threadId}] Exit code: ${code}`)
       this.isTerminated = true
     })
 
     // 如果 Worker 有 stdout，打印 Worker 输出
     this.worker.stdout?.on('data', (chunk) => {
-      process.stdout.write(`[Worker] ${chunk}`)
+      console.log(`💼[Worker ${pathName}] ${chunk}`)
     })
 
     // 如果 Worker 有 stderr，打印 Worker 错误输出
     this.worker.stderr?.on('data', (chunk) => {
-      process.stderr.write(`[Worker ERR] ${chunk}`)
+      console.error(`💼[Worker ${pathName} ERR ] ${chunk}`)
     })
   }
 

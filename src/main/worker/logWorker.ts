@@ -1,43 +1,57 @@
-import { parentPort, workerData } from 'worker_threads'
-import log from 'electron-log'
-import path from 'path'
-const { logPath, isDev } = workerData
+import { workerData } from 'worker_threads'
+import { LogWorker, LogWorkerData } from '@/lib/logWorker'
 
-if (!parentPort) throw new Error('This file must be run as a Worker')
+const logWorker = new LogWorker(workerData as LogWorkerData)
 
-if (logPath) {
-  log.transports.file.resolvePathFn = () => path.join(logPath, '')
-}
-// console.log('🚀[Worker] Log worker logPath', logPath)
+process.on('exit', () => {
+  logWorker.dispose()
+})
 
-log.transports.file.level = 'info'
-log.transports.console.level = isDev ? 'debug' : 'info'
-log.transports.file.format = '[{y}-{m}-{d} {h}:{i}:{s}.{ms}] [{level}] {text}'
+process.on('SIGINT', () => {
+  logWorker.dispose()
+  process.exit(0)
+})
 
-// 缓存 & 批量写入
-const buffer: string[] = []
-const flushInterval = 3000 // 1秒刷一次
-let flushTimer: NodeJS.Timeout | null = null
+// import { parentPort, workerData } from 'worker_threads'
+// import log from 'electron-log'
+// import path from 'path'
+// const { logPath, isDev } = workerData
 
-function flushLogs() {
-  buffer.forEach((msg) => log.info(msg))
-  buffer.length = 0
-  flushTimer = null
-}
+// if (!parentPort) throw new Error('This file must be run as a Worker')
 
-function bufferedWrite(message: string) {
-  buffer.push(message)
-  if (!flushTimer) flushTimer = setTimeout(flushLogs, flushInterval)
-}
+// if (logPath) {
+//   log.transports.file.resolvePathFn = () => path.join(logPath, '')
+// }
+// // console.log('🚀[Worker] Log worker logPath', logPath)
 
-// console.log('🚀[Worker] Log worker workerData', workerData)
+// log.transports.file.level = 'info'
+// log.transports.console.level = isDev ? 'debug' : 'info'
+// log.transports.file.format = '[{y}-{m}-{d} {h}:{i}:{s}.{ms}] [{level}] {text}'
 
-// 接收主线程消息
-parentPort.on(
-  'message',
-  (data: { level: keyof typeof log; message: string }) => {
-    // console.log('🚀[Worker] Log worker data', buffer.length)
-    const { level, message } = data
-    bufferedWrite(`[${level.toUpperCase()}] ${message}`)
-  },
-)
+// // 缓存 & 批量写入
+// const buffer: string[] = []
+// const flushInterval = 3000 // 1秒刷一次
+// let flushTimer: NodeJS.Timeout | null = null
+
+// function flushLogs() {
+//   buffer.forEach((msg) => log.info(msg))
+//   buffer.length = 0
+//   flushTimer = null
+// }
+
+// function bufferedWrite(message: string) {
+//   buffer.push(message)
+//   if (!flushTimer) flushTimer = setTimeout(flushLogs, flushInterval)
+// }
+
+// // console.log('🚀[Worker] Log worker workerData', workerData)
+
+// // 接收主线程消息
+// parentPort.on(
+//   'message',
+//   (data: { level: keyof typeof log; message: string }) => {
+//     // console.log('🚀[Worker] Log worker data', buffer.length)
+//     const { level, message } = data
+//     bufferedWrite(`[${level.toUpperCase()}] ${message}`)
+//   },
+// )

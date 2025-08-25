@@ -2,7 +2,7 @@
 import { app } from 'electron'
 
 export const categoryNames = [
-  //   { categoryName: 'appLog' },
+  // { categoryName: 'appLog' },
   //   { categoryName: 'bridgeLog' },
   //   { categoryName: 'ipcMainLog' },
   //   { categoryName: 'sdkLog' },

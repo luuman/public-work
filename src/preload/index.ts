@@ -4,6 +4,7 @@ import {
   nativeImage,
   webUtils,
   webFrame,
+  ipcRenderer,
 } from 'electron'
 import { exposeElectronAPI } from '@electron-toolkit/preload'
 
@@ -59,4 +60,9 @@ window.addEventListener('DOMContentLoaded', () => {
   // console.log('cachedWebContentsId', cachedWebContentsId, cachedWindowId)
   webFrame.setVisualZoomLevelLimits(1, 1) // 禁用 trackpad 缩放
   webFrame.setZoomFactor(1)
+})
+
+ipcRenderer.on('log', (event, data) => {
+  const { level, message } = data
+  console[level](`[Main:${level}]`, message)
 })

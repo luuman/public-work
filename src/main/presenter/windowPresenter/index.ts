@@ -14,7 +14,7 @@ import { WindowActions } from './windowActions'
 import { WindowFocus } from './windowFocus'
 import { IpcHandlers } from './IpcHandlers'
 import { IWindowPresenter } from './types'
-
+import { forwardConsoleToRenderer } from '@/utils/fCTRenderer'
 /**
  * 窗口 Presenter - 主入口类
  *
@@ -129,6 +129,7 @@ export class WindowPresenter implements IWindowPresenter {
       //   },
       // )
     }
+    forwardConsoleToRenderer(mainWindow)
 
     appLog.info(`Shell window ${windowId} created successfully`)
     return windowId

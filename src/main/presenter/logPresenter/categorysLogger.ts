@@ -31,43 +31,43 @@ export class CategoryLogger {
 
   public info(...args: any[]) {
     const message = this.formatMessage(args)
-    console.log(`🚀[${this.category}] [INFO]`, message)
+    console.log(`📅[Log ${this.category}] [INFO]`, message)
     this.logToFile('info', message)
   }
 
   public warn(...args: any[]) {
     const message = this.formatMessage(args)
-    console.warn(`🚀[${this.category}] [WARN]`, message)
+    console.warn(`📅[Log ${this.category}] [WARN]`, message)
     this.logToFile('warn', message)
   }
 
   public error(...args: any[]) {
     const message = this.formatMessage(args)
-    console.error(`🚀[${this.category}] [ERROR]`, message)
+    console.error(`📅[Log ${this.category}] [ERROR]`, message)
     this.logToFile('error', message)
   }
 
   public debug(...args: any[]) {
     const message = this.formatMessage(args)
-    console.debug(`🚀[${this.category}] [DEBUG]`, message)
+    console.debug(`📅[Log ${this.category}] [DEBUG]`, message)
     this.logToFile('debug', message)
   }
 
   public trace(...args: any[]) {
     const message = this.formatMessage(args)
-    console.trace(`🚀[${this.category}] [TRACE]`, message)
+    console.trace(`📅[Log ${this.category}] [TRACE]`, message)
     this.logToFile('trace', message)
   }
 
   public fatal(...args: any[]) {
     const message = this.formatMessage(args)
-    console.log(`🚀[${this.category}] [FATAL]`, message)
+    console.log(`📅[Log ${this.category}] [FATAL]`, message)
     this.logToFile('fatal', message)
   }
 
   public log(...args: any[]) {
     const message = this.formatMessage(args)
-    console.log(`🚀[${this.category}] [LOG]`, message)
+    console.log(`📅[Log ${this.category}] [LOG]`, message)
     this.logToFile('log', message)
   }
 }

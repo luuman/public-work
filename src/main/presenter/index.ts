@@ -71,28 +71,24 @@ export class Presenter implements IPresenter {
     if (!this.devicePresenter) return
 
     try {
-      const dbDir = path.join(app.getPath('userData'), 'app_db')
-      const dbPath = path.join(dbDir, 'chat.db')
-      appLog.info('collectSystemInfo', dbPath)
-      const workerPath = path.resolve(__dirname, './worker/dbWorker.js')
-      appLog.log('🤚 collectSystemInfo:dbPath', dbPath)
-      appLog.log('🤚 collectSystemInfo:dbDir', dbDir)
-      appLog.log('🤚 collectSystemInfo:workerPath', workerPath)
+      const workerPath = path.resolve(__dirname, './worker/sqlite3Worker.js')
       const { SQLitePresenter } = await import('./sqlitePresenter')
 
-      this.sqlitePresenter = new SQLitePresenter(dbPath, workerPath)
+      appLog.log('🤚 collectSystemInfo:workerPath', workerPath)
+
+      this.sqlitePresenter = new SQLitePresenter('chat', workerPath)
 
       // 查询对话列表
 
-      this.sqlitePresenter.proxy
-        .getConversationList(1, 20)
-        .then((res) => appLog.info('getConversationList result', res))
-        .catch((err) => appLog.error('getConversationList error', err))
+      // this.sqlitePresenter.proxy
+      //   .getConversationList(1, 20)
+      //   .then((res) => appLog.info('getConversationList result', res))
+      //   .catch((err) => appLog.error('getConversationList error', err))
 
-      this.sqlitePresenter.proxy
-        .getConversation('qe6ih8v-wq4X-tbygftdm')
-        .then((res) => appLog.info('getConversationList result', res))
-        .catch((err) => appLog.error('getConversationList error', err))
+      // this.sqlitePresenter.proxy
+      //   .getConversation('qe6ih8v-wq4X-tbygftdm')
+      //   .then((res) => appLog.info('getConversationList result', res))
+      //   .catch((err) => appLog.error('getConversationList error', err))
 
       // 插入消息
       // 调用 insertMessage，不用手写包装函数
@@ -114,10 +110,10 @@ export class Presenter implements IPresenter {
       //   })
       //   .catch(appLog.error)
 
-      this.sqlitePresenter.proxy
-        .createConversation('多少钱')
-        .then((res) => appLog.info('getConversationList result', res))
-        .catch((err) => appLog.error('getConversationList error', err))
+      // this.sqlitePresenter.proxy
+      //   .createConversation('多少钱')
+      //   .then((res) => appLog.info('getConversationList result', res))
+      //   .catch((err) => appLog.error('getConversationList error', err))
     } catch (error) {
       appLog.info('collectSystemInfo', error)
     }

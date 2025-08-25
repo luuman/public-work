@@ -40,13 +40,15 @@ export default defineConfig({
         input: {
           index: resolve('src/main/index.ts'),
           fibonacciWorker: resolve('src/main/worker/fibonacciWorker.ts'),
+          sqlite3Worker: resolve('src/main/worker/sqlite3Worker/index.ts'),
           logWorker: resolve('src/main/worker/logWorker.ts'),
           dbWorker: resolve('src/main/worker/dbWorker/index.ts'),
-          log4jsWorker: resolve('src/main/worker/log4jsWorker/index.ts'),
+          log4jsWorker: resolve('src/main/worker/log4jsWorker.ts'),
         },
         output: {
           entryFileNames: (chunk) => {
             if (
+              chunk.name === 'sqlite3Worker' ||
               chunk.name === 'fibonacciWorker' ||
               chunk.name === 'logWorker' ||
               chunk.name === 'dbWorker' ||
